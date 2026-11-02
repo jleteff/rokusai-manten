@@ -234,25 +234,28 @@ details summary { cursor: pointer; font-weight: 700; }
 
   /* ---------- 10,000 house rules ---------- */
   var MIN_ENTRY = 1000;
-  var THREE_PAIRS = 1500, STRAIGHT = 1500, FULL_HOUSE = 1500, TWO_TRIPLETS = 2500;
-  // 1s: 1,000 / 2,000 / 3,000 / 4,000. Other numbers: number x 100 for three, doubling for each extra die.
-  function kindScore(v, c) { return v === 1 ? 1000 * (c - 2) : v * 100 * Math.pow(2, c - 3); }
+  var THREE_PAIRS = 1500, STRAIGHT = 2500, FULL_HOUSE = 1500, TWO_TRIPLETS = 2500;
+  // Three of a kind = number x 100 (three 1s = 1,000). Each extra matching die adds 100.
+  function kindScore(v, c) { return (v === 1 ? 1000 : v * 100) + 100 * (c - 3); }
   function counts(vals) { var c = [0, 0, 0, 0, 0, 0, 0]; vals.forEach(function (v) { c[v]++; }); return c; }
   // Scores a chosen set of dice from one throw. valid = every chosen die contributes to the score.
-  function scoreSel(vals) {
+  // bonus = numbers whose triple was already kept this turn: each further die of that number is worth 100.
+  function scoreSel(vals, bonus) {
+    bonus = bonus || [];
     if (!vals.length) return { score: 0, valid: false };
     var c = counts(vals), n = vals.length, score = 0, v, w;
     var best = { score: 0, valid: false };
     function offer(sc) { if (sc > best.score) best = { score: sc, valid: true }; }
+    function single(k) { return bonus.indexOf(k) > -1 || k === 1 ? 100 : k === 5 ? 50 : 0; }
     if (n === 6 && c.slice(1).every(function (x) { return x === 1; })) offer(STRAIGHT);
     if (n === 6 && c.slice(1).filter(function (x) { return x === 2; }).length === 3) offer(THREE_PAIRS);
     if (n === 6 && c.slice(1).filter(function (x) { return x === 3; }).length === 2) offer(TWO_TRIPLETS);
     var plain = true;
     for (v = 1; v <= 6; v++) {
-      if (c[v] >= 3) score += kindScore(v, c[v]);
-      else if (v === 1) score += c[v] * 100;
-      else if (v === 5) score += c[v] * 50;
-      else if (c[v] > 0) { plain = false; break; }
+      if (!c[v]) continue;
+      var sc = Math.max(c[v] >= 3 ? kindScore(v, c[v]) : 0, single(v) * c[v]);
+      if (sc <= 0) { plain = false; break; }
+      score += sc;
     }
     if (plain) offer(score);
     // Full house: three of a kind plus a pair (the pair does not have to score on its own).
@@ -266,8 +269,7 @@ details summary { cursor: pointer; font-weight: 700; }
           var extra = 0, ok = true, k;
           for (k = 1; k <= 6; k++) {
             if (!left[k]) continue;
-            if (left[k] === 1 && k === 1) extra += 100;
-            else if (left[k] === 1 && k === 5) extra += 50;
+            if (left[k] === 1 && single(k) > 0) extra += single(k);
             else ok = false;
           }
           if (ok) offer(FULL_HOUSE + extra);
@@ -276,9 +278,10 @@ details summary { cursor: pointer; font-weight: 700; }
     }
     return best;
   }
-  function hasScore(vals) {
+  function hasScore(vals, bonus) {
     var c = counts(vals), v;
     if (c[1] || c[5]) return true;
+    if ((bonus || []).some(function (b) { return c[b] > 0; })) return true;
     for (v = 2; v <= 6; v++) if (c[v] >= 3) return true;   // also covers full houses and two triplets
     if (vals.length === 6) {
       if (c.slice(1).every(function (x) { return x === 1; })) return true;
@@ -293,7 +296,7 @@ details summary { cursor: pointer; font-weight: 700; }
     var best = null;
     for (m = 1; m < (1 << free.length); m++) {
       var idxs = free.filter(function (_, k) { return m & (1 << k); });
-      var sc = scoreSel(idxs.map(function (j) { return r.dice[j]; }));
+      var sc = scoreSel(idxs.map(function (j) { return r.dice[j]; }), r.bonus);
       if (sc.valid && sc.score > 0 && (!best || sc.score > best.score || (sc.score === best.score && idxs.length < best.idxs.length))) best = { score: sc.score, idxs: idxs };
     }
     return best ? best.idxs : [];
@@ -307,7 +310,7 @@ details summary { cursor: pointer; font-weight: 700; }
   var code = null, room = null, players = {}, roomLoaded = false, subErr = null;
   var unsubs = [], busy = false, joining = false, seenRoll = null, animate = false;
   var sel = new Set(), selKey = "", autoPick = store.get("fk-auto") === "1";
-  var toastT = null, loadT = null, joinErr = false;
+  var toastT = null, loadT = null, joinErr = false, pickT = null;
 
   function toast(msg) {
     var t = $("#toast"); t.textContent = msg; t.hidden = false;
@@ -355,7 +358,7 @@ details summary { cursor: pointer; font-weight: 700; }
         var key = (room.turn) + ":" + (room.rollId || 0);
         if (key !== selKey) {
           selKey = key; sel = new Set();
-          if (autoPick && room.phase === "choose" && room.order && room.order[room.turn] === uid) sel = new Set(bestSel(room));
+          if (autoPick && room.phase === "choose" && room.order && room.order[room.turn] === uid) { sel = new Set(bestSel(room)); sharePick(); }
         }
       }
       maybeJoin(); hostSync(); scheduleFarkle(); render();
@@ -392,6 +395,18 @@ details summary { cursor: pointer; font-weight: 700; }
     act(db.doc("rooms/" + code).update(patch));
   }
 
+  // The active player's taps are shared so everyone at the table sees the pick as it happens.
+  function sharePick() {
+    clearTimeout(pickT);
+    var r = room;
+    if (!r || !mineTurn(r) || r.phase !== "choose") return;
+    var rid = r.rollId || 0, p = Array.from(sel).sort();
+    pickT = setTimeout(function () {
+      if (room && mineTurn(room) && room.phase === "choose" && (room.rollId || 0) === rid)
+        db.doc("rooms/" + code).update({ pick: p, pickRoll: rid }).catch(function () {});
+    }, 180);
+  }
+
   /* ---------- actions ---------- */
   async function createTable() {
     if (!myName) return;
@@ -408,7 +423,7 @@ details summary { cursor: pointer; font-weight: 700; }
     var scores = {}; ids.forEach(function (i) { scores[i] = 0; });
     act(db.doc("rooms/" + code).update({
       status: "play", order: ids, scores: scores, turn: 0, dice: [], held: [false, false, false, false, false, false],
-      turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, winner: null,
+      turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1,
       log: ["Game on. " + nameOf(ids[0]) + " rolls first."]
     }));
   }
@@ -419,28 +434,38 @@ details summary { cursor: pointer; font-weight: 700; }
   function pushLog(r, line) { return (r.log || []).concat([line]).slice(-8); }
   function endTurn(r, scores, log) {
     var next = (r.turn + 1) % r.order.length;
-    return { scores: scores, finalFrom: -1, turn: next, dice: [], held: [false, false, false, false, false, false], turnScore: 0, phase: "roll", log: log };
+    return { scores: scores, finalFrom: -1, turn: next, dice: [], held: [false, false, false, false, false, false], turnScore: 0, phase: "roll", bonus: [], pick: [], pickRoll: -1, log: log };
   }
-  function rollFrom(r, held, turnScore, log) {
+  function rollFrom(r, held, turnScore, log, bonus) {
+    bonus = bonus || [];
     var h = held.slice(), hot = false, i;
     if (h.every(Boolean)) { h = [false, false, false, false, false, false]; hot = true; }
     var dice = r.dice.length ? r.dice.slice() : [1, 1, 1, 1, 1, 1];
     var free = [];
     for (i = 0; i < 6; i++) if (!h[i]) { dice[i] = rollDie(); free.push(dice[i]); }
-    var who = nameOf(r.order[r.turn]);
-    if (!hasScore(free)) {
-      return { dice: dice, held: h, turnScore: 0, phase: "farkle", rollId: (r.rollId || 0) + 1, log: pushLog({ log: log }, "FARKLE. " + who + " loses " + turnScore.toLocaleString() + ".") };
+    var who = nameOf(r.order[r.turn]), rid = (r.rollId || 0) + 1;
+    if (free.length === 6 && free.every(function (x) { return x === free[0]; })) {
+      // Six of anything in one throw wins the game on the spot.
+      return { status: "done", phase: "done", winner: r.order[r.turn], winHow: "six", dice: dice, held: h, turnScore: 0, rollId: rid, pick: [], pickRoll: -1,
+        log: pushLog({ log: log }, who + " rolls six " + free[0] + "s in one throw and wins on the spot!") };
     }
-    return { dice: dice, held: h, turnScore: turnScore, phase: "choose", rollId: (r.rollId || 0) + 1, log: hot ? pushLog({ log: log }, who + " has hot dice and rolls all six.") : log };
+    if (!hasScore(free, bonus)) {
+      return { dice: dice, held: h, turnScore: 0, phase: "farkle", rollId: rid, pick: [], pickRoll: -1, log: pushLog({ log: log }, "FARKLE. " + who + " loses " + turnScore.toLocaleString() + ".") };
+    }
+    return { dice: dice, held: h, turnScore: turnScore, phase: "choose", rollId: rid, bonus: bonus, pick: [], pickRoll: -1, log: hot ? pushLog({ log: log }, who + " has hot dice and rolls all six.") : log };
   }
   function doRoll() {
     var r = room; if (!mineTurn(r) || r.phase !== "roll") return;
-    act(db.doc("rooms/" + code).update(rollFrom(r, r.held, 0, r.log || [])));
+    act(db.doc("rooms/" + code).update(rollFrom(r, r.held, 0, r.log || [], [])));
   }
   function commit(kind) {
     var r = room; if (!mineTurn(r) || r.phase !== "choose") return;
-    var idxs = Array.from(sel), s = scoreSel(idxs.map(function (i) { return r.dice[i]; }));
+    clearTimeout(pickT);
+    var idxs = Array.from(sel), keptVals = idxs.map(function (i) { return r.dice[i]; }), s = scoreSel(keptVals, r.bonus);
     if (!s.valid || s.score <= 0) return;
+    // Any triple kept now makes further dice of that number worth 100 for the rest of the turn.
+    var bonus = (r.bonus || []).slice(), kc = counts(keptVals);
+    for (var bv = 1; bv <= 6; bv++) if (kc[bv] >= 3 && bonus.indexOf(bv) < 0) bonus.push(bv);
     var held = r.held.slice(); idxs.forEach(function (i) { held[i] = true; });
     var cur = r.order[r.turn], total = r.turnScore + s.score, me = nameOf(cur);
     if (kind === "bank") {
@@ -451,14 +476,14 @@ details summary { cursor: pointer; font-weight: 700; }
       var log = pushLog(r, me + " banks " + total.toLocaleString() + ".");
       if (newScore === r.target) {
         act(db.doc("rooms/" + code).update({
-          status: "done", phase: "done", winner: cur, scores: scores, turnScore: 0, dice: r.dice, held: held,
+          status: "done", phase: "done", winner: cur, winHow: "exact", scores: scores, turnScore: 0, dice: r.dice, held: held, pick: [], pickRoll: -1,
           log: pushLog({ log: log }, me + " lands exactly on " + r.target.toLocaleString() + " and wins.")
         }));
       } else {
         act(db.doc("rooms/" + code).update(endTurn(r, scores, log)));
       }
     } else {
-      act(db.doc("rooms/" + code).update(rollFrom(r, held, total, r.log || [])));
+      act(db.doc("rooms/" + code).update(rollFrom(r, held, total, r.log || [], bonus)));
     }
   }
   // After a Farkle the dice stay on screen for a moment, then the turn passes by itself.
@@ -531,18 +556,19 @@ details summary { cursor: pointer; font-weight: 700; }
       '<button class="btn small" data-act="copy">Copy link</button></div>';
   }
   function rulesHTML() {
-    var rows = [1, 2, 3, 4, 5, 6].map(function (v) {
-      return "<tr><th>" + v + "s</th>" + [3, 4, 5, 6].map(function (c) { return "<td>" + kindScore(v, c).toLocaleString() + "</td>"; }).join("") + "</tr>";
-    }).join("");
+    var cells = [1, 2, 3, 4, 5, 6].map(function (v) { return "<td>" + kindScore(v, 3).toLocaleString() + "</td>"; }).join("");
     return '<details><summary>House rules and scoring</summary><ul class="rules">' +
       "<li>Roll six dice. Each roll, set aside at least one scoring die, then roll the rest or bank.</li>" +
       "<li>Single 1 = 100. Single 5 = 50.</li>" +
-      "<li>Three pairs = " + THREE_PAIRS.toLocaleString() + ". Straight 1–6 = " + STRAIGHT.toLocaleString() + ". Two triplets = " + TWO_TRIPLETS.toLocaleString() + ". Full house (three of a kind plus a pair) = " + FULL_HOUSE.toLocaleString() + ". These count only when rolled in one throw.</li>" +
+      "<li>Three of a kind = the number × 100. Three 1s = 1,000.</li>" +
+      "<li>Each extra matching die adds 100, whether it comes in the same throw or on a later throw after you kept the triple. Three 4s = 400, then another 4 = 100 more.</li>" +
+      "<li>Straight 1–6 = " + STRAIGHT.toLocaleString() + ". Two triplets = " + TWO_TRIPLETS.toLocaleString() + ". Three pairs = " + THREE_PAIRS.toLocaleString() + ". Full house (three of a kind plus a pair) = " + FULL_HOUSE.toLocaleString() + ". These count only in one throw.</li>" +
+      "<li><strong>Six of anything in one throw wins the game on the spot.</strong></li>" +
       "<li>Score all six dice and you roll all six again (hot dice).</li>" +
       "<li>No scoring dice on a roll is a Farkle: you lose the turn's points and the dice pass.</li>" +
       "<li>You need " + MIN_ENTRY.toLocaleString() + " in one turn to get on the board.</li>" +
       "<li>Finish on exactly the target. You can't bank a turn that would go over it.</li></ul>" +
-      '<div class="kinds"><table><thead><tr><th>Of a kind</th><th>Three</th><th>Four</th><th>Five</th><th>Six</th></tr></thead><tbody>' + rows + "</tbody></table></div></details>";
+      '<div class="kinds"><table><thead><tr><th>Three of a kind</th><th>1s</th><th>2s</th><th>3s</th><th>4s</th><th>5s</th><th>6s</th></tr></thead><tbody><tr><th>Points</th>' + cells + "</tr><tr><th>Each extra</th><td>+100</td><td>+100</td><td>+100</td><td>+100</td><td>+100</td><td>+100</td></tr></tbody></table></div></details>";
   }
 
   /* ---------- screens ---------- */
@@ -594,7 +620,9 @@ details summary { cursor: pointer; font-weight: 700; }
   function gameHTML() {
     var r = room, cur = r.order[r.turn], mine = mineTurn(r), done = r.status === "done";
     var inGame = r.order.indexOf(uid) > -1;
-    var selIdx = Array.from(sel), s = scoreSel(selIdx.map(function (i) { return r.dice[i]; }));
+    // Your own taps on your turn; everyone else sees the active player's shared pick.
+    var viewSel = mine ? sel : new Set(r.phase === "choose" && r.pickRoll === (r.rollId || 0) ? (r.pick || []) : []);
+    var selIdx = Array.from(viewSel), s = scoreSel(selIdx.map(function (i) { return r.dice[i]; }), r.bonus);
     var total = r.turnScore + (s.valid ? s.score : 0);
     var freeCount = r.held.filter(function (h) { return !h; }).length;
     var canPick = mine && r.phase === "choose" && !busy;
@@ -604,7 +632,7 @@ details summary { cursor: pointer; font-weight: 700; }
       var val = r.dice[i] || 0, held = r.held[i];
       var cls = held ? "held" : "free";
       if (!r.dice.length) cls += " blank";
-      if (sel.has(i)) cls += " sel";
+      if (viewSel.has(i)) cls += " sel";
       if (r.phase === "farkle" && !held) cls += " bust";
       if (animate && !held && r.dice.length) cls += " tumble";
       dice += dieHTML(val, cls, i, !(canPick && !held));
@@ -638,7 +666,9 @@ details summary { cursor: pointer; font-weight: 700; }
       controls = '<button class="btn hot" data-act="pass"' + (busy ? " disabled" : "") + ">Pass the dice</button>";
       hint = "No scoring dice. The dice pass in a moment."; hintCls = "bad";
     } else {
-      hint = r.phase === "farkle" ? esc(nameOf(cur)) + " farkled. Next player is up in a moment." : esc(nameOf(cur)) + " is rolling. Watch the felt.";
+      hint = r.phase === "farkle" ? esc(nameOf(cur)) + " farkled. Next player is up in a moment."
+        : (r.phase === "choose" && selIdx.length && s.valid) ? esc(nameOf(cur)) + " is keeping dice worth " + s.score.toLocaleString() + "."
+        : esc(nameOf(cur)) + " is rolling. Watch the felt.";
     }
     if (!done && room.host === uid && !mine) controls += '<button class="btn ghost small" data-act="skip">Skip ' + esc(nameOf(cur)) + "</button>";
 
@@ -646,7 +676,7 @@ details summary { cursor: pointer; font-weight: 700; }
     var center;
     if (done) {
       center = '<p class="eyebrow mine">Winner</p><div class="winner-name">' + esc(nameOf(r.winner)) + "</div>" +
-        '<p class="small">Landed on exactly ' + r.target.toLocaleString() + ".</p>" + '<div class="tray">' + dice + "</div>";
+        '<p class="small">' + (r.winHow === "six" ? "Rolled six of a kind in one throw." : "Landed on exactly " + r.target.toLocaleString() + ".") + "</p>" + '<div class="tray">' + dice + "</div>";
     } else {
       var head = r.phase === "farkle" ? '<div class="stamp">Farkle</div>'
         : '<p class="eyebrow' + (mine ? " mine" : "") + '">' + (mine ? "Your turn" : esc(nameOf(cur)) + "'s turn") + "</p>";
@@ -671,14 +701,14 @@ details summary { cursor: pointer; font-weight: 700; }
     if (a === "die") {
       var i = Number(el.getAttribute("data-i"));
       if (sel.has(i)) sel.delete(i); else sel.add(i);
-      render();
+      sharePick(); render();
     } else if (a === "create") { var n = $("#nm"); myName = n.value.trim(); if (!myName) { n.focus(); return; } store.set("fk-name", myName); createTable(); }
     else if (a === "join") { var c = $("#jc").value.trim().toUpperCase(); var nm = $("#nm") ? $("#nm").value.trim() : ""; if (nm) { myName = nm; store.set("fk-name", nm); } if (c) location.hash = "t-" + c; }
     else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); maybeJoin(); render(); }
-    else if (a === "autopick") { if (room && mineTurn(room) && room.phase === "choose") { sel = new Set(bestSel(room)); render(); } }
+    else if (a === "autopick") { if (room && mineTurn(room) && room.phase === "choose") { sel = new Set(bestSel(room)); sharePick(); render(); } }
     else if (a === "autotoggle") {
       autoPick = !autoPick; store.set("fk-auto", autoPick ? "1" : "0");
-      if (autoPick && room && mineTurn(room) && room.phase === "choose" && !sel.size) sel = new Set(bestSel(room));
+      if (autoPick && room && mineTurn(room) && room.phase === "choose" && !sel.size) { sel = new Set(bestSel(room)); sharePick(); }
       render();
     }
     else if (a === "start") startGame();

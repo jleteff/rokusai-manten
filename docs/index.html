@@ -410,6 +410,7 @@ ol.rules { padding-left: 20px; }
   // Chat lives on each player's own seat document, so the existing Firestore rules already allow it.
   var QUICK = ["😂", "🔥", "🎲", "Nice roll", "Choke!", "Too easy", "Bank it, coward", "Farkle incoming"];
   var chatOpen = false, chatSeen = {}, chatPrimed = false, chatReadAt = 0, myChat = null, lastSend = 0, bubbleT = null, chatKeys = "";
+  var alertsOn = store.get("fk-alerts") !== "0", swReg = null, audioCtx = null, titleT = null, baseTitle = document.title;
   var passAnim = null, animating = false, pendingRender = false, avatarOpen = false, myAvatar = store.get("fk-avatar") || "";
   var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
@@ -458,6 +459,8 @@ ol.rules { padding-left: 20px; }
       if (room) {
         if (seenRoll === null) seenRoll = room.rollId || 0;
         else if ((room.rollId || 0) !== seenRoll) { seenRoll = room.rollId || 0; animate = true; }
+        if (before && room.status === "play" && room.order && room.order[room.turn] === uid &&
+            !(before.status === "play" && before.order && before.order[before.turn] === uid)) notifyTurn();
         // The turn moved on: the dealer scoops the last dice and passes them along.
         if (before && before.status === "play" && room.status === "play" && before.turn !== room.turn && before.dice && before.dice.length)
           passAnim = { dice: before.dice.slice(), next: room.order[room.turn] };
@@ -513,6 +516,54 @@ ol.rules { padding-left: 20px; }
       if (room && mineTurn(room) && room.phase === "choose" && (room.rollId || 0) === rid)
         db.doc("rooms/" + code).update({ pick: p, pickRoll: rid }).catch(function () {});
     }, 180);
+  }
+
+  /* ---------- turn alerts ---------- */
+  // Work while the game is open, including in a background tab or a backgrounded app.
+  // A locked phone or a closed app needs a push server, which this static site does not have.
+  function canNotify() { return "Notification" in window; }
+  function chime() {
+    try {
+      if (!audioCtx) return;
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      var t = audioCtx.currentTime;
+      [659.25, 880].forEach(function (f, i) {
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + i * 0.14);
+        g.gain.exponentialRampToValueAtTime(0.25, t + i * 0.14 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.14 + 0.35);
+        o.connect(g); g.connect(audioCtx.destination); o.start(t + i * 0.14); o.stop(t + i * 0.14 + 0.4);
+      });
+    } catch (e) {}
+  }
+  function flashTitle() {
+    clearInterval(titleT);
+    var on = false;
+    titleT = setInterval(function () { on = !on; document.title = on ? "🎲 Your turn!" : baseTitle; }, 1000);
+  }
+  function notifyTurn() {
+    if (!alertsOn) return;
+    try { if (navigator.vibrate) navigator.vibrate([140, 80, 140]); } catch (e) {}
+    chime();
+    if (!document.hidden) { toast("Your turn. Roll the dice!"); return; }
+    flashTitle();
+    if (!canNotify() || Notification.permission !== "granted") return;
+    var opts = { body: "The dealer slid the dice to you, " + (myName || "you") + ".", tag: "turn-" + code, renotify: true, data: { url: location.href } };
+    if (swReg && swReg.showNotification) swReg.showNotification("Your turn · 六賽万点", opts).catch(function () {});
+    else { try { new Notification("Your turn · 六賽万点", opts); } catch (e) {} }
+  }
+  function alertsHTML() {
+    var perm = canNotify() ? Notification.permission : "unsupported";
+    var note = !alertsOn ? "Off. You won't get a sound or a notification when it's your turn."
+      : perm === "granted" ? "On. You'll get a notification, a chime and a buzz when it's your turn, as long as the game is open."
+      : perm === "denied" ? "Sound and buzz are on. Notifications are blocked for this site in your browser settings."
+      : perm === "unsupported" ? "Sound and the tab title are on. This browser doesn't allow web notifications here (on iPhone, add the game to your Home Screen first)."
+      : "Sound and buzz are on. Allow notifications to get a pop-up when the game is in the background.";
+    return '<div class="panel"><p class="label">Turn alerts</p><p class="muted" style="margin:6px 0 10px;font-size:14px">' + note + '</p><div class="row">' +
+      '<button class="btn ghost small pill" data-act="alerts" aria-pressed="' + alertsOn + '">Alerts: ' + (alertsOn ? "on" : "off") + "</button>" +
+      (alertsOn && perm === "default" ? '<button class="btn small" data-act="allownotif">Allow notifications</button>' : "") +
+      '<button class="btn ghost small" data-act="testalert">Test</button></div></div>';
   }
 
   /* ---------- chat ---------- */
@@ -973,7 +1024,7 @@ ol.rules { padding-left: 20px; }
           '</select><button class="btn" data-act="start"' + (ids.length ? "" : " disabled") + ">Start game</button></div>"
       : '<p class="status-line">Playing to ' + room.target.toLocaleString() + ". Waiting for " + esc(nameOf(room.host)) + " to start.</p>";
     return tableHTML(seats, center) + '<div class="actionbar">' + bar + "</div>" +
-      '<div class="below"><div class="panel"><p class="label">Invite link</p>' + inviteHTML() + "</div><div class=\"panel\">" + rulesHTML() + "</div></div>";
+      '<div class="below">' + alertsHTML() + '<div class="panel"><p class="label">Invite link</p>' + inviteHTML() + "</div><div class=\"panel\">" + rulesHTML() + "</div></div>";
   }
   function gameHTML() {
     var r = room, cur = r.order[r.turn], mine = mineTurn(r), done = r.status === "done";
@@ -1051,7 +1102,7 @@ ol.rules { padding-left: 20px; }
       '<div class="actionbar">' + (controls ? '<div class="actions">' + controls + "</div>" : "") +
       '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + tools + "</div>" +
       '<div class="below"><div class="panel"><p class="label">Game log · race to ' + r.target.toLocaleString() + ' exactly</p><ul class="log">' + log + "</ul></div>" +
-      '<div class="panel"><p class="label">Invite link</p>' + inviteHTML() + "</div>" +
+      alertsHTML() + '<div class="panel"><p class="label">Invite link</p>' + inviteHTML() + "</div>" +
       '<div class="panel">' + rulesHTML() + "</div></div>";
   }
 
@@ -1073,6 +1124,20 @@ ol.rules { padding-left: 20px; }
       autoPick = !autoPick; store.set("fk-auto", autoPick ? "1" : "0");
       if (autoPick && room && mineTurn(room) && room.phase === "choose" && !sel.size) { sel = new Set(bestSel(room)); sharePick(); }
       render();
+    }
+    else if (a === "alerts") { alertsOn = !alertsOn; store.set("fk-alerts", alertsOn ? "1" : "0"); if (alertsOn) chime(); render(); }
+    else if (a === "allownotif") {
+      if (canNotify()) Promise.resolve(Notification.requestPermission()).then(function () { render(); }, function () { render(); });
+    }
+    else if (a === "testalert") {
+      var was = alertsOn; alertsOn = true; chime();
+      try { if (navigator.vibrate) navigator.vibrate([140, 80, 140]); } catch (err) {}
+      if (canNotify() && Notification.permission === "granted") {
+        var o = { body: "This is what your turn alert looks like.", tag: "test", data: { url: location.href } };
+        if (swReg && swReg.showNotification) swReg.showNotification("Your turn · 六賽万点", o).catch(function () {});
+        else { try { new Notification("Your turn · 六賽万点", o); } catch (err) {} }
+      } else toast("Chime played. Allow notifications to also get a pop-up.");
+      alertsOn = was;
     }
     else if (a === "chatopen") setChatOpen(true);
     else if (a === "chatclose") setChatOpen(false);
@@ -1114,6 +1179,15 @@ ol.rules { padding-left: 20px; }
     clearTimeout(resizeT);
     resizeT = setTimeout(function () { if (isWide() !== wasWide) { wasWide = isWide(); render(); } }, 150);
   });
+
+  // Browsers only let sound start after a tap, so unlock audio on the first one.
+  document.addEventListener("pointerdown", function () {
+    try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === "suspended") audioCtx.resume(); } catch (e) {}
+  }, { passive: true });
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) { clearInterval(titleT); document.title = baseTitle; }
+  });
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").then(function (r) { swReg = r; }, function () {});
 
   /* ---------- boot ---------- */
   async function init() {

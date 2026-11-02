@@ -96,6 +96,7 @@ input[type=text], select {
 .hint { margin-top: 12px; min-height: 22px; }
 .hint.bad { color: var(--ember); }
 .hint.ok { color: var(--good); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
 .board { display: flex; flex-direction: column; gap: 8px; list-style: none; padding: 0; margin: 12px 0 0; }
 .p { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--table); }
@@ -200,6 +201,18 @@ summary { cursor: pointer; font-weight: 700; }
     }
     return false;
   }
+  // Highest-scoring valid set of the dice still in play. On a tie, keep fewer dice so more stay in play.
+  function bestSel(r) {
+    var free = [], i, m;
+    for (i = 0; i < 6; i++) if (!r.held[i]) free.push(i);
+    var best = null;
+    for (m = 1; m < (1 << free.length); m++) {
+      var idxs = free.filter(function (_, k) { return m & (1 << k); });
+      var sc = scoreSel(idxs.map(function (j) { return r.dice[j]; }));
+      if (sc.valid && sc.score > 0 && (!best || sc.score > best.score || (sc.score === best.score && idxs.length < best.idxs.length))) best = { score: sc.score, idxs: idxs };
+    }
+    return best ? best.idxs : [];
+  }
   var rollDie = function () { return 1 + Math.floor(Math.random() * 6); };
   var PIPS = { 0: [], 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
@@ -208,7 +221,7 @@ summary { cursor: pointer; font-weight: 700; }
   var uid = null, myName = store.get("fk-name") || "";
   var code = null, room = null, players = {}, roomLoaded = false, subErr = null;
   var unsubs = [], busy = false, joining = false, seenRoll = null, animate = false;
-  var sel = new Set(), selKey = "";
+  var sel = new Set(), selKey = "", autoPick = store.get("fk-auto") === "1";
   var toastT = null, loadT = null, canWrite = null, joinErr = false;
 
   function toast(msg) {
@@ -253,7 +266,10 @@ summary { cursor: pointer; font-weight: 700; }
         if (seenRoll === null) seenRoll = room.rollId || 0;
         else if ((room.rollId || 0) !== seenRoll) { seenRoll = room.rollId || 0; animate = true; }
         var key = (room.turn) + ":" + (room.rollId || 0);
-        if (key !== selKey) { selKey = key; sel = new Set(); }
+        if (key !== selKey) {
+          selKey = key; sel = new Set();
+          if (autoPick && room.phase === "choose" && room.order[room.turn] === uid) sel = new Set(bestSel(room));
+        }
       }
       maybeJoin(); hostSync(); render();
     }, function (e) { subErr = e; render(); }));
@@ -460,7 +476,7 @@ summary { cursor: pointer; font-weight: 700; }
       dice += dieHTML(val, cls, i, !(canPick && !held));
     }
 
-    var controls = "", hint = "", hintCls = "";
+    var controls = "", hint = "", hintCls = "", tools = "";
     if (done) {
       controls = r.host === uid || room.host === uid ? '<button class="btn" data-act="again">Play again</button>' : '<span class="muted">Waiting for the host to start another game.</span>';
     } else if (!inGame) {
@@ -472,7 +488,9 @@ summary { cursor: pointer; font-weight: 700; }
       var over = (r.scores[cur] || 0) + total > r.target;
       controls = '<button class="btn" data-act="keeproll"' + (s.valid && s.score > 0 && !busy ? "" : " disabled") + ">" + (rest === 0 && s.valid ? "Hot dice: roll all 6" : "Set aside, roll " + Math.max(rest, 0)) + "</button>" +
         '<button class="btn ghost" data-act="bank"' + (s.valid && s.score > 0 && entryOk && !over && !busy ? "" : " disabled") + ">Bank " + total.toLocaleString() + "</button>";
-      if (!selIdx.length) hint = "Tap the scoring dice you want to keep.";
+      tools = '<div class="tools"><button class="btn ghost small" data-act="autopick"' + (busy ? " disabled" : "") + '>Pick best dice</button>' +
+        '<button class="btn ghost small" data-act="autotoggle" aria-pressed="' + autoPick + '">Auto-pick each roll: ' + (autoPick ? "on" : "off") + "</button></div>";
+      if (!selIdx.length) hint = "Tap the scoring dice you want to keep, or use Pick best dice.";
       else if (!s.valid) { hint = "Every die you keep must score."; hintCls = "bad"; }
       else { hint = "Keeping these is worth " + s.score + "."; hintCls = "ok"; if (!entryOk) hint += " You need " + MIN_ENTRY.toLocaleString() + " in a turn to get on the board."; if (over) { hint = "Banking this would go over " + r.target.toLocaleString() + ". You have to land exactly on it."; hintCls = "bad"; } else if ((r.scores[cur] || 0) + total === r.target) { hint += " That's exactly " + r.target.toLocaleString() + ". Bank it to win."; } }
     } else if (mine && r.phase === "farkle") {
@@ -497,7 +515,7 @@ summary { cursor: pointer; font-weight: 700; }
     return '<div class="game"><div class="panel"><div class="banner">' + head + "</div>" +
       '<div class="dice">' + dice + "</div>" +
       '<div class="actions">' + controls + "</div>" +
-      '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + last + "</div>" +
+      '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + tools + last + "</div>" +
       '<div class="panel side"><p class="label">Race to ' + r.target.toLocaleString() + ' exactly</p><ul class="board">' + board + '</ul><ul class="log">' + log + "</ul>" + rulesHTML() + "</div></div>";
   }
 
@@ -512,6 +530,12 @@ summary { cursor: pointer; font-weight: 700; }
     } else if (a === "create") { var n = $("#nm"); myName = n.value.trim(); if (!myName) { n.focus(); return; } store.set("fk-name", myName); createTable(); }
     else if (a === "join") { var c = $("#jc").value.trim().toUpperCase(); var nm = $("#nm") ? $("#nm").value.trim() : ""; if (nm) { myName = nm; store.set("fk-name", nm); } if (c) location.hash = "t-" + c; }
     else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); maybeJoin(); render(); }
+    else if (a === "autopick") { if (room && mineTurn(room) && room.phase === "choose") { sel = new Set(bestSel(room)); render(); } }
+    else if (a === "autotoggle") {
+      autoPick = !autoPick; store.set("fk-auto", autoPick ? "1" : "0");
+      if (autoPick && room && mineTurn(room) && room.phase === "choose" && !sel.size) sel = new Set(bestSel(room));
+      render();
+    }
     else if (a === "start") startGame();
     else if (a === "roll") doRoll();
     else if (a === "keeproll") commit("roll");

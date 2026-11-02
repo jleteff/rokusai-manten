@@ -1,8 +1,10 @@
-// Paste your Firebase web app config here (Project settings > Your apps > Web app).
-// These values are safe to publish; the Firestore rules are what protect the data.
+// Firebase web app config for the farkle-night project.
+// These values are meant to be public. The Firestore rules are what protect the data.
 window.FIREBASE_CONFIG = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyBnzZPZ8akGzBXPSOn3-Lz7zmn6ZK1NOzE",
+  authDomain: "farkle-night.firebaseapp.com",
+  projectId: "farkle-night",
+  storageBucket: "farkle-night.firebasestorage.app",
+  messagingSenderId: "305144882762",
+  appId: "1:305144882762:web:b11f61ff6def165a5f68b3"
 };

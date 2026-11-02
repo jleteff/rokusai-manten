@@ -154,6 +154,8 @@ input[type=text], select {
 .dealer-seat .av svg { width: 100%; height: 100%; display: block; }
 .dealer-seat .plate { border-color: rgba(227,183,78,.5); }
 .dealer-seat { cursor: pointer; }
+.plate .need { display: block; font-size: 10.5px; font-weight: 700; color: #f4d78a; line-height: 1.2; margin-top: 1px; white-space: nowrap; }
+.seat.turn .plate .need { color: var(--gold); }
 .dealer-seat:hover .av { outline: 2px dashed rgba(227,183,78,.6); outline-offset: 3px; }
 .dealer-seat .plate .nm { color: var(--gold); letter-spacing: .12em; text-transform: uppercase; font-size: 10.5px; }
 
@@ -493,7 +495,11 @@ ol.rules { padding-left: 20px; }
     "Die {i}, showing {v}": "النرد {i}، يظهر {v}",
     "Die {i}, not rolled": "النرد {i}، لم يُرمَ بعد",
     "Change dealer": "غيّر الموزّعة",
-    "Tap the dealer to switch between Sofia and Layla.": "اضغط على الموزّعة للتبديل بين صوفيا وليلى."
+    "Tap the dealer to switch between Sofia and Layla.": "اضغط على الموزّعة للتبديل بين صوفيا وليلى.",
+    "Needs {n}": "يحتاج {n}",
+    "Your turn. You need exactly {n} to go out.": "دورك. تحتاج إلى {n} بالضبط لتنهي اللعبة.",
+    " {n} left to go out after this.": " يتبقى {n} لتنهي بعد هذا.",
+    "From {a}, each player's seat shows exactly how many points they need to go out.": "من {a}، يُظهر مقعد كل لاعب عدد النقاط التي يحتاجها بالضبط لينهي."
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -608,6 +614,11 @@ ol.rules { padding-left: 20px; }
   }
   function bestSel(r) { return pickSet(r.dice, r.held, r.bonus, "best").idxs; }
   // Within 1,000 of the target (9,000 when playing to 10,000), every scoring die must be kept.
+  // From 2,000 below the target (8,000 when playing to 10,000), show what each player needs to go out.
+  function needToGoOut(r, id) {
+    var sc = (r.scores && r.scores[id]) || 0;
+    return sc >= r.target - 2000 && sc < r.target ? r.target - sc : 0;
+  }
   function lockMode(r, id) { return ((r.scores && r.scores[id]) || 0) >= r.target - 1000; }
   var rollDie = function () { return 1 + Math.floor(Math.random() * 6); };
   var PIPS = { 0: [], 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
@@ -1088,7 +1099,7 @@ ol.rules { padding-left: 20px; }
       return '<div class="' + cls + '" data-seat="' + esc(id) + '" style="' + st + '"' + mine + ">" + badge + bubble +
         avatarHTML(id, nameOf(id), players[id] && players[id].avatar) +
         '<div class="plate"><span class="nm">' + esc(nm) + "</span>" +
-        (o.scores ? '<span class="sc">' + fmt(o.scores[id] || 0) + "</span>" : "") + "</div></div>";
+        (o.scores ? '<span class="sc">' + fmt(o.scores[id] || 0) + "</span>" + (needToGoOut(room, id) ? '<span class="need">' + T("Needs {n}", { n: fmt(needToGoOut(room, id)) }) + "</span>" : "") : "") + "</div></div>";
     }).join("");
   }
   function tableHTML(seats, center) {
@@ -1124,6 +1135,7 @@ ol.rules { padding-left: 20px; }
         li(T("You need {n} in one turn to get on the board.", { n: n(MIN_ENTRY) })) +
         li(T("Score with all six dice and you roll all six again (hot dice).")) +
         li(T("The winner of a game rolls first in the next one.")) +
+        li(T("From {a}, each player's seat shows exactly how many points they need to go out.", { a: n(tgt - 2000) })) +
         li(T("Tap the dealer to switch between Sofia and Layla.")) +
         li(T("After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.")) +
         li(T("A new triple on a later throw scores whichever is higher: the triple, or 100 per die.")) +
@@ -1322,7 +1334,8 @@ ol.rules { padding-left: 20px; }
       hint = T("Taking your seat. The host's screen adds you in a moment. If this stays, ask the host to keep the page open.");
     } else if (mine && r.phase === "roll") {
       controls = '<button class="btn" data-act="roll"' + (busy ? " disabled" : "") + ">" + T("Roll the dice") + "</button>";
-      hint = r.scores[uid] > 0 ? T("Your turn.") : T("Your turn. You need {n} this turn to get on the board.", { n: fmt(MIN_ENTRY) });
+      hint = needToGoOut(r, uid) ? T("Your turn. You need exactly {n} to go out.", { n: fmt(needToGoOut(r, uid)) })
+        : r.scores[uid] > 0 ? T("Your turn.") : T("Your turn. You need {n} this turn to get on the board.", { n: fmt(MIN_ENTRY) });
     } else if (mine && r.phase === "choose") {
       var rest = freeCount - selIdx.length, entryOk = (r.scores[cur] > 0) || total >= MIN_ENTRY;
       var over = (r.scores[cur] || 0) + total > r.target;
@@ -1337,6 +1350,7 @@ ol.rules { padding-left: 20px; }
         if (!entryOk) hint += T(" You need {n} in a turn to get on the board.", { n: fmt(MIN_ENTRY) });
         if (over) { hint = T("Banking this would go over {n}. You have to land exactly on it.", { n: fmt(r.target) }); hintCls = "bad"; }
         else if ((r.scores[cur] || 0) + total === r.target) hint += T(" That's exactly {n}. Bank it to win.", { n: fmt(r.target) });
+        else if (needToGoOut(r, cur)) hint += T(" {n} left to go out after this.", { n: fmt(needToGoOut(r, cur) - total) });
       }
       if (forced.length) hint = T("{n}+ rule: every scoring die is kept for you. ", { n: fmt(r.target - 1000) }) + hint;
     } else if (mine && r.phase === "farkle") {

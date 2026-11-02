@@ -147,13 +147,12 @@ input[type=text], select {
 .fly .die { box-shadow: 0 6px 12px rgba(0,0,0,.5); }
 .fly.cup { display: flex; gap: 3px; }
 .fly.cup .die { width: 22px; padding: 3px; border-radius: 5px; }
-.dealer {
-  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; margin-top: 2px;
-  background: radial-gradient(circle at 40% 35%, #ffffff, #e7e0c9 70%); color: var(--ink);
-  font-size: 7.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
-  box-shadow: inset 0 0 0 3px #cfc7ab, inset 0 0 0 5px #fff, 0 4px 8px rgba(0,0,0,.45);
-}
-.table.wide .dealer { width: 50px; height: 50px; font-size: 8.5px; }
+/* the dealer has her own seat at the head of the table */
+.dealer-seat { --av-d: calc(var(--av) * 1.32); }
+.dealer-seat .av { width: var(--av-d); height: var(--av-d); padding: 0; background: #3a0d18; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(227,183,78,.35), 0 8px 18px rgba(0,0,0,.6); }
+.dealer-seat .av svg { width: 100%; height: 100%; display: block; }
+.dealer-seat .plate { border-color: rgba(227,183,78,.5); }
+.dealer-seat .plate .nm { color: var(--gold); letter-spacing: .12em; text-transform: uppercase; font-size: 10.5px; }
 
 /* seats */
 .seat { position: absolute; transform: translate(-50%, -50%); width: var(--sw); display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 3; text-align: center; }
@@ -716,13 +715,59 @@ ol.rules { padding-left: 20px; }
       ' aria-label="Die ' + (i + 1) + (v ? ", showing " + v : ", not rolled") + '">' + cells + "</button>";
   }
   // Seats sit on an ellipse around the rail. You are always at the bottom; the rest follow clockwise in turn order.
+  // The house dealer: white dress shirt, black vest and bow tie, brunette ponytail, blue eyes.
+  var DEALER_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true"><defs>' +
+    '<clipPath id="dlc"><circle cx="50" cy="50" r="50"/></clipPath>' +
+    '<radialGradient id="dlbg" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#8a2a3e"/><stop offset="1" stop-color="#360b16"/></radialGradient>' +
+    '<linearGradient id="dlhair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a4726"/><stop offset=".55" stop-color="#4f2c16"/><stop offset="1" stop-color="#2e190c"/></linearGradient>' +
+    '<linearGradient id="dlskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d2b4"/><stop offset="1" stop-color="#ecbd98"/></linearGradient></defs>' +
+    '<g clip-path="url(#dlc)"><rect width="100" height="100" fill="url(#dlbg)"/>' +
+    // ponytail swinging out behind her right shoulder
+    '<path d="M64 29 C83 29 91 47 86 66 C83 77 75 84 68 83 C76 70 77 53 66 40 Z" fill="url(#dlhair)"/>' +
+    '<path d="M70 38 C80 46 81 60 76 72" stroke="#8b5530" stroke-width="1.2" fill="none" opacity=".6"/>' +
+    // neck, shirt, vest, collar, bow tie
+    '<path d="M43 60 L57 60 L58.5 75 L41.5 75 Z" fill="#e8b48e"/>' +
+    '<path d="M10 100 C13 82 27 73 41 71 L59 71 C73 73 87 82 90 100 Z" fill="#fbfaf6"/>' +
+    '<path d="M10 100 C13 86 22 78 33 75 L43 100 Z" fill="#17171c"/><path d="M90 100 C87 86 78 78 67 75 L57 100 Z" fill="#17171c"/>' +
+    '<path d="M41 71 L50 85 L44.5 87 L37 74 Z" fill="#fff" stroke="#d9d4c8" stroke-width=".6"/><path d="M59 71 L50 85 L55.5 87 L63 74 Z" fill="#fff" stroke="#d9d4c8" stroke-width=".6"/>' +
+    '<path d="M43.5 84 L50 87.2 L56.5 84 L56.5 90.6 L50 87.8 L43.5 90.6 Z" fill="#17171c"/><circle cx="50" cy="87.5" r="1.3" fill="#2a2a31"/>' +
+    '<circle cx="50" cy="94" r=".9" fill="#d9d4c8"/>' +
+    // face, ears, gold earrings
+    '<ellipse cx="50" cy="43" rx="16.5" ry="20.5" fill="url(#dlskin)"/>' +
+    '<ellipse cx="33.8" cy="46" rx="2.5" ry="3.8" fill="#e8b48e"/><ellipse cx="66.2" cy="46" rx="2.5" ry="3.8" fill="#e8b48e"/>' +
+    '<circle cx="33.8" cy="51.6" r="1.6" fill="#e3b74e"/><circle cx="66.2" cy="51.6" r="1.6" fill="#e3b74e"/>' +
+    // hair swept back with a side part, hair tie
+    '<path d="M32.5 45 C29.5 25 41 16.5 51.5 17.5 C64 17.5 71.5 27 67.5 45 C66.5 34.5 61 27.5 53 26 C47.5 27.5 41.5 29.5 37.5 35.5 C35 38.5 33.5 41.5 32.5 45 Z" fill="url(#dlhair)"/>' +
+    '<path d="M53 18.5 C49 22 46 25 44 29" stroke="#8b5530" stroke-width="1" fill="none" opacity=".7"/>' +
+    '<rect x="64.6" y="31.2" width="3" height="5" rx="1.3" fill="#2a160b" transform="rotate(24 66 33.7)"/>' +
+    // brows, blue eyes with liner, nose, blush, red lips
+    '<path d="M38.5 36.6 Q43 33.8 47 36" stroke="#4a2914" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+    '<path d="M53 36 Q57 33.8 61.5 36.6" stroke="#4a2914" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+    '<ellipse cx="43" cy="42.2" rx="3.7" ry="2.5" fill="#fff"/><ellipse cx="57" cy="42.2" rx="3.7" ry="2.5" fill="#fff"/>' +
+    '<circle cx="43" cy="42.4" r="2" fill="#2f86e8"/><circle cx="57" cy="42.4" r="2" fill="#2f86e8"/>' +
+    '<circle cx="43" cy="42.4" r=".9" fill="#0b1626"/><circle cx="57" cy="42.4" r=".9" fill="#0b1626"/>' +
+    '<circle cx="43.7" cy="41.7" r=".5" fill="#fff"/><circle cx="57.7" cy="41.7" r=".5" fill="#fff"/>' +
+    '<path d="M39 41.4 Q43 38.4 47 41.2 L48.2 40.4" stroke="#1a0f08" stroke-width="1.1" fill="none" stroke-linecap="round"/>' +
+    '<path d="M53 41.2 Q57 38.4 61 41.4 M51.8 40.4 L53 41.2" stroke="#1a0f08" stroke-width="1.1" fill="none" stroke-linecap="round"/>' +
+    '<path d="M39.6 40.6 L38.4 39.4 M41.4 39.7 L40.6 38.3 M58.6 39.7 L59.4 38.3 M60.4 40.6 L61.6 39.4" stroke="#1a0f08" stroke-width=".7" stroke-linecap="round"/>' +
+    '<path d="M50 45 Q48.5 50 50.7 50.7" stroke="#cf987a" stroke-width="1" fill="none" stroke-linecap="round"/>' +
+    '<ellipse cx="39.5" cy="49" rx="3.3" ry="1.8" fill="#ea8f8a" opacity=".35"/><ellipse cx="60.5" cy="49" rx="3.3" ry="1.8" fill="#ea8f8a" opacity=".35"/>' +
+    '<path d="M44.5 54.6 Q47.3 52.9 50 54 Q52.7 52.9 55.5 54.6 Q53 58.1 50 58.2 Q47 58.1 44.5 54.6 Z" fill="#c82f48"/>' +
+    '<path d="M45 54.7 Q50 55.9 55 54.7" stroke="#9a1f35" stroke-width=".55" fill="none"/>' +
+    '<path d="M47.6 56.6 Q50 57.3 52.4 56.6" stroke="#f08a99" stroke-width=".6" fill="none" opacity=".7"/>' +
+    "</g></svg>";
+  // Seats sit on an ellipse with one extra place for the dealer, opposite you.
   function seatsHTML(ids, o) {
     var all = ids.slice(), g;
     for (g = 0; g < (o.ghosts || 0); g++) all.push(null);
     var n = all.length, start = Math.max(0, ids.indexOf(uid)), wide = isWide();
     var rx = wide ? 44 : 38, ry = wide ? 40 : 43;
-    return all.map(function (id, k) {
-      var pos = (k - start + n) % n, t = Math.PI / 2 + pos * 2 * Math.PI / n;
+    var slots = n + 1, dealerSlot = Math.floor(slots / 2);
+    var place = function (t) { return "left:" + (50 + rx * Math.cos(t)).toFixed(2) + "%;top:" + (50 + ry * Math.sin(t)).toFixed(2) + "%"; };
+    var td = Math.PI / 2 + dealerSlot * 2 * Math.PI / slots;
+    var dealer = '<div class="seat dealer-seat" id="dealer" style="' + place(td) + '"><div class="av">' + DEALER_SVG + '</div><div class="plate"><span class="nm">Dealer</span></div></div>';
+    return dealer + all.map(function (id, k) {
+      var pos = (k - start + n) % n, slot = pos < dealerSlot ? pos : pos + 1, t = Math.PI / 2 + slot * 2 * Math.PI / slots;
       var st = "left:" + (50 + rx * Math.cos(t)).toFixed(2) + "%;top:" + (50 + ry * Math.sin(t)).toFixed(2) + "%";
       var talk = id ? bubbleFor(id) : "", bubble = talk ? '<span class="bubble' + (Math.sin(t) < -0.3 ? " down" : "") + '">' + esc(talk) + "</span>" : "";
       if (!id) return '<div class="seat open" style="' + st + '" aria-hidden="true"><div class="av">+</div><div class="plate"><span class="nm">Open seat</span></div></div>';
@@ -845,7 +890,8 @@ ol.rules { padding-left: 20px; }
     var dealer = document.getElementById("dealer"), seat = document.querySelector('.seat[data-seat="' + pa.next + '"]');
     var slots = document.querySelectorAll(".tray .die");
     if (reduceMotion || !dealer || !seat || !slots.length || !dealer.animate) return;
-    var dc = centerOf(dealer), sc = centerOf(seat.querySelector(".av") || seat);
+    var dealerAv = dealer.querySelector(".av") || dealer;
+    var dc = centerOf(dealerAv), sc = centerOf(seat.querySelector(".av") || seat);
     pa.dice.forEach(function (v, k) {
       var slot = slots[k]; if (!slot) return;
       var b = slot.getBoundingClientRect(), f = document.createElement("div");
@@ -869,7 +915,8 @@ ol.rules { padding-left: 20px; }
         { transform: t + " scale(1)", opacity: 1, offset: 0.85 }, { transform: t + " scale(.5)", opacity: 0 }
       ], { duration: 900, easing: "cubic-bezier(.4,.1,.3,1)", fill: "both" });
       a.onfinish = function () { cup.remove(); };
-      if (document.getElementById("dealer")) document.getElementById("dealer").animate([{ transform: "scale(1)" }, { transform: "scale(1.15)" }, { transform: "scale(1)" }], { duration: 320 });
+      var dav = document.querySelector("#dealer .av");
+      if (dav) dav.animate([{ transform: "scale(1)" }, { transform: "scale(1.12) rotate(-4deg)" }, { transform: "scale(1)" }], { duration: 360 });
     }, 520 + 6 * 45);
   }
 
@@ -995,7 +1042,7 @@ ol.rules { padding-left: 20px; }
       var head = r.phase === "farkle" ? '<div class="stamp">' + (r.bust === "over" ? "Bust" : "Farkle") + "</div>"
         : '<p class="eyebrow' + (mine ? " mine" : "") + '">' + (mine ? "Your turn" : esc(nameOf(cur)) + "'s turn") + "</p>";
       center = head + '<div class="pot"><span class="chips' + (potValue ? "" : " empty") + '" aria-hidden="true"></span><span class="pot-n" id="pot">' + potValue.toLocaleString() + "</span></div>" +
-        '<p class="pot-l">This turn</p><div class="tray">' + dice + "</div>" + '<div class="dealer" id="dealer" aria-hidden="true">Dealer</div>';
+        '<p class="pot-l">This turn</p><div class="tray">' + dice + "</div>";
     }
     var seats = seatsHTML(r.order, { cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "Farkled") : mine ? "Your turn" : "Rolling" });
     var log = (r.log || []).slice(-6).map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("");

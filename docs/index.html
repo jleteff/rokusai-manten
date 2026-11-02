@@ -589,11 +589,14 @@ ol.rules { padding-left: 20px; }
   function startGame() {
     var ids = Object.keys(players).sort(byJoin);
     if (!ids.length) return;
+    // The last game's winner rolls first; everyone else keeps their place around the table.
+    var w = ids.indexOf(room.lastWinner);
+    if (w > 0) ids = ids.slice(w).concat(ids.slice(0, w));
     var scores = {}; ids.forEach(function (i) { scores[i] = 0; });
     act(db.doc("rooms/" + code).update({
       status: "play", order: ids, scores: scores, turn: 0, dice: [], held: [false, false, false, false, false, false],
       turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null,
-      log: ["Game on. " + nameOf(ids[0]) + " rolls first."]
+      log: [w > -1 ? nameOf(ids[0]) + " won last game and rolls first." : "Game on. " + nameOf(ids[0]) + " rolls first."]
     }));
   }
   function act(p) {
@@ -685,7 +688,7 @@ ol.rules { padding-left: 20px; }
     act(db.doc("rooms/" + code).update(endTurn(r, r.scores, log)));
   }
   function playAgain() {
-    act(db.doc("rooms/" + code).update({ status: "lobby", phase: "roll", dice: [], winner: null, finalFrom: -1, log: [] }));
+    act(db.doc("rooms/" + code).update({ status: "lobby", phase: "roll", dice: [], winner: null, lastWinner: room.winner || null, finalFrom: -1, log: [] }));
   }
   function setTarget(v) { act(db.doc("rooms/" + code).update({ target: Number(v) })); }
 
@@ -767,6 +770,7 @@ ol.rules { padding-left: 20px; }
       '<div class="rules-sec"><h4>Fine print</h4><ul class="rules">' +
         "<li>You need " + n(MIN_ENTRY) + " in one turn to get on the board.</li>" +
         "<li>Score with all six dice and you roll all six again (hot dice).</li>" +
+        "<li>The winner of a game rolls first in the next one.</li>" +
         "<li>After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.</li>" +
         "<li>A new triple on a later throw scores whichever is higher: the triple, or 100 per die.</li>" +
         "<li>You must land on exactly " + n(tgt) + ". You can't bank a turn that would go over.</li>" +
@@ -914,6 +918,7 @@ ol.rules { padding-left: 20px; }
     var seats = seatsHTML(ids, { ghosts: Math.max(0, 6 - ids.length) });
     var center = '<p class="eyebrow">Table</p><div class="lobby-code">' + esc(code) + "</div>" +
       '<p class="small">' + ids.length + (ids.length === 1 ? " player" : " players") + " seated. Send the link so friends can pull up a chair. Tap your seat to pick an avatar.</p>" +
+      (room.lastWinner && players[room.lastWinner] ? '<p class="small"><strong>' + esc(nameOf(room.lastWinner)) + "</strong> won last game and rolls first.</p>" : "") +
       '<button class="btn small" data-act="copy">Copy invite link</button>';
     var bar = isHost
       ? '<div class="actions"><select id="tg" aria-label="Play to" style="flex:0 0 auto;width:auto">' +

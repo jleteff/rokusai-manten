@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1311">
-<title>10,000</title>
+<title>六賽万点 · Six Dice</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=DM+Sans:wght@400;500;700&display=swap">
+<!-- Only the four title characters are downloaded from this font. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&text=%E5%85%AD%E8%B3%BD%E4%B8%87%E7%82%B9&display=swap">
 <style>
 /* Layout: a felt card-room table seen from above. Players sit on the rail around it (you are always at the bottom seat),
    dice and the turn's pot sit in the middle, and your actions live in a bar under the table. */
@@ -27,6 +29,7 @@
   --good: #8ad69d;
   --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-jp: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -52,7 +55,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* header */
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .brand { display: flex; align-items: baseline; gap: 8px; }
-.brand b { font-family: var(--font-display); font-weight: 900; font-size: 34px; line-height: 1; color: var(--gold); letter-spacing: .01em; }
+.brand b { font-family: var(--font-jp); font-weight: 400; font-size: 26px; line-height: 1; color: var(--gold); letter-spacing: .04em; }
 .brand span { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ivory-dim); font-weight: 700; }
 .chip-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--room-2); border-radius: 999px; padding: 6px 12px; min-height: 36px; }
 .chip-btn .code { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: .12em; color: var(--gold); }
@@ -81,7 +84,8 @@ input[type=text], select {
 
 /* home */
 .hero { text-align: center; padding: 22px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.hero h1 { font-family: var(--font-display); font-weight: 900; font-size: clamp(72px, 22vw, 150px); line-height: .9; color: var(--gold); letter-spacing: .01em; text-shadow: 0 6px 0 #00000055; }
+.hero h1 { font-family: var(--font-jp); font-weight: 400; font-size: clamp(54px, 17vw, 116px); line-height: 1.05; color: var(--gold); letter-spacing: .04em; text-shadow: 0 6px 0 #00000055; }
+.hero .romaji { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: .22em; text-transform: uppercase; color: var(--ivory); }
 .hero p { color: var(--ivory-dim); max-width: 34ch; }
 .hero-dice { display: flex; gap: 10px; margin-bottom: 6px; --d: 38px; }
 .hero-dice .die { transform: rotate(var(--r)); }
@@ -202,6 +206,9 @@ details summary { cursor: pointer; font-weight: 700; }
 @media (max-width: 640px) {
   .home-cards { grid-template-columns: minmax(0, 1fr); }
 }
+@media (max-width: 520px) {
+  .brand span { display: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   .die.tumble, .stamp, .seat.turn .av { animation: none; }
   .die, .btn { transition: none; }
@@ -211,7 +218,7 @@ details summary { cursor: pointer; font-weight: 700; }
 <body>
 <div class="app">
   <div class="top">
-    <div class="brand"><b>10,000</b><span>Dice</span></div>
+    <div class="brand" lang="ja"><b>六賽万点</b><span lang="en">Six Dice · 10,000</span></div>
     <div id="topright"></div>
   </div>
   <div id="warn"></div>
@@ -589,7 +596,7 @@ details summary { cursor: pointer; font-weight: 700; }
   }
   function homeHTML() {
     var deco = [[1, "-8deg"], [5, "6deg"], [1, "-3deg"], [5, "10deg"]].map(function (d, i) { return '<span style="--r:' + d[1] + '">' + dieHTML(d[0], "", i, true) + "</span>"; }).join("");
-    return '<div class="hero"><div class="hero-dice" aria-hidden="true">' + deco + '</div><h1>10,000</h1><p>Six dice. Push your luck. First to land on exactly ten thousand wins.</p></div>' +
+    return '<div class="hero"><div class="hero-dice" aria-hidden="true">' + deco + '</div><h1 lang="ja">六賽万点</h1><p class="romaji">Roku-sai Manten</p><p>Six dice, ten thousand points. Push your luck, and land on exactly ten thousand to win.</p></div>' +
       '<div class="home-cards"><div class="panel"><h2>New table</h2><p class="muted" style="margin-bottom:14px">Start a game and send the link to your friends.</p>' +
       '<div class="field"><label class="label" for="nm">Your name</label><input type="text" id="nm" maxlength="20" value="' + esc(myName) + '" autocomplete="nickname"></div>' +
       '<button class="btn" data-act="create">Create table</button></div>' +

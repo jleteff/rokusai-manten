@@ -1,5 +1,7 @@
 # 六賽万点 (Roku-sai Manten)
 
+**Play:** https://jleteff.github.io/rokusai-manten/
+
 "Six dice, ten thousand points." A live multiplayer game of 10,000, the dice game also known as Farkle. Everyone opens one link on their own phone. No accounts for players.
 The page is static (hosted free on GitHub Pages). Game state lives in Firestore. Players sign in anonymously.
 
@@ -16,7 +18,7 @@ The page is static (hosted free on GitHub Pages). Game state lives in Firestore.
 
 ### 2. GitHub Pages (the web address)
 1. In this repo: *Settings > Pages > Build and deployment*. Source: **Deploy from a branch**. Branch: `main`, folder `/docs`. Save.
-2. After a minute your game is at `https://YOUR_GITHUB_NAME.github.io/farkle-night/`.
+2. After a minute your game is at `https://YOUR_GITHUB_NAME.github.io/rokusai-manten/`.
 3. If sign-in is refused, add `YOUR_GITHUB_NAME.github.io` under *Firebase > Authentication > Settings > Authorized domains*.
 
 Free GitHub Pages needs a **public** repo. Nothing secret is in it.

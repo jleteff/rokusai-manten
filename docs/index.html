@@ -128,26 +128,25 @@ input[type=text], select {
 
 /* dice */
 .die {
-  width: var(--d); aspect-ratio: 1; border: 0; border-radius: 18%;
-  background: linear-gradient(145deg, #fffaea, #e2d9bd); padding: 14%;
-  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 4%;
+  width: var(--d); height: var(--d); border: 0; border-radius: 18%;
+  background: linear-gradient(145deg, #fffaea, #e2d9bd); padding: 0; display: block; position: relative;
   box-shadow: 0 4px 0 #a99f7f, 0 9px 14px rgba(0,0,0,.45);
   transition: transform .15s, box-shadow .15s;
 }
-.die i { border-radius: 50%; }
-.die i.on { background: var(--ink); box-shadow: inset 0 2px 2px rgba(0,0,0,.5); }
+.die svg { display: block; width: 100%; height: 100%; pointer-events: none; }
+.die svg circle { fill: #15130f; }
 .die:disabled { cursor: default; }
 .die.free:not(:disabled):hover { transform: translateY(-3px); }
 .die.sel { transform: translateY(-8px); box-shadow: 0 0 0 4px var(--gold), 0 14px 18px rgba(0,0,0,.5); }
 .die.held { background: linear-gradient(145deg, #d8b860, #a8853a); box-shadow: 0 4px 0 #6e5520, 0 9px 14px rgba(0,0,0,.45); opacity: .85; }
-.die.held i.on { background: #2a2210; }
+.die.held svg circle { fill: #241c0b; }
 .die.blank { opacity: .3; }
 .die.bust { box-shadow: 0 0 0 3px var(--ember), 0 9px 14px rgba(0,0,0,.45); }
 /* dice in flight (thrown from a seat, scooped by the dealer) */
 .fly { position: fixed; z-index: 30; pointer-events: none; }
 .fly .die { box-shadow: 0 6px 12px rgba(0,0,0,.5); }
 .fly.cup { display: flex; gap: 3px; }
-.fly.cup .die { width: 22px; padding: 3px; border-radius: 5px; }
+.fly.cup .die { width: 22px; height: 22px; border-radius: 5px; }
 /* the dealer has her own seat at the head of the table */
 .dealer-seat { --av-d: calc(var(--av) * 1.32); }
 .dealer-seat .av { width: var(--av-d); height: var(--av-d); padding: 0; background: #3a0d18; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(227,183,78,.35), 0 8px 18px rgba(0,0,0,.6); }
@@ -1408,9 +1407,15 @@ ol.rules { padding-left: 20px; }
     if (AVATARS.indexOf(a) > -1) return '<div class="av emo"' + st + ">" + a + "</div>";
     return '<div class="av"' + st + ">" + esc(initials(name || "?")) + "</div>";
   }
+  // Dots are drawn as SVG so every browser shows them (older iPhones and Androids can't lay out a grid inside a button).
+  var PIP_XY = [[27, 27], [50, 27], [73, 27], [27, 50], [50, 50], [73, 50], [27, 73], [50, 73], [73, 73]];
+  function pipsSVG(v) {
+    return '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">' + (PIPS[v] || []).map(function (k) {
+      return '<circle cx="' + PIP_XY[k][0] + '" cy="' + PIP_XY[k][1] + '" r="10.5"/>';
+    }).join("") + "</svg>";
+  }
   function dieHTML(v, cls, i, dis) {
-    var cells = "", k, on = PIPS[v] || [];
-    for (k = 0; k < 9; k++) cells += '<i class="' + (on.indexOf(k) > -1 ? "on" : "") + '"></i>';
+    var cells = pipsSVG(v);
     return '<button class="die ' + cls + '" data-act="die" data-i="' + i + '" data-v="' + v + '"' + (dis ? " disabled" : "") +
       ' aria-label="' + (v ? T("Die {i}, showing {v}", { i: i + 1, v: v }) : T("Die {i}, not rolled", { i: i + 1 })) + '">' + cells + "</button>";
   }
@@ -1619,10 +1624,7 @@ ol.rules { padding-left: 20px; }
 
   /* ---------- table animations ---------- */
   function centerOf(el) { var b = el.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }
-  function setFace(el, v) {
-    var on = PIPS[v] || [], cells = el.querySelectorAll("i");
-    for (var k = 0; k < cells.length; k++) cells[k].className = on.indexOf(k) > -1 ? "on" : "";
-  }
+  function setFace(el, v) { el.innerHTML = pipsSVG(v); }
   // Dice leave the roller's seat, tumble across the felt with their faces flickering, and settle in place.
   function runRoll(rollerId) {
     var dice = document.querySelectorAll(".tray .die.tumble");
@@ -1659,7 +1661,7 @@ ol.rules { padding-left: 20px; }
       var slot = slots[k]; if (!slot) return;
       var b = slot.getBoundingClientRect(), f = document.createElement("div");
       f.className = "fly"; f.style.left = b.left + "px"; f.style.top = b.top + "px";
-      f.innerHTML = dieHTML(v, "", k, true); f.firstChild.style.width = b.width + "px";
+      f.innerHTML = dieHTML(v, "", k, true); f.firstChild.style.width = b.width + "px"; f.firstChild.style.height = b.height + "px";
       document.body.appendChild(f);
       var a = f.animate([
         { transform: "none", opacity: 1 },

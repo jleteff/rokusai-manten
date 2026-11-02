@@ -34,6 +34,6 @@ Open the address, create a table, send the link (it ends in `#t-XXXX`) to your f
 - Players are Firebase anonymous users. Clearing browser data means a new identity.
 
 ## Known limits
-- Anyone with a table link can sit down until the host starts. Later arrivals are added by the host's screen, so the host keeps the page open.
+- Anyone with a table link can sit down. Latecomers are added by the host's screen, so the host keeps the page open.
 - Rolls happen in each player's browser, so a determined player could cheat by editing their own client. Fine for friends, not for money.
 - Local testing: `firebase emulators:start --only auth,firestore,hosting`, then open `http://localhost:5000/?emulator=1`.

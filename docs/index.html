@@ -147,29 +147,53 @@ summary { cursor: pointer; font-weight: 700; }
   };
 
   /* ---------- Farkle rules ---------- */
-  var MIN_ENTRY = 500;
+  var MIN_ENTRY = 1000;
+  var FULL_HOUSE = 1500;   // three of a kind plus a pair, all five dice set aside together
   function counts(vals) { var c = [0, 0, 0, 0, 0, 0, 0]; vals.forEach(function (v) { c[v]++; }); return c; }
   // Scores a chosen set of dice. valid = every chosen die contributes to the score.
   function scoreSel(vals) {
     if (!vals.length) return { score: 0, valid: false };
-    var c = counts(vals), n = vals.length, score = 0, v;
+    var c = counts(vals), n = vals.length, score = 0, v, w;
     if (n === 6 && c.slice(1).every(function (x) { return x === 1; })) return { score: 1500, valid: true };
     var pairs = c.slice(1).filter(function (x) { return x === 2; }).length;
     if (n === 6 && pairs === 3) return { score: 1500, valid: true };
+    var best = { score: 0, valid: false };
+    var plain = true;
     for (v = 1; v <= 6; v++) {
       if (c[v] >= 3) {
         var base = v === 1 ? 1000 : v * 100;
         score += base * Math.pow(2, c[v] - 3);
       } else if (v === 1) score += c[v] * 100;
       else if (v === 5) score += c[v] * 50;
-      else if (c[v] > 0) return { score: 0, valid: false };
+      else if (c[v] > 0) { plain = false; break; }
     }
-    return { score: score, valid: true };
+    if (plain) best = { score: score, valid: true };
+    // Full house: three of a kind plus a pair (the pair does not have to score on its own).
+    // A leftover sixth die counts only if it is a 1 or a 5.
+    if (n === 5 || n === 6) {
+      for (v = 1; v <= 6; v++) {
+        if (c[v] < 3) continue;
+        for (w = 1; w <= 6; w++) {
+          if (w === v || c[w] < 2) continue;
+          var left = c.slice(); left[v] -= 3; left[w] -= 2;
+          var extra = 0, ok = true, k;
+          for (k = 1; k <= 6; k++) {
+            if (!left[k]) continue;
+            if (left[k] === 1 && k === 1) extra += 100;
+            else if (left[k] === 1 && k === 5) extra += 50;
+            else ok = false;
+          }
+          if (ok && FULL_HOUSE + extra > best.score) best = { score: FULL_HOUSE + extra, valid: true };
+        }
+      }
+    }
+    return best;
   }
   function hasScore(vals) {
     var c = counts(vals), v;
     if (c[1] || c[5]) return true;
     for (v = 2; v <= 6; v++) if (c[v] >= 3) return true;
+    // A full house always contains a triple, which is already caught above.
     if (vals.length === 6) {
       if (c.slice(1).every(function (x) { return x === 1; })) return true;
       if (c.slice(1).filter(function (x) { return x === 2; }).length === 3) return true;
@@ -203,23 +227,7 @@ summary { cursor: pointer; font-weight: 700; }
     return s;
   }
   function nameOf(id) { return (players[id] && players[id].name) || "Someone"; }
-  // The host can play for friends who were added by name on this device.
-  function mineTurn(r) {
-    var c = r.order[r.turn];
-    return c === uid || (r.host === uid && !!(players[c] && players[c].local));
-  }
-  function addLocalHTML() {
-    return '<div class="row" style="margin-top:14px"><input type="text" id="lp" maxlength="20" placeholder="Friend\'s name" aria-label="Friend\'s name" style="flex:1 1 160px;width:auto"><button class="btn ghost small" data-act="addlocal">Add player on this device</button></div>' +
-      '<p class="muted" style="margin-top:6px;font-size:13px">For friends who can\'t join from their own phone. You roll for them.</p>';
-  }
-  function addLocal() {
-    var inp = $("#lp"), n = inp && inp.value.trim();
-    if (!n) { if (inp) inp.focus(); return; }
-    var id = "l_" + Math.random().toString(36).slice(2, 9);
-    db.doc("rooms/" + code + "/players/" + id).set({ name: n, joined: Date.now(), local: true })
-      .then(function () { toast(n + " added"); }, writeFail);
-  }
-
+  function mineTurn(r) { return r.order[r.turn] === uid; }
   /* ---------- routing / subscriptions ---------- */
   function parseHash() {
     var m = /^#t-([A-Za-z0-9]{3,8})$/.exec(location.hash || "");
@@ -254,10 +262,16 @@ summary { cursor: pointer; font-weight: 700; }
       players = m; hostSync(); render();
     }, function () {}));
   }
+  function uniqueName(n) {
+    var taken = Object.keys(players).map(function (i) { return String(players[i].name).toLowerCase(); });
+    var out = n, k = 2;
+    while (taken.indexOf(out.toLowerCase()) > -1) out = n + " " + k++;
+    return out;
+  }
   function maybeJoin() {
     if (!room || room.status === "done" || !myName || players[uid] || joining || joinErr || canWrite === false) return;
     joining = true;
-    db.doc("rooms/" + code + "/players/" + uid).set({ name: myName, joined: Date.now() })
+    db.doc("rooms/" + code + "/players/" + uid).set({ name: uniqueName(myName), joined: Date.now() })
       .catch(function (e) { joining = false; joinErr = true; writeFail(e); render(); });
   }
 
@@ -281,7 +295,7 @@ summary { cursor: pointer; font-weight: 700; }
     if (!myName) return;
     var c = genCode();
     try {
-      await db.doc("rooms/" + c).set({ host: uid, status: "lobby", target: 5000, created: Date.now() });
+      await db.doc("rooms/" + c).set({ host: uid, status: "lobby", target: 10000, created: Date.now() });
       await db.doc("rooms/" + c + "/players/" + uid).set({ name: myName, joined: Date.now() });
       location.hash = "t-" + c; route();
     } catch (e) { writeFail(e); }
@@ -334,10 +348,18 @@ summary { cursor: pointer; font-weight: 700; }
     var cur = r.order[r.turn], total = r.turnScore + s.score, me = nameOf(cur);
     if (kind === "bank") {
       if (!(r.scores[cur] > 0) && total < MIN_ENTRY) return;
-      var scores = Object.assign({}, r.scores); scores[cur] = (scores[cur] || 0) + total;
-      var finalFrom = r.finalFrom, log = pushLog(r, me + " banks " + total + ".");
-      if (finalFrom < 0 && scores[cur] >= r.target) { finalFrom = r.turn; log = pushLog({ log: log }, me + " hit " + r.target + ". Everyone else gets one last turn."); }
-      act(db.doc("rooms/" + code).update(endTurn(r, scores, finalFrom, log)));
+      var newScore = (r.scores[cur] || 0) + total;
+      if (newScore > r.target) return;   // must land exactly on the target
+      var scores = Object.assign({}, r.scores); scores[cur] = newScore;
+      var log = pushLog(r, me + " banks " + total + ".");
+      if (newScore === r.target) {
+        act(db.doc("rooms/" + code).update({
+          status: "done", phase: "done", winner: cur, scores: scores, turnScore: 0, dice: r.dice, held: held,
+          log: pushLog({ log: log }, me + " lands exactly on " + r.target.toLocaleString() + " and wins.")
+        }));
+      } else {
+        act(db.doc("rooms/" + code).update(endTurn(r, scores, -1, log)));
+      }
     } else {
       act(db.doc("rooms/" + code).update(rollFrom(r, held, total, r.log || [])));
     }
@@ -369,10 +391,11 @@ summary { cursor: pointer; font-weight: 700; }
       "<li>Single 1 = 100. Single 5 = 50.</li>" +
       "<li>Three of a kind = number × 100 (three 1s = 1000). Each extra die doubles it.</li>" +
       "<li>Straight 1–6 or three pairs = 1500.</li>" +
+      "<li>Full house (three of a kind plus a pair, all five dice set aside together) = " + FULL_HOUSE.toLocaleString() + ". You can then roll the last die.</li>" +
       "<li>Score all six dice and you roll all six again (hot dice).</li>" +
       "<li>No scoring dice on a roll is a Farkle: you lose the turn's points.</li>" +
-      "<li>You need " + MIN_ENTRY + " in one turn to get on the board.</li>" +
-      "<li>First to the target triggers one last turn for everyone else.</li></ul></details>";
+      "<li>You need " + MIN_ENTRY.toLocaleString() + " in one turn to get on the board.</li>" +
+      "<li>You must finish on the exact target. You can't bank a turn that would go over it. Keep rolling, or risk a Farkle.</li></ul></details>";
   }
   function render() {
     var v = $("#view"), tr = $("#topright");
@@ -406,10 +429,10 @@ summary { cursor: pointer; font-weight: 700; }
     var ids = Object.keys(players).sort(function (a, b) { return (players[a].joined || 0) - (players[b].joined || 0); });
     var isHost = room.host === uid;
     var list = ids.map(function (i) {
-      return '<li class="p"><span class="nm">' + esc(players[i].name) + (i === uid ? '<span class="tag">you</span>' : "") + (i === room.host ? '<span class="tag">host</span>' : "") + (players[i].local ? '<span class="tag">on host device</span>' : "") + "</span></li>";
+      return '<li class="p"><span class="nm">' + esc(players[i].name) + (i === uid ? '<span class="tag">you</span>' : "") + (i === room.host ? '<span class="tag">host</span>' : "") + "</span></li>";
     }).join("");
     return '<div class="panel lobby"><h2>Waiting for players</h2><p class="muted">Share this link. Players appear as they open it.</p>' + inviteHTML() +
-      '<ul class="board">' + list + "</ul>" + (isHost ? addLocalHTML() : "") +
+      '<ul class="board">' + list + "</ul>" +
       '<div class="row" style="margin-top:18px">' +
       (isHost
         ? '<label class="label" for="tg">Play to</label><select id="tg" data-act="target" style="width:auto">' +
@@ -446,11 +469,12 @@ summary { cursor: pointer; font-weight: 700; }
       controls = '<button class="btn" data-act="roll"' + (busy ? " disabled" : "") + ">Roll six dice</button>";
     } else if (mine && r.phase === "choose") {
       var rest = freeCount - selIdx.length, entryOk = (r.scores[cur] > 0) || total >= MIN_ENTRY;
+      var over = (r.scores[cur] || 0) + total > r.target;
       controls = '<button class="btn" data-act="keeproll"' + (s.valid && s.score > 0 && !busy ? "" : " disabled") + ">" + (rest === 0 && s.valid ? "Hot dice: roll all 6" : "Set aside, roll " + Math.max(rest, 0)) + "</button>" +
-        '<button class="btn ghost" data-act="bank"' + (s.valid && s.score > 0 && entryOk && !busy ? "" : " disabled") + ">Bank " + total.toLocaleString() + "</button>";
+        '<button class="btn ghost" data-act="bank"' + (s.valid && s.score > 0 && entryOk && !over && !busy ? "" : " disabled") + ">Bank " + total.toLocaleString() + "</button>";
       if (!selIdx.length) hint = "Tap the scoring dice you want to keep.";
       else if (!s.valid) { hint = "Every die you keep must score."; hintCls = "bad"; }
-      else { hint = "Keeping these is worth " + s.score + "."; hintCls = "ok"; if (!entryOk) hint += " You need " + MIN_ENTRY + " in a turn to get on the board."; }
+      else { hint = "Keeping these is worth " + s.score + "."; hintCls = "ok"; if (!entryOk) hint += " You need " + MIN_ENTRY.toLocaleString() + " in a turn to get on the board."; if (over) { hint = "Banking this would go over " + r.target.toLocaleString() + ". You have to land exactly on it."; hintCls = "bad"; } else if ((r.scores[cur] || 0) + total === r.target) { hint += " That's exactly " + r.target.toLocaleString() + ". Bank it to win."; } }
     } else if (mine && r.phase === "farkle") {
       controls = '<button class="btn hot" data-act="pass"' + (busy ? " disabled" : "") + ">Farkle. Pass the dice</button>";
     } else {
@@ -466,15 +490,15 @@ summary { cursor: pointer; font-weight: 700; }
 
     var head = done
       ? '<div><p class="label">Winner</p><div class="winner">' + esc(nameOf(r.winner)) + "</div></div>"
-      : '<div><p class="label">' + (mine && cur === uid ? "Your turn" : mine ? "Your turn on this device" : "Now playing") + '</p><h2 class="' + (mine ? "mine" : "") + '">' + (mine ? (cur === uid ? "Roll them" : "Roll for " + esc(nameOf(cur))) : esc(nameOf(cur))) + "</h2></div>" +
+      : '<div><p class="label">' + (mine ? "Your turn" : "Now playing") + '</p><h2 class="' + (mine ? "mine" : "") + '">' + (mine ? "Roll them" : esc(nameOf(cur))) + "</h2></div>" +
         '<div class="turnscore"><p class="label">This turn</p><div class="n">' + (r.phase === "choose" ? total : r.turnScore).toLocaleString() + "</div></div>";
-    var last = r.finalFrom >= 0 && !done ? '<p class="hint bad">Last round. ' + esc(nameOf(r.order[r.finalFrom])) + " reached " + r.target.toLocaleString() + ".</p>" : "";
+    var last = "";
 
     return '<div class="game"><div class="panel"><div class="banner">' + head + "</div>" +
       '<div class="dice">' + dice + "</div>" +
       '<div class="actions">' + controls + "</div>" +
       '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + last + "</div>" +
-      '<div class="panel side"><p class="label">Race to ' + r.target.toLocaleString() + '</p><ul class="board">' + board + '</ul><ul class="log">' + log + "</ul>" + (r.host === uid && !done ? addLocalHTML() : "") + rulesHTML() + "</div></div>";
+      '<div class="panel side"><p class="label">Race to ' + r.target.toLocaleString() + ' exactly</p><ul class="board">' + board + '</ul><ul class="log">' + log + "</ul>" + rulesHTML() + "</div></div>";
   }
 
   /* ---------- events ---------- */
@@ -488,7 +512,6 @@ summary { cursor: pointer; font-weight: 700; }
     } else if (a === "create") { var n = $("#nm"); myName = n.value.trim(); if (!myName) { n.focus(); return; } store.set("fk-name", myName); createTable(); }
     else if (a === "join") { var c = $("#jc").value.trim().toUpperCase(); var nm = $("#nm") ? $("#nm").value.trim() : ""; if (nm) { myName = nm; store.set("fk-name", nm); } if (c) location.hash = "t-" + c; }
     else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); maybeJoin(); render(); }
-    else if (a === "addlocal") addLocal();
     else if (a === "start") startGame();
     else if (a === "roll") doRoll();
     else if (a === "keeproll") commit("roll");

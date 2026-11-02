@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1311">
 <title>六賽万点 · Six Dice</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=DM+Sans:wght@400;500;700&family=Cairo:wght@400;600;700;800;900&display=swap">
 <!-- Only the four title characters are downloaded from this font. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&text=%E5%85%AD%E8%B3%BD%E4%B8%87%E7%82%B9&display=swap">
 <style>
@@ -30,6 +30,7 @@
   --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-jp: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  --font-num: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -206,8 +207,8 @@ details summary { cursor: pointer; font-weight: 700; }
 .rules { margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: var(--ivory-dim); display: flex; flex-direction: column; gap: 4px; }
 .kinds { overflow-x: auto; margin-top: 12px; }
 .kinds table { border-collapse: collapse; font-size: 13px; width: 100%; min-width: 300px; font-variant-numeric: tabular-nums; }
-.kinds th, .kinds td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--line); }
-.kinds th:first-child { text-align: left; }
+.kinds th, .kinds td { padding: 6px 8px; text-align: end; border-bottom: 1px solid var(--line); }
+.kinds th:first-child { text-align: start; }
 .kinds thead th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ivory-dim); font-weight: 700; }
 .kinds td { color: var(--gold); }
 
@@ -235,6 +236,15 @@ ol.rules { padding-left: 20px; }
   .brand span { display: none; }
   .chip-btn .lbl.inv { display: none; }
 }
+@media (max-width: 420px) { .chip-btn .lbl.tbl { display: none; } }
+/* Arabic: right-to-left layout, an Arabic typeface, no letter-spacing on Arabic text */
+:root[dir="rtl"] { --font-body: "Cairo", "DM Sans", system-ui, sans-serif; --font-display: "Cairo", "Big Shoulders Display", sans-serif; }
+[dir="rtl"] .label, [dir="rtl"] .eyebrow, [dir="rtl"] .pot-l, [dir="rtl"] .badge, [dir="rtl"] .chip-btn .lbl, [dir="rtl"] .brand span,
+[dir="rtl"] .kinds thead th, [dir="rtl"] .rules-sec h4, [dir="rtl"] .dealer-seat .plate .nm, [dir="rtl"] .panel h2,
+[dir="rtl"] .stamp, [dir="rtl"] .winner-name, [dir="rtl"] .chat-head h2 { letter-spacing: 0; }
+.pot-n, .plate .sc, .lobby-code, .chip-btn .code, .hero .romaji { font-family: var(--font-num); }
+.plate .nm, .msg .txt, .bubble, .winner-name { unicode-bidi: plaintext; }
+.chip-btn.lang { font-weight: 700; font-size: 13px; }
 /* chat: speech bubbles over seats, plus a drawer with the whole conversation */
 .topbtns { display: flex; gap: 8px; align-items: center; }
 .chip-btn { position: relative; }
@@ -280,7 +290,7 @@ ol.rules { padding-left: 20px; }
 <body>
 <div class="app">
   <div class="top">
-    <div class="brand" lang="ja"><b>六賽万点</b><span lang="en">Six Dice · 10,000</span></div>
+    <div class="brand"><b lang="ja">六賽万点</b><span id="brandsub">Six Dice · 10,000</span></div>
     <div id="topright"></div>
   </div>
   <div id="warn"></div>
@@ -289,10 +299,10 @@ ol.rules { padding-left: 20px; }
 <div id="toast" class="toast" hidden></div>
 <div id="sheet"></div>
 <div class="chat-sheet" id="chatsheet" role="dialog" aria-label="Table chat">
-  <div class="chat-head"><h2>Table talk</h2><button class="btn ghost small" type="button" data-act="chatclose">Close</button></div>
+  <div class="chat-head"><h2 id="chattitle">Table talk</h2><button class="btn ghost small" type="button" data-act="chatclose" id="chatclose">Close</button></div>
   <div class="chat-list" id="chatlist" aria-live="polite"></div>
   <div class="quick" id="quick"></div>
-  <form class="chat-form" id="chatform"><input id="chatin" type="text" maxlength="200" placeholder="Talk some trash…" autocomplete="off" enterkeyhint="send" aria-label="Chat message"><button class="btn small" type="submit">Send</button></form>
+  <form class="chat-form" id="chatform"><input id="chatin" type="text" maxlength="200" placeholder="Talk some trash…" autocomplete="off" enterkeyhint="send" dir="auto" aria-label="Chat message"><button class="btn small" type="submit" id="chatsend">Send</button></form>
 </div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -307,6 +317,204 @@ ol.rules { padding-left: 20px; }
     get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   };
+
+  /* ---------- language ---------- */
+  // Each player chooses their own language; Arabic switches the page to right-to-left.
+  var LANG = store.get("fk-lang") || (/^ar/i.test(navigator.language || "") ? "ar" : "en");
+  var AR = {
+    "Six Dice · 10,000": "ستة نرد · 10,000",
+    "Chat": "دردشة",
+    "Table": "طاولة",
+    "Invite": "دعوة",
+    "Open table chat": "افتح دردشة الطاولة",
+    "{n} unread": "{n} غير مقروءة",
+    "Copy the invite link for table {code}": "انسخ رابط الدعوة للطاولة {code}",
+    "Switch language": "تغيير اللغة",
+    "You can watch, but not play": "يمكنك المشاهدة فقط",
+    "Couldn't save your seat at the table. Check your connection and reload the page.": "تعذّر حفظ مقعدك على الطاولة. تحقّق من الاتصال وأعد تحميل الصفحة.",
+    "Can't connect": "تعذّر الاتصال",
+    "The game couldn't reach Firebase. Check docs/firebase-config.js and that Anonymous sign-in is turned on.": "تعذّر وصول اللعبة إلى Firebase. تحقّق من ملف docs/firebase-config.js ومن تفعيل تسجيل الدخول المجهول.",
+    "Can't reach the table": "تعذّر الوصول إلى الطاولة",
+    "Still waiting for the table to answer. It may load in a moment.": "ما زلنا ننتظر ردّ الطاولة. قد تُحمَّل بعد لحظة.",
+    "Something went wrong loading this table.": "حدث خطأ أثناء تحميل هذه الطاولة.",
+    "Back": "رجوع",
+    "Finding table {code}…": "جارٍ البحث عن الطاولة {code}…",
+    "No table {code}": "لا توجد طاولة {code}",
+    "Check the code, or start a new table.": "تحقّق من الرمز، أو ابدأ طاولة جديدة.",
+    "Six dice, ten thousand points. Push your luck, and land on exactly ten thousand to win.": "ستة أحجار نرد وعشرة آلاف نقطة. جرّب حظّك، واوصل إلى عشرة آلاف بالضبط لتفوز.",
+    "New table": "طاولة جديدة",
+    "Start a game and send the link to your friends.": "ابدأ لعبة وأرسل الرابط لأصدقائك.",
+    "Choose your avatar": "اختر صورتك الرمزية",
+    "Tap to pick an avatar or add a photo.": "اضغط لاختيار صورة رمزية أو إضافة صورة.",
+    "Your name": "اسمك",
+    "Create table": "أنشئ طاولة",
+    "Join a table": "انضم إلى طاولة",
+    "Got a code from a friend? Or just open their link.": "معك رمز من صديق؟ أو افتح رابطه مباشرة.",
+    "Table code": "رمز الطاولة",
+    "Join": "انضم",
+    "Pull up a chair": "تفضّل واجلس",
+    "What should the table call you?": "بماذا نناديك على الطاولة؟",
+    "Sit down": "اجلس",
+    "Players seated: {n}.": "عدد اللاعبين على الطاولة: {n}.",
+    "Send the link so friends can pull up a chair. Tap your seat to pick an avatar.": "أرسل الرابط ليجلس أصدقاؤك. اضغط على مقعدك لاختيار صورة رمزية.",
+    "{name} won last game and rolls first.": "{name} فاز في اللعبة السابقة ويبدأ أولاً.",
+    "Copy invite link": "انسخ رابط الدعوة",
+    "Play to": "اللعب حتى",
+    "Play to {n}": "اللعب حتى {n}",
+    "Start game": "ابدأ اللعبة",
+    "Playing to {n}. Waiting for {name} to start.": "اللعب حتى {n}. بانتظار {name} ليبدأ.",
+    "Invite link": "رابط الدعوة",
+    "Copy link": "انسخ الرابط",
+    "Table link": "رابط الطاولة",
+    "Play again": "العب مجدداً",
+    "Waiting for {name} to start another game.": "بانتظار {name} ليبدأ لعبة جديدة.",
+    "Taking your seat. The host's screen adds you in a moment. If this stays, ask the host to keep the page open.": "جارٍ تجهيز مقعدك. ستضيفك شاشة المضيف بعد لحظة. إن طال الانتظار، اطلب من المضيف إبقاء الصفحة مفتوحة.",
+    "Roll the dice": "ارمِ النرد",
+    "Your turn.": "دورك.",
+    "Your turn. You need {n} this turn to get on the board.": "دورك. تحتاج إلى {n} في هذا الدور لتدخل اللوحة.",
+    "Hot dice: roll all 6": "نرد ساخن: ارمِ الستة",
+    "Keep, roll {n}": "احتفظ وارمِ {n}",
+    "Bank {n}": "سجّل {n}",
+    "Pick best dice": "اختر أفضل نرد",
+    "Auto-pick each roll: on": "اختيار تلقائي: مفعّل",
+    "Auto-pick each roll: off": "اختيار تلقائي: متوقف",
+    "Tap the scoring dice you want to keep.": "اضغط على النرد الرابح الذي تريد الاحتفاظ به.",
+    "Every die you keep must score.": "كل نرد تحتفظ به يجب أن يسجّل نقاطاً.",
+    "Keeping these is worth {n}.": "قيمة ما تحتفظ به {n}.",
+    " You need {n} in a turn to get on the board.": " تحتاج إلى {n} في دور واحد لتدخل اللوحة.",
+    "Banking this would go over {n}. You have to land exactly on it.": "التسجيل الآن يتجاوز {n}. يجب أن تصل إليه بالضبط.",
+    " That's exactly {n}. Bank it to win.": " هذا {n} بالضبط. سجّل لتفوز.",
+    "{n}+ rule: every scoring die is kept for you. ": "قاعدة {n}+: يُحتفظ بكل نرد رابح تلقائياً. ",
+    "Pass the dice": "مرّر النرد",
+    "The dice you had to keep put you over {n}. Bust. The dice pass in a moment.": "النرد الذي اضطررت للاحتفاظ به تجاوز بك {n}. خسرت الدور. سينتقل النرد بعد لحظة.",
+    "No scoring dice. The dice pass in a moment.": "لا يوجد نرد رابح. سينتقل النرد بعد لحظة.",
+    "{name} went over {n}. Bust. Next player is up in a moment.": "{name} تجاوز {n} وخسر الدور. اللاعب التالي بعد لحظة.",
+    "{name} farkled. Next player is up in a moment.": "{name} خسر الدور (فاركل). اللاعب التالي بعد لحظة.",
+    "{name} is keeping dice worth {n}.": "{name} يحتفظ بنرد قيمته {n}.",
+    "{name} is rolling. Watch the felt.": "{name} يرمي النرد. راقب الطاولة.",
+    "Skip {name}": "تخطَّ {name}",
+    "Winner": "الفائز",
+    "Rolled six of a kind in one throw.": "رمى ستة متشابهة في رمية واحدة.",
+    "Landed on exactly {n}.": "وصل إلى {n} بالضبط.",
+    "Bust": "تجاوز",
+    "Farkle": "فاركل",
+    "Your turn": "دورك",
+    "{name}'s turn": "دور {name}",
+    "This turn": "هذا الدور",
+    "Farkled": "فاركل",
+    "Rolling": "يرمي",
+    "Game log · race to {n} exactly": "سجل اللعبة · السباق إلى {n} بالضبط",
+    "Final stretch": "المرحلة الأخيرة",
+    "Not on board": "خارج اللوحة",
+    "Host": "المضيف",
+    "(you)": "(أنت)",
+    "Change your avatar": "غيّر صورتك الرمزية",
+    "Open seat": "مقعد شاغر",
+    "Dealer": "الموزّعة",
+    "Turn alerts": "تنبيهات الدور",
+    "Off. You won't get a sound or a notification when it's your turn.": "متوقفة. لن يصلك صوت أو إشعار عندما يحين دورك.",
+    "On. You'll get a notification, a chime and a buzz when it's your turn, as long as the game is open.": "مفعّلة. سيصلك إشعار ونغمة واهتزاز عندما يحين دورك، طالما اللعبة مفتوحة.",
+    "Sound and buzz are on. Notifications are blocked for this site in your browser settings.": "الصوت والاهتزاز مفعّلان. الإشعارات محظورة لهذا الموقع في إعدادات المتصفح.",
+    "Sound and the tab title are on. This browser doesn't allow web notifications here (on iPhone, add the game to your Home Screen first).": "الصوت وعنوان التبويب مفعّلان. هذا المتصفح لا يسمح بإشعارات الويب هنا (على الآيفون، أضف اللعبة إلى الشاشة الرئيسية أولاً).",
+    "Sound and buzz are on. Allow notifications to get a pop-up when the game is in the background.": "الصوت والاهتزاز مفعّلان. اسمح بالإشعارات لتظهر لك رسالة عندما تكون اللعبة في الخلفية.",
+    "Alerts: on": "التنبيهات: مفعّلة",
+    "Alerts: off": "التنبيهات: متوقفة",
+    "Allow notifications": "اسمح بالإشعارات",
+    "Test": "تجربة",
+    "Your turn. Roll the dice!": "دورك. ارمِ النرد!",
+    "🎲 Your turn!": "🎲 دورك!",
+    "Your turn · 六賽万点": "دورك · 六賽万点",
+    "The dealer slid the dice to you, {name}.": "الموزّعة مرّرت لك النرد يا {name}.",
+    "This is what your turn alert looks like.": "هكذا يبدو تنبيه دورك.",
+    "Chime played. Allow notifications to also get a pop-up.": "تم تشغيل النغمة. اسمح بالإشعارات لتظهر لك رسالة أيضاً.",
+    "Table talk": "حديث الطاولة",
+    "Close": "إغلاق",
+    "Talk some trash…": "استفزّ خصومك…",
+    "Take a seat to chat": "اجلس على الطاولة لتدردش",
+    "Send": "إرسال",
+    "Chat message": "رسالة",
+    "You": "أنت",
+    "No trash talk yet. Somebody has to start it.": "لا مناوشات بعد. على أحدهم أن يبدأ.",
+    "Nice roll": "رمية حلوة",
+    "Choke!": "انهار!",
+    "Too easy": "سهلة جداً",
+    "Bank it, coward": "سجّل يا جبان",
+    "Farkle incoming": "فاركل قادم",
+    "Your avatar": "صورتك الرمزية",
+    "Done": "تم",
+    "Upload a photo": "ارفع صورة",
+    "Use my initials": "استخدم أحرف اسمي",
+    "Photos are cropped to a small square and only shown at your table.": "تُقصّ الصور إلى مربع صغير ولا تظهر إلا على طاولتك.",
+    "Avatar {a}": "صورة رمزية {a}",
+    "That move isn't allowed right now.": "هذه الحركة غير مسموحة الآن.",
+    "Couldn't reach the table. Check your connection and try again.": "تعذّر الوصول إلى الطاولة. تحقّق من الاتصال وحاول مجدداً.",
+    "That photo couldn't be used. Try another one.": "تعذّر استخدام هذه الصورة. جرّب صورة أخرى.",
+    "That file isn't a photo the game can read.": "هذا الملف ليس صورة تستطيع اللعبة قراءتها.",
+    "Invite link copied": "تم نسخ رابط الدعوة",
+    "Copy the selected link below": "انسخ الرابط المحدد في الأسفل",
+    "How to play": "طريقة اللعب",
+    "The basics": "الأساسيات",
+    "On your turn, roll six dice.": "في دورك، ارمِ ستة أحجار نرد.",
+    "Set aside at least one scoring die. Then roll the rest to push your luck, or bank your points.": "ضع جانباً نرداً رابحاً واحداً على الأقل. ثم ارمِ الباقي لتجرّب حظّك، أو سجّل نقاطك.",
+    "Roll no scoring dice and it's a Farkle: you lose this turn's points.": "إذا لم تحصل على أي نرد رابح فهذا «فاركل»: تخسر نقاط هذا الدور.",
+    "First to exactly {n} wins.": "أول من يصل إلى {n} بالضبط يفوز.",
+    "What scores": "ما الذي يسجّل نقاطاً",
+    "Single 1 = 100. Single 5 = 50.": "الواحد = 100. الخمسة = 50.",
+    "Three of a kind = the number × 100. Three 1s = 1,000.": "ثلاثة متشابهة = الرقم × 100. ثلاثة آحاد = 1,000.",
+    "Each extra matching die adds 100. Four 4s = 500.": "كل نرد إضافي مطابق يضيف 100. أربع أربعات = 500.",
+    "Three of a kind": "ثلاثة متشابهة",
+    "Points": "النقاط",
+    "Each extra": "كل إضافي",
+    "Big rolls (one throw only)": "الرميات الكبيرة (في رمية واحدة فقط)",
+    "Six of anything wins the game on the spot.": "ستة متشابهة من أي رقم تفوز باللعبة فوراً.",
+    "Straight 1–6 = {a}. Two triplets = {b}.": "متتالية 1–6 = {a}. مجموعتا ثلاثة = {b}.",
+    "Five-dice straight (1–5 or 2–6) = {n}.": "متتالية من خمسة (1–5 أو 2–6) = {n}.",
+    "Three pairs = {a}. Full house (three of a kind plus a pair) = {b}.": "ثلاثة أزواج = {a}. فُل هاوس (ثلاثة متشابهة مع زوج) = {b}.",
+    "Fine print": "التفاصيل",
+    "You need {n} in one turn to get on the board.": "تحتاج إلى {n} في دور واحد لتدخل اللوحة.",
+    "Score with all six dice and you roll all six again (hot dice).": "إذا سجّلت بالستة كلها ترمي الستة من جديد (نرد ساخن).",
+    "The winner of a game rolls first in the next one.": "الفائز في لعبة يبدأ أولاً في اللعبة التالية.",
+    "After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.": "بعد أن تحتفظ بثلاثة متشابهة، كل نرد من نفس الرقم في الرميات التالية يساوي 100. ثلاث أربعات = 400، ثم أربعة أخرى = 100 إضافية.",
+    "A new triple on a later throw scores whichever is higher: the triple, or 100 per die.": "ثلاثة متشابهة جديدة في رمية لاحقة تُحسب بالأعلى: قيمة الثلاثة، أو 100 لكل نرد.",
+    "You must land on exactly {n}. You can't bank a turn that would go over.": "يجب أن تصل إلى {n} بالضبط. لا يمكنك تسجيل دور يتجاوزه.",
+    "Once you have {a} banked, every scoring die you roll is kept for you. If those dice put you over {b}, you bust and lose the turn.": "عندما يصل رصيدك إلى {a}، يُحتفظ بكل نرد رابح ترميه تلقائياً. وإن تجاوزت {b} بسببه، تخسر الدور.",
+    "Game on. {name} rolls first.": "بدأت اللعبة. {name} يبدأ أولاً.",
+    "{names} sat down at the table.": "{names} جلس على الطاولة.",
+    "{name} rolls six {v}s in one throw and wins on the spot!": "{name} رمى ستة {v} في رمية واحدة وفاز فوراً!",
+    "FARKLE. {name} loses {n}.": "فاركل! {name} خسر {n}.",
+    "{name} has to keep {n} and goes over {t}. Bust.": "{name} اضطر للاحتفاظ بـ {n} وتجاوز {t}. خسر الدور.",
+    "{name} has hot dice and rolls all six.": "{name} حصل على نرد ساخن ويرمي الستة.",
+    "{name} banks {n}.": "{name} سجّل {n}.",
+    "{name} lands exactly on {t} and wins.": "{name} وصل إلى {t} بالضبط وفاز!",
+    "{name} was skipped.": "تم تخطي {name}.",
+    "{name} passes the dice.": "{name} مرّر النرد.",
+    "Die {i}, showing {v}": "النرد {i}، يظهر {v}",
+    "Die {i}, not rolled": "النرد {i}، لم يُرمَ بعد"
+    };
+  function T(s, v) {
+    var out = (LANG === "ar" && AR[s]) || s;
+    if (v) out = out.replace(/\{(\w+)\}/g, function (_, k) { return v[k] != null ? v[k] : ""; });
+    return out;
+  }
+  function fmt(x) { return Number(x || 0).toLocaleString("en-US"); }
+  // Log entries are stored as codes so each phone shows them in its own language.
+  var LOGS = { start: "Game on. {name} rolls first.", startw: "{name} won last game and rolls first.", sat: "{names} sat down at the table.",
+    six: "{name} rolls six {v}s in one throw and wins on the spot!", farkle: "FARKLE. {name} loses {n}.", over: "{name} has to keep {n} and goes over {t}. Bust.",
+    hot: "{name} has hot dice and rolls all six.", bank: "{name} banks {n}.", exact: "{name} lands exactly on {t} and wins.", skip: "{name} was skipped.", pass: "{name} passes the dice." };
+  function logLine(e) {
+    if (typeof e === "string") return esc(e);
+    if (!e || !LOGS[e.k]) return "";
+    var v = {}; Object.keys(e).forEach(function (k) { v[k] = typeof e[k] === "number" ? fmt(e[k]) : (k === "name" || k === "names") ? "<bdi>" + esc(e[k]) + "</bdi>" : esc(e[k]); });
+    return T(LOGS[e.k], v);
+  }
+  function applyLang() {
+    var html = document.documentElement;
+    html.setAttribute("lang", LANG); html.setAttribute("dir", LANG === "ar" ? "rtl" : "ltr");
+    var set = function (id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; };
+    set("brandsub", T("Six Dice · 10,000")); set("chattitle", T("Table talk")); set("chatclose", T("Close")); set("chatsend", T("Send"));
+    var ci = document.getElementById("chatin"); if (ci) ci.setAttribute("aria-label", T("Chat message"));
+    baseTitle = LANG === "ar" ? "六賽万点 · ستة نرد" : "六賽万点 · Six Dice"; document.title = baseTitle;
+  }
 
   /* ---------- 10,000 house rules ---------- */
   var MIN_ENTRY = 1000;
@@ -421,8 +629,8 @@ ol.rules { padding-left: 20px; }
   function writeFail(e) {
     var c = e && e.code;
     toast(c === "permission-denied"
-      ? "That move isn't allowed right now."
-      : "Couldn't reach the table. Check your connection and try again.");
+      ? T("That move isn't allowed right now.")
+      : T("Couldn't reach the table. Check your connection and try again."));
   }
   function genCode() {
     var a = "ABCDEFGHJKMNPQRSTUVWXYZ23456789", s = "", i;
@@ -499,7 +707,7 @@ ol.rules { padding-left: 20px; }
     if (!missing.length) return;
     var patch = {
       order: room.order.concat(missing),
-      log: pushLog(room, missing.map(nameOf).join(", ") + " sat down at the table.")
+      log: pushLog(room, { k: "sat", names: missing.map(nameOf).join(", ") })
     };
     // Dotted paths merge into the scores map instead of replacing it.
     missing.forEach(function (i) { patch["scores." + i] = 0; });
@@ -540,30 +748,30 @@ ol.rules { padding-left: 20px; }
   function flashTitle() {
     clearInterval(titleT);
     var on = false;
-    titleT = setInterval(function () { on = !on; document.title = on ? "🎲 Your turn!" : baseTitle; }, 1000);
+    titleT = setInterval(function () { on = !on; document.title = on ? T("🎲 Your turn!") : baseTitle; }, 1000);
   }
   function notifyTurn() {
     if (!alertsOn) return;
     try { if (navigator.vibrate) navigator.vibrate([140, 80, 140]); } catch (e) {}
     chime();
-    if (!document.hidden) { toast("Your turn. Roll the dice!"); return; }
+    if (!document.hidden) { toast(T("Your turn. Roll the dice!")); return; }
     flashTitle();
     if (!canNotify() || Notification.permission !== "granted") return;
-    var opts = { body: "The dealer slid the dice to you, " + (myName || "you") + ".", tag: "turn-" + code, renotify: true, data: { url: location.href } };
-    if (swReg && swReg.showNotification) swReg.showNotification("Your turn · 六賽万点", opts).catch(function () {});
-    else { try { new Notification("Your turn · 六賽万点", opts); } catch (e) {} }
+    var opts = { body: T("The dealer slid the dice to you, {name}.", { name: myName || T("You") }), tag: "turn-" + code, renotify: true, data: { url: location.href } };
+    if (swReg && swReg.showNotification) swReg.showNotification(T("Your turn · 六賽万点"), opts).catch(function () {});
+    else { try { new Notification(T("Your turn · 六賽万点"), opts); } catch (e) {} }
   }
   function alertsHTML() {
     var perm = canNotify() ? Notification.permission : "unsupported";
-    var note = !alertsOn ? "Off. You won't get a sound or a notification when it's your turn."
-      : perm === "granted" ? "On. You'll get a notification, a chime and a buzz when it's your turn, as long as the game is open."
-      : perm === "denied" ? "Sound and buzz are on. Notifications are blocked for this site in your browser settings."
-      : perm === "unsupported" ? "Sound and the tab title are on. This browser doesn't allow web notifications here (on iPhone, add the game to your Home Screen first)."
-      : "Sound and buzz are on. Allow notifications to get a pop-up when the game is in the background.";
-    return '<div class="panel"><p class="label">Turn alerts</p><p class="muted" style="margin:6px 0 10px;font-size:14px">' + note + '</p><div class="row">' +
-      '<button class="btn ghost small pill" data-act="alerts" aria-pressed="' + alertsOn + '">Alerts: ' + (alertsOn ? "on" : "off") + "</button>" +
-      (alertsOn && perm === "default" ? '<button class="btn small" data-act="allownotif">Allow notifications</button>' : "") +
-      '<button class="btn ghost small" data-act="testalert">Test</button></div></div>';
+    var note = !alertsOn ? T("Off. You won't get a sound or a notification when it's your turn.")
+      : perm === "granted" ? T("On. You'll get a notification, a chime and a buzz when it's your turn, as long as the game is open.")
+      : perm === "denied" ? T("Sound and buzz are on. Notifications are blocked for this site in your browser settings.")
+      : perm === "unsupported" ? T("Sound and the tab title are on. This browser doesn't allow web notifications here (on iPhone, add the game to your Home Screen first).")
+      : T("Sound and buzz are on. Allow notifications to get a pop-up when the game is in the background.");
+    return '<div class="panel"><p class="label">' + T("Turn alerts") + '</p><p class="muted" style="margin:6px 0 10px;font-size:14px">' + note + '</p><div class="row">' +
+      '<button class="btn ghost small pill" data-act="alerts" aria-pressed="' + alertsOn + '">' + T(alertsOn ? "Alerts: on" : "Alerts: off") + "</button>" +
+      (alertsOn && perm === "default" ? '<button class="btn small" data-act="allownotif">' + T("Allow notifications") + "</button>" : "") +
+      '<button class="btn ghost small" data-act="testalert">' + T("Test") + "</button></div></div>";
   }
 
   /* ---------- chat ---------- */
@@ -612,16 +820,16 @@ ol.rules { padding-left: 20px; }
     var list = $("#chatlist"), inp = $("#chatin"); if (!list) return;
     var msgs = allChat(), keys = msgs.map(function (m) { return m.key; }).join("|");
     var seated = !!players[uid];
-    if (inp) { inp.disabled = !seated; inp.placeholder = seated ? "Talk some trash…" : "Take a seat to chat"; }
-    $("#quick").innerHTML = seated ? QUICK.map(function (q) { return '<button class="btn ghost small" type="button" data-act="quick" data-t="' + esc(q) + '">' + esc(q) + "</button>"; }).join("") : "";
+    if (inp) { inp.disabled = !seated; inp.placeholder = seated ? T("Talk some trash…") : T("Take a seat to chat"); }
+    $("#quick").innerHTML = seated ? QUICK.map(function (q) { q = T(q); return '<button class="btn ghost small" type="button" data-act="quick" data-t="' + esc(q) + '">' + esc(q) + "</button>"; }).join("") : "";
     if (keys === chatKeys && !force) return;
     var nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
     chatKeys = keys;
     list.innerHTML = msgs.length ? msgs.map(function (m) {
       var me = m.id === uid;
       return '<div class="msg' + (me ? " me" : "") + '">' + avatarHTML(m.id, nameOf(m.id), players[m.id] && players[m.id].avatar) +
-        '<div><span class="who">' + esc(me ? "You" : nameOf(m.id)) + '</span><span class="txt">' + esc(m.t) + "</span></div></div>";
-    }).join("") : '<p class="chat-empty">No trash talk yet. Somebody has to start it.</p>';
+        '<div><span class="who">' + esc(me ? T("You") : nameOf(m.id)) + '</span><span class="txt">' + esc(m.t) + "</span></div></div>";
+    }).join("") : '<p class="chat-empty">' + T("No trash talk yet. Somebody has to start it.") + "</p>";
     if (nearBottom || force || (msgs.length && msgs[msgs.length - 1].id === uid)) list.scrollTop = list.scrollHeight;
     if (chatOpen) chatReadAt = Date.now();
   }
@@ -646,7 +854,7 @@ ol.rules { padding-left: 20px; }
     act(db.doc("rooms/" + code).update({
       status: "play", order: ids, scores: scores, turn: 0, dice: [], held: [false, false, false, false, false, false],
       turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null,
-      log: [w > -1 ? nameOf(ids[0]) + " won last game and rolls first." : "Game on. " + nameOf(ids[0]) + " rolls first."]
+      log: [{ k: w > -1 ? "startw" : "start", name: nameOf(ids[0]) }]
     }));
   }
   function act(p) {
@@ -669,10 +877,10 @@ ol.rules { padding-left: 20px; }
     if (free.length === 6 && free.every(function (x) { return x === free[0]; })) {
       // Six of anything in one throw wins the game on the spot.
       return { status: "done", phase: "done", winner: r.order[r.turn], winHow: "six", dice: dice, held: h, turnScore: 0, rollId: rid, pick: [], pickRoll: -1,
-        log: pushLog({ log: log }, who + " rolls six " + free[0] + "s in one throw and wins on the spot!") };
+        log: pushLog({ log: log }, { k: "six", name: who, v: free[0] }) };
     }
     if (!hasScore(free, bonus)) {
-      return { dice: dice, held: h, turnScore: 0, phase: "farkle", rollId: rid, pick: [], pickRoll: -1, forced: [], bust: null, log: pushLog({ log: log }, "FARKLE. " + who + " loses " + turnScore.toLocaleString() + ".") };
+      return { dice: dice, held: h, turnScore: 0, phase: "farkle", rollId: rid, pick: [], pickRoll: -1, forced: [], bust: null, log: pushLog({ log: log }, { k: "farkle", name: who, n: turnScore }) };
     }
     var cur = r.order[r.turn], forced = [];
     if (lockMode(r, cur)) {
@@ -680,11 +888,11 @@ ol.rules { padding-left: 20px; }
       var f = pickSet(dice, h, bonus, "all");
       if ((r.scores[cur] || 0) + turnScore + f.score > r.target) {
         return { dice: dice, held: h, turnScore: 0, phase: "farkle", bust: "over", rollId: rid, forced: f.idxs, pick: [], pickRoll: -1,
-          log: pushLog({ log: log }, who + " has to keep " + f.score.toLocaleString() + " and goes over " + r.target.toLocaleString() + ". Bust.") };
+          log: pushLog({ log: log }, { k: "over", name: who, n: f.score, t: r.target }) };
       }
       forced = f.idxs;
     }
-    return { dice: dice, held: h, turnScore: turnScore, phase: "choose", rollId: rid, bonus: bonus, pick: [], pickRoll: -1, forced: forced, bust: null, log: hot ? pushLog({ log: log }, who + " has hot dice and rolls all six.") : log };
+    return { dice: dice, held: h, turnScore: turnScore, phase: "choose", rollId: rid, bonus: bonus, pick: [], pickRoll: -1, forced: forced, bust: null, log: hot ? pushLog({ log: log }, { k: "hot", name: who }) : log };
   }
   function doRoll() {
     var r = room; if (!mineTurn(r) || r.phase !== "roll") return;
@@ -705,11 +913,11 @@ ol.rules { padding-left: 20px; }
       var newScore = (r.scores[cur] || 0) + total;
       if (newScore > r.target) return;   // must land exactly on the target
       var scores = Object.assign({}, r.scores); scores[cur] = newScore;
-      var log = pushLog(r, me + " banks " + total.toLocaleString() + ".");
+      var log = pushLog(r, { k: "bank", name: me, n: total });
       if (newScore === r.target) {
         act(db.doc("rooms/" + code).update({
           status: "done", phase: "done", winner: cur, winHow: "exact", scores: scores, turnScore: 0, dice: r.dice, held: held, pick: [], pickRoll: -1,
-          log: pushLog({ log: log }, me + " lands exactly on " + r.target.toLocaleString() + " and wins.")
+          log: pushLog({ log: log }, { k: "exact", name: me, t: r.target })
         }));
       } else {
         act(db.doc("rooms/" + code).update(endTurn(r, scores, log)));
@@ -734,7 +942,7 @@ ol.rules { padding-left: 20px; }
   }
   function pass(reason) {
     var r = room;
-    var log = reason === "auto" ? (r.log || []) : pushLog(r, reason === "skip" ? nameOf(r.order[r.turn]) + " was skipped." : nameOf(r.order[r.turn]) + " passes the dice.");
+    var log = reason === "auto" ? (r.log || []) : pushLog(r, { k: reason === "skip" ? "skip" : "pass", name: nameOf(r.order[r.turn]) });
     act(db.doc("rooms/" + code).update(endTurn(r, r.scores, log)));
   }
   function playAgain() {
@@ -763,7 +971,7 @@ ol.rules { padding-left: 20px; }
     var cells = "", k, on = PIPS[v] || [];
     for (k = 0; k < 9; k++) cells += '<i class="' + (on.indexOf(k) > -1 ? "on" : "") + '"></i>';
     return '<button class="die ' + cls + '" data-act="die" data-i="' + i + '" data-v="' + v + '"' + (dis ? " disabled" : "") +
-      ' aria-label="Die ' + (i + 1) + (v ? ", showing " + v : ", not rolled") + '">' + cells + "</button>";
+      ' aria-label="' + (v ? T("Die {i}, showing {v}", { i: i + 1, v: v }) : T("Die {i}, not rolled", { i: i + 1 })) + '">' + cells + "</button>";
   }
   // Seats sit on an ellipse around the rail. You are always at the bottom; the rest follow clockwise in turn order.
   // The house dealer: white dress shirt, black vest and bow tie, brunette ponytail, blue eyes.
@@ -816,24 +1024,24 @@ ol.rules { padding-left: 20px; }
     var slots = n + 1, dealerSlot = Math.floor(slots / 2);
     var place = function (t) { return "left:" + (50 + rx * Math.cos(t)).toFixed(2) + "%;top:" + (50 + ry * Math.sin(t)).toFixed(2) + "%"; };
     var td = Math.PI / 2 + dealerSlot * 2 * Math.PI / slots;
-    var dealer = '<div class="seat dealer-seat" id="dealer" style="' + place(td) + '"><div class="av">' + DEALER_SVG + '</div><div class="plate"><span class="nm">Dealer</span></div></div>';
+    var dealer = '<div class="seat dealer-seat" id="dealer" style="' + place(td) + '"><div class="av">' + DEALER_SVG + '</div><div class="plate"><span class="nm">' + T("Dealer") + '</span></div></div>';
     return dealer + all.map(function (id, k) {
       var pos = (k - start + n) % n, slot = pos < dealerSlot ? pos : pos + 1, t = Math.PI / 2 + slot * 2 * Math.PI / slots;
       var st = "left:" + (50 + rx * Math.cos(t)).toFixed(2) + "%;top:" + (50 + ry * Math.sin(t)).toFixed(2) + "%";
       var talk = id ? bubbleFor(id) : "", bubble = talk ? '<span class="bubble' + (Math.sin(t) < -0.3 ? " down" : "") + '">' + esc(talk) + "</span>" : "";
-      if (!id) return '<div class="seat open" style="' + st + '" aria-hidden="true"><div class="av">+</div><div class="plate"><span class="nm">Open seat</span></div></div>';
+      if (!id) return '<div class="seat open" style="' + st + '" aria-hidden="true"><div class="av">+</div><div class="plate"><span class="nm">' + T("Open seat") + "</span></div></div>";
       var cls = "seat" + (id === uid ? " me" : "") + (id === o.cur ? " turn" : "") + (id === o.winner ? " win" : "");
-      var badge = id === o.winner ? '<span class="badge">Winner</span>'
-        : id === o.cur ? '<span class="badge">' + (o.curBadge || "Rolling") + "</span>"
-        : (o.scores && lockMode(room, id)) ? '<span class="badge off">Final stretch</span>'
-        : (o.scores && !(o.scores[id] > 0)) ? '<span class="badge off">Not on board</span>'
-        : (!o.scores && id === room.host) ? '<span class="badge off">Host</span>' : "";
-      var nm = nameOf(id) + (id === uid ? " (you)" : "");
-      var mine = id === uid ? ' data-act="avatar" role="button" tabindex="0" aria-label="Change your avatar"' : "";
+      var badge = id === o.winner ? '<span class="badge">' + T("Winner") + "</span>"
+        : id === o.cur ? '<span class="badge">' + T(o.curBadge || "Rolling") + "</span>"
+        : (o.scores && lockMode(room, id)) ? '<span class="badge off">' + T("Final stretch") + "</span>"
+        : (o.scores && !(o.scores[id] > 0)) ? '<span class="badge off">' + T("Not on board") + "</span>"
+        : (!o.scores && id === room.host) ? '<span class="badge off">' + T("Host") + "</span>" : "";
+      var nm = nameOf(id) + (id === uid ? " " + T("(you)") : "");
+      var mine = id === uid ? ' data-act="avatar" role="button" tabindex="0" aria-label="' + T("Change your avatar") + '"' : "";
       return '<div class="' + cls + '" data-seat="' + esc(id) + '" style="' + st + '"' + mine + ">" + badge + bubble +
         avatarHTML(id, nameOf(id), players[id] && players[id].avatar) +
         '<div class="plate"><span class="nm">' + esc(nm) + "</span>" +
-        (o.scores ? '<span class="sc">' + (o.scores[id] || 0).toLocaleString() + "</span>" : "") + "</div></div>";
+        (o.scores ? '<span class="sc">' + fmt(o.scores[id] || 0) + "</span>" : "") + "</div></div>";
     }).join("");
   }
   function tableHTML(seats, center) {
@@ -841,49 +1049,52 @@ ol.rules { padding-left: 20px; }
       '<div class="center">' + center + "</div></div>";
   }
   function inviteHTML() {
-    return '<div class="invite"><input type="text" id="link" readonly value="' + esc(location.href) + '" aria-label="Table link">' +
-      '<button class="btn small" data-act="copy">Copy link</button></div>';
+    return '<div class="invite"><input type="text" id="link" readonly value="' + esc(location.href) + '" aria-label="' + T("Table link") + '">' +
+      '<button class="btn small" data-act="copy">' + T("Copy link") + "</button></div>";
   }
   function rulesHTML(open) {
-    var tgt = (room && room.target) || 10000, n = function (x) { return x.toLocaleString(); };
+    var tgt = (room && room.target) || 10000, n = fmt;
     var cells = [1, 2, 3, 4, 5, 6].map(function (v) { return "<td>" + n(kindScore(v, 3)) + "</td>"; }).join("");
-    return '<details' + (open ? " open" : "") + '><summary>How to play</summary>' +
-      '<div class="rules-sec"><h4>The basics</h4><ol class="rules">' +
-        "<li>On your turn, roll six dice.</li>" +
-        "<li>Set aside at least one scoring die. Then roll the rest to push your luck, or bank your points.</li>" +
-        "<li>Roll no scoring dice and it's a Farkle: you lose this turn's points.</li>" +
-        "<li>First to exactly " + n(tgt) + " wins.</li></ol></div>" +
-      '<div class="rules-sec"><h4>What scores</h4><ul class="rules">' +
-        "<li>Single 1 = 100. Single 5 = 50.</li>" +
-        "<li>Three of a kind = the number × 100. Three 1s = 1,000.</li>" +
-        "<li>Each extra matching die adds 100. Four 4s = 500.</li></ul>" +
-        '<div class="kinds"><table><thead><tr><th>Three of a kind</th><th>1s</th><th>2s</th><th>3s</th><th>4s</th><th>5s</th><th>6s</th></tr></thead><tbody><tr><th>Points</th>' + cells + "</tr><tr><th>Each extra</th><td>+100</td><td>+100</td><td>+100</td><td>+100</td><td>+100</td><td>+100</td></tr></tbody></table></div></div>" +
-      '<div class="rules-sec"><h4>Big rolls (one throw only)</h4><ul class="rules">' +
-        "<li><strong>Six of anything wins the game on the spot.</strong></li>" +
-        "<li>Straight 1–6 = " + n(STRAIGHT) + ". Two triplets = " + n(TWO_TRIPLETS) + ".</li>" +
-        "<li>Five-dice straight (1–5 or 2–6) = " + n(SMALL_STRAIGHT) + ".</li>" +
-        "<li>Three pairs = " + n(THREE_PAIRS) + ". Full house (three of a kind plus a pair) = " + n(FULL_HOUSE) + ".</li></ul></div>" +
-      '<div class="rules-sec"><h4>Fine print</h4><ul class="rules">' +
-        "<li>You need " + n(MIN_ENTRY) + " in one turn to get on the board.</li>" +
-        "<li>Score with all six dice and you roll all six again (hot dice).</li>" +
-        "<li>The winner of a game rolls first in the next one.</li>" +
-        "<li>After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.</li>" +
-        "<li>A new triple on a later throw scores whichever is higher: the triple, or 100 per die.</li>" +
-        "<li>You must land on exactly " + n(tgt) + ". You can't bank a turn that would go over.</li>" +
-        "<li>Once you have " + n(tgt - 1000) + " banked, every scoring die you roll is kept for you. If those dice put you over " + n(tgt) + ", you bust and lose the turn.</li></ul></div></details>";
+    var li = function (s) { return "<li>" + s + "</li>"; };
+    return '<details' + (open ? " open" : "") + '><summary>' + T("How to play") + "</summary>" +
+      '<div class="rules-sec"><h4>' + T("The basics") + '</h4><ol class="rules">' +
+        li(T("On your turn, roll six dice.")) +
+        li(T("Set aside at least one scoring die. Then roll the rest to push your luck, or bank your points.")) +
+        li(T("Roll no scoring dice and it's a Farkle: you lose this turn's points.")) +
+        li(T("First to exactly {n} wins.", { n: n(tgt) })) + "</ol></div>" +
+      '<div class="rules-sec"><h4>' + T("What scores") + '</h4><ul class="rules">' +
+        li(T("Single 1 = 100. Single 5 = 50.")) +
+        li(T("Three of a kind = the number × 100. Three 1s = 1,000.")) +
+        li(T("Each extra matching die adds 100. Four 4s = 500.")) + "</ul>" +
+        '<div class="kinds"><table><thead><tr><th>' + T("Three of a kind") + "</th><th>1s</th><th>2s</th><th>3s</th><th>4s</th><th>5s</th><th>6s</th></tr></thead><tbody><tr><th>" + T("Points") + "</th>" + cells +
+        "</tr><tr><th>" + T("Each extra") + "</th><td>+100</td><td>+100</td><td>+100</td><td>+100</td><td>+100</td><td>+100</td></tr></tbody></table></div></div>" +
+      '<div class="rules-sec"><h4>' + T("Big rolls (one throw only)") + '</h4><ul class="rules">' +
+        li("<strong>" + T("Six of anything wins the game on the spot.") + "</strong>") +
+        li(T("Straight 1–6 = {a}. Two triplets = {b}.", { a: n(STRAIGHT), b: n(TWO_TRIPLETS) })) +
+        li(T("Five-dice straight (1–5 or 2–6) = {n}.", { n: n(SMALL_STRAIGHT) })) +
+        li(T("Three pairs = {a}. Full house (three of a kind plus a pair) = {b}.", { a: n(THREE_PAIRS), b: n(FULL_HOUSE) })) + "</ul></div>" +
+      '<div class="rules-sec"><h4>' + T("Fine print") + '</h4><ul class="rules">' +
+        li(T("You need {n} in one turn to get on the board.", { n: n(MIN_ENTRY) })) +
+        li(T("Score with all six dice and you roll all six again (hot dice).")) +
+        li(T("The winner of a game rolls first in the next one.")) +
+        li(T("After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.")) +
+        li(T("A new triple on a later throw scores whichever is higher: the triple, or 100 per die.")) +
+        li(T("You must land on exactly {n}. You can't bank a turn that would go over.", { n: n(tgt) })) +
+        li(T("Once you have {a} banked, every scoring die you roll is kept for you. If those dice put you over {b}, you bust and lose the turn.", { a: n(tgt - 1000), b: n(tgt) })) +
+        "</ul></div></details>";
   }
 
   /* ---------- avatar picker ---------- */
   function renderSheet() {
     var root = $("#sheet");
     if (!avatarOpen) { root.innerHTML = ""; return; }
-    var grid = AVATARS.map(function (a) { return '<button class="av-opt" data-act="setav" data-v="' + a + '" aria-pressed="' + (myAvatar === a) + '" aria-label="Avatar ' + a + '">' + a + "</button>"; }).join("");
-    root.innerHTML = '<div class="sheet-back" data-act="closeav"><div class="sheet" role="dialog" aria-modal="true" aria-label="Choose your avatar">' +
-      '<div class="row" style="justify-content:space-between"><h2 style="margin:0;font-family:var(--font-display);text-transform:uppercase">Your avatar</h2><button class="btn ghost small" data-act="closeav">Done</button></div>' +
+    var grid = AVATARS.map(function (a) { return '<button class="av-opt" data-act="setav" data-v="' + a + '" aria-pressed="' + (myAvatar === a) + '" aria-label="' + T("Avatar {a}", { a: a }) + '">' + a + "</button>"; }).join("");
+    root.innerHTML = '<div class="sheet-back" data-act="closeav"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + T("Choose your avatar") + '">' +
+      '<div class="row" style="justify-content:space-between"><h2 style="margin:0;font-family:var(--font-display);text-transform:uppercase">' + T("Your avatar") + '</h2><button class="btn ghost small" data-act="closeav">' + T("Done") + "</button></div>" +
       '<div class="av-grid">' + grid + "</div>" +
-      '<div class="row"><label class="btn small" for="avfile">Upload a photo</label><input type="file" id="avfile" accept="image/*" class="vh">' +
-      '<button class="btn ghost small" data-act="setav" data-v="">Use my initials</button></div>' +
-      '<p class="muted" style="margin-top:12px;font-size:13px">Photos are cropped to a small square and only shown at your table.</p></div></div>';
+      '<div class="row"><label class="btn small" for="avfile">' + T("Upload a photo") + '</label><input type="file" id="avfile" accept="image/*" class="vh">' +
+      '<button class="btn ghost small" data-act="setav" data-v="">' + T("Use my initials") + "</button></div>" +
+      '<p class="muted" style="margin-top:12px;font-size:13px">' + T("Photos are cropped to a small square and only shown at your table.") + "</p></div></div>";
   }
   function saveAvatar(v) {
     myAvatar = v; store.set("fk-avatar", v);
@@ -899,9 +1110,9 @@ ol.rules { padding-left: 20px; }
       URL.revokeObjectURL(url);
       var data = c.toDataURL("image/jpeg", 0.82);
       if (!isPhoto(data)) data = c.toDataURL("image/jpeg", 0.5);
-      if (isPhoto(data)) saveAvatar(data); else toast("That photo couldn't be used. Try another one.");
+      if (isPhoto(data)) saveAvatar(data); else toast(T("That photo couldn't be used. Try another one."));
     };
-    img.onerror = function () { URL.revokeObjectURL(url); toast("That file isn't a photo the game can read."); };
+    img.onerror = function () { URL.revokeObjectURL(url); toast(T("That file isn't a photo the game can read.")); };
     img.src = url;
   }
 
@@ -976,16 +1187,18 @@ ol.rules { padding-left: 20px; }
     if (animating) { pendingRender = true; return; }
     var v = $("#view"), tr = $("#topright");
     $("#warn").innerHTML = joinErr
-      ? '<div class="panel" style="border-color:var(--ember)"><h2>You can watch, but not play</h2><p class="muted">Couldn\'t save your seat at the table. Check your connection and reload the page.</p></div>'
+      ? '<div class="panel" style="border-color:var(--ember)"><h2>' + T("You can watch, but not play") + '</h2><p class="muted">' + T("Couldn't save your seat at the table. Check your connection and reload the page.") + "</p></div>"
       : "";
-    if (!db) { tr.innerHTML = ""; v.innerHTML = '<div class="panel"><h2>Can\'t connect</h2><p class="muted">The game couldn\'t reach Firebase. Check docs/firebase-config.js and that Anonymous sign-in is turned on.</p></div>'; return; }
+    var langBtn = '<button class="chip-btn lang" data-act="lang" aria-label="' + T("Switch language") + '"' + (LANG === "ar" ? ' lang="en">English' : ' lang="ar">عربي') + "</button>";
+    if (!db) { tr.innerHTML = '<div class="topbtns">' + langBtn + "</div>"; v.innerHTML = '<div class="panel"><h2>' + T("Can't connect") + '</h2><p class="muted">' + T("The game couldn't reach Firebase. Check docs/firebase-config.js and that Anonymous sign-in is turned on.") + "</p></div>"; return; }
     var unread = room ? unreadCount() : 0;
-    tr.innerHTML = code ? '<div class="topbtns">' + (room ? '<button class="chip-btn" data-act="chatopen" aria-label="Open table chat' + (unread ? ", " + unread + " unread" : "") + '"><span class="chat-lbl">Chat</span>' + (unread ? '<span class="dot">' + unread + "</span>" : "") + "</button>" : "") +
-      '<button class="chip-btn" data-act="copy" aria-label="Copy the invite link for table ' + esc(code) + '"><span class="lbl">Table</span><span class="code">' + esc(code) + '</span><span class="lbl inv">Invite</span></button></div>' : "";
+    tr.innerHTML = '<div class="topbtns">' + (code && room ? '<button class="chip-btn" data-act="chatopen" aria-label="' + T("Open table chat") + (unread ? ", " + T("{n} unread", { n: unread }) : "") + '"><span class="chat-lbl">' + T("Chat") + "</span>" + (unread ? '<span class="dot">' + unread + "</span>" : "") + "</button>" : "") +
+      (code ? '<button class="chip-btn" data-act="copy" aria-label="' + T("Copy the invite link for table {code}", { code: esc(code) }) + '"><span class="lbl tbl">' + T("Table") + '</span><span class="code">' + esc(code) + '</span><span class="lbl inv">' + T("Invite") + "</span></button>" : "") +
+      langBtn + "</div>";
     if (!code) { v.innerHTML = homeHTML(); return; }
-    if (subErr) { v.innerHTML = '<div class="panel"><h2>Can\'t reach the table</h2><p class="muted">' + (subErr.code === "slow" ? "Still waiting for the table to answer. It may load in a moment." : "Something went wrong loading this table.") + '</p><div class="row" style="margin-top:14px"><button class="btn ghost" data-act="home">Back</button></div></div>'; return; }
-    if (!roomLoaded) { v.innerHTML = '<div class="panel muted">Finding table ' + esc(code) + "…</div>"; return; }
-    if (!room) { v.innerHTML = '<div class="panel"><h2>No table ' + esc(code) + '</h2><p class="muted">Check the code, or start a new table.</p><div class="row" style="margin-top:14px"><button class="btn" data-act="home">Back</button></div></div>'; return; }
+    if (subErr) { v.innerHTML = '<div class="panel"><h2>' + T("Can't reach the table") + '</h2><p class="muted">' + (subErr.code === "slow" ? T("Still waiting for the table to answer. It may load in a moment.") : T("Something went wrong loading this table.")) + '</p><div class="row" style="margin-top:14px"><button class="btn ghost" data-act="home">' + T("Back") + "</button></div></div>"; return; }
+    if (!roomLoaded) { v.innerHTML = '<div class="panel muted">' + T("Finding table {code}…", { code: esc(code) }) + "</div>"; return; }
+    if (!room) { v.innerHTML = '<div class="panel"><h2>' + T("No table {code}", { code: esc(code) }) + '</h2><p class="muted">' + T("Check the code, or start a new table.") + '</p><div class="row" style="margin-top:14px"><button class="btn" data-act="home">' + T("Back") + "</button></div></div>"; return; }
     if (!myName) { v.innerHTML = nameGate(); return; }
     v.innerHTML = room.status === "lobby" ? lobbyHTML() : gameHTML();
     var rollAnim = animate && room.status !== "lobby", roller = room.order ? room.order[room.turn] : null;
@@ -993,38 +1206,41 @@ ol.rules { padding-left: 20px; }
     if (passAnim) { var pa = passAnim; passAnim = null; runPass(pa); }
     if (rollAnim) runRoll(roller);
   }
+  function avatarPickHTML() {
+    return '<div class="home-av"><button type="button" data-act="avatar" aria-label="' + T("Choose your avatar") + '">' + avatarHTML(uid, myName, myAvatar) + '</button><span class="muted">' + T("Tap to pick an avatar or add a photo.") + "</span></div>";
+  }
   function homeHTML() {
     var deco = [[1, "-8deg"], [5, "6deg"], [1, "-3deg"], [5, "10deg"]].map(function (d, i) { return '<span style="--r:' + d[1] + '">' + dieHTML(d[0], "", i, true) + "</span>"; }).join("");
-    return '<div class="hero"><div class="hero-dice" aria-hidden="true">' + deco + '</div><h1 lang="ja">六賽万点</h1><p class="romaji">Roku-sai Manten</p><p>Six dice, ten thousand points. Push your luck, and land on exactly ten thousand to win.</p></div>' +
-      '<div class="home-cards"><div class="panel"><h2>New table</h2><p class="muted" style="margin-bottom:14px">Start a game and send the link to your friends.</p>' +
-      '<div class="home-av"><button type="button" data-act="avatar" aria-label="Choose your avatar">' + avatarHTML(uid, myName, myAvatar) + '</button><span class="muted">Tap to pick an avatar or add a photo.</span></div>' +
-      '<div class="field"><label class="label" for="nm">Your name</label><input type="text" id="nm" maxlength="20" value="' + esc(myName) + '" autocomplete="nickname"></div>' +
-      '<button class="btn" data-act="create">Create table</button></div>' +
-      '<div class="panel"><h2>Join a table</h2><p class="muted" style="margin-bottom:14px">Got a code from a friend? Or just open their link.</p>' +
-      '<div class="field"><label class="label" for="jc">Table code</label><input type="text" id="jc" maxlength="8" placeholder="K7M2" autocapitalize="characters"></div>' +
-      '<button class="btn ghost" data-act="join">Join</button></div></div>' +
+    return '<div class="hero"><div class="hero-dice" aria-hidden="true">' + deco + '</div><h1 lang="ja">六賽万点</h1><p class="romaji" lang="ja-Latn">Roku-sai Manten</p><p>' + T("Six dice, ten thousand points. Push your luck, and land on exactly ten thousand to win.") + "</p></div>" +
+      '<div class="home-cards"><div class="panel"><h2>' + T("New table") + '</h2><p class="muted" style="margin-bottom:14px">' + T("Start a game and send the link to your friends.") + "</p>" +
+      avatarPickHTML() +
+      '<div class="field"><label class="label" for="nm">' + T("Your name") + '</label><input type="text" id="nm" maxlength="20" dir="auto" value="' + esc(myName) + '" autocomplete="nickname"></div>' +
+      '<button class="btn" data-act="create">' + T("Create table") + "</button></div>" +
+      '<div class="panel"><h2>' + T("Join a table") + '</h2><p class="muted" style="margin-bottom:14px">' + T("Got a code from a friend? Or just open their link.") + "</p>" +
+      '<div class="field"><label class="label" for="jc">' + T("Table code") + '</label><input type="text" id="jc" maxlength="8" placeholder="K7M2" dir="ltr" autocapitalize="characters"></div>' +
+      '<button class="btn ghost" data-act="join">' + T("Join") + "</button></div></div>" +
       '<div class="panel" style="margin:14px 0 28px">' + rulesHTML(true) + "</div>";
   }
   function nameGate() {
-    return '<div class="panel" style="max-width:460px;margin:20px auto"><h2>Pull up a chair</h2><p class="muted" style="margin-bottom:14px">What should the table call you?</p>' +
-      '<div class="home-av"><button type="button" data-act="avatar" aria-label="Choose your avatar">' + avatarHTML(uid, myName, myAvatar) + '</button><span class="muted">Tap to pick an avatar or add a photo.</span></div>' +
-      '<div class="field"><label class="label" for="nm">Your name</label><input type="text" id="nm" maxlength="20" autocomplete="nickname"></div>' +
-      '<button class="btn" data-act="setname">Sit down</button></div>';
+    return '<div class="panel" style="max-width:460px;margin:20px auto"><h2>' + T("Pull up a chair") + '</h2><p class="muted" style="margin-bottom:14px">' + T("What should the table call you?") + "</p>" +
+      avatarPickHTML() +
+      '<div class="field"><label class="label" for="nm">' + T("Your name") + '</label><input type="text" id="nm" maxlength="20" dir="auto" autocomplete="nickname"></div>' +
+      '<button class="btn" data-act="setname">' + T("Sit down") + "</button></div>";
   }
   function lobbyHTML() {
     var ids = Object.keys(players).sort(byJoin), isHost = room.host === uid;
     var seats = seatsHTML(ids, { ghosts: Math.max(0, 6 - ids.length) });
-    var center = '<p class="eyebrow">Table</p><div class="lobby-code">' + esc(code) + "</div>" +
-      '<p class="small">' + ids.length + (ids.length === 1 ? " player" : " players") + " seated. Send the link so friends can pull up a chair. Tap your seat to pick an avatar.</p>" +
-      (room.lastWinner && players[room.lastWinner] ? '<p class="small"><strong>' + esc(nameOf(room.lastWinner)) + "</strong> won last game and rolls first.</p>" : "") +
-      '<button class="btn small" data-act="copy">Copy invite link</button>';
+    var center = '<p class="eyebrow">' + T("Table") + '</p><div class="lobby-code">' + esc(code) + "</div>" +
+      '<p class="small">' + T("Players seated: {n}.", { n: ids.length }) + " " + T("Send the link so friends can pull up a chair. Tap your seat to pick an avatar.") + "</p>" +
+      (room.lastWinner && players[room.lastWinner] ? '<p class="small">' + T("{name} won last game and rolls first.", { name: "<strong><bdi>" + esc(nameOf(room.lastWinner)) + "</bdi></strong>" }) + "</p>" : "") +
+      '<button class="btn small" data-act="copy">' + T("Copy invite link") + "</button>";
     var bar = isHost
-      ? '<div class="actions"><select id="tg" aria-label="Play to" style="flex:0 0 auto;width:auto">' +
-          [5000, 10000].map(function (t) { return '<option value="' + t + '"' + (room.target === t ? " selected" : "") + ">Play to " + t.toLocaleString() + "</option>"; }).join("") +
-          '</select><button class="btn" data-act="start"' + (ids.length ? "" : " disabled") + ">Start game</button></div>"
-      : '<p class="status-line">Playing to ' + room.target.toLocaleString() + ". Waiting for " + esc(nameOf(room.host)) + " to start.</p>";
+      ? '<div class="actions"><select id="tg" aria-label="' + T("Play to") + '" style="flex:0 0 auto;width:auto">' +
+          [5000, 10000].map(function (t) { return '<option value="' + t + '"' + (room.target === t ? " selected" : "") + ">" + T("Play to {n}", { n: fmt(t) }) + "</option>"; }).join("") +
+          '</select><button class="btn" data-act="start"' + (ids.length ? "" : " disabled") + ">" + T("Start game") + "</button></div>"
+      : '<p class="status-line">' + T("Playing to {n}. Waiting for {name} to start.", { n: fmt(room.target), name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" }) + "</p>";
     return tableHTML(seats, center) + '<div class="actionbar">' + bar + "</div>" +
-      '<div class="below">' + alertsHTML() + '<div class="panel"><p class="label">Invite link</p>' + inviteHTML() + "</div><div class=\"panel\">" + rulesHTML() + "</div></div>";
+      '<div class="below">' + alertsHTML() + '<div class="panel"><p class="label">' + T("Invite link") + "</p>" + inviteHTML() + '</div><div class="panel">' + rulesHTML() + "</div></div>";
   }
   function gameHTML() {
     var r = room, cur = r.order[r.turn], mine = mineTurn(r), done = r.status === "done";
@@ -1050,59 +1266,60 @@ ol.rules { padding-left: 20px; }
     }
 
     var controls = "", hint = "", hintCls = "", tools = "";
+    var who = "<bdi>" + esc(nameOf(cur)) + "</bdi>";
     if (done) {
-      controls = room.host === uid ? '<button class="btn" data-act="again">Play again</button>' : "";
-      hint = room.host === uid ? "" : "Waiting for " + esc(nameOf(room.host)) + " to start another game.";
+      controls = room.host === uid ? '<button class="btn" data-act="again">' + T("Play again") + "</button>" : "";
+      hint = room.host === uid ? "" : T("Waiting for {name} to start another game.", { name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" });
     } else if (!inGame) {
-      hint = "Taking your seat. The host's screen adds you in a moment. If this stays, ask the host to keep the page open.";
+      hint = T("Taking your seat. The host's screen adds you in a moment. If this stays, ask the host to keep the page open.");
     } else if (mine && r.phase === "roll") {
-      controls = '<button class="btn" data-act="roll"' + (busy ? " disabled" : "") + ">Roll the dice</button>";
-      hint = r.scores[uid] > 0 ? "Your turn." : "Your turn. You need " + MIN_ENTRY.toLocaleString() + " this turn to get on the board.";
+      controls = '<button class="btn" data-act="roll"' + (busy ? " disabled" : "") + ">" + T("Roll the dice") + "</button>";
+      hint = r.scores[uid] > 0 ? T("Your turn.") : T("Your turn. You need {n} this turn to get on the board.", { n: fmt(MIN_ENTRY) });
     } else if (mine && r.phase === "choose") {
       var rest = freeCount - selIdx.length, entryOk = (r.scores[cur] > 0) || total >= MIN_ENTRY;
       var over = (r.scores[cur] || 0) + total > r.target;
-      controls = '<button class="btn" data-act="keeproll"' + (s.valid && s.score > 0 && !busy ? "" : " disabled") + ">" + (rest === 0 && s.valid ? "Hot dice: roll all 6" : "Keep, roll " + Math.max(rest, 0)) + "</button>" +
-        '<button class="btn bank" data-act="bank"' + (s.valid && s.score > 0 && entryOk && !over && !busy ? "" : " disabled") + ">Bank " + total.toLocaleString() + "</button>";
-      if (!forced.length) tools = '<div class="tools"><button class="btn ghost small" data-act="autopick"' + (busy ? " disabled" : "") + '>Pick best dice</button>' +
-        '<button class="btn ghost small pill" data-act="autotoggle" aria-pressed="' + autoPick + '">Auto-pick each roll: ' + (autoPick ? "on" : "off") + "</button></div>";
-      if (!selIdx.length) hint = "Tap the scoring dice you want to keep.";
-      else if (!s.valid) { hint = "Every die you keep must score."; hintCls = "bad"; }
+      controls = '<button class="btn" data-act="keeproll"' + (s.valid && s.score > 0 && !busy ? "" : " disabled") + ">" + (rest === 0 && s.valid ? T("Hot dice: roll all 6") : T("Keep, roll {n}", { n: Math.max(rest, 0) })) + "</button>" +
+        '<button class="btn bank" data-act="bank"' + (s.valid && s.score > 0 && entryOk && !over && !busy ? "" : " disabled") + ">" + T("Bank {n}", { n: fmt(total) }) + "</button>";
+      if (!forced.length) tools = '<div class="tools"><button class="btn ghost small" data-act="autopick"' + (busy ? " disabled" : "") + ">" + T("Pick best dice") + "</button>" +
+        '<button class="btn ghost small pill" data-act="autotoggle" aria-pressed="' + autoPick + '">' + T(autoPick ? "Auto-pick each roll: on" : "Auto-pick each roll: off") + "</button></div>";
+      if (!selIdx.length) hint = T("Tap the scoring dice you want to keep.");
+      else if (!s.valid) { hint = T("Every die you keep must score."); hintCls = "bad"; }
       else {
-        hint = "Keeping these is worth " + s.score.toLocaleString() + "."; hintCls = "ok";
-        if (!entryOk) hint += " You need " + MIN_ENTRY.toLocaleString() + " in a turn to get on the board.";
-        if (over) { hint = "Banking this would go over " + r.target.toLocaleString() + ". You have to land exactly on it."; hintCls = "bad"; }
-        else if ((r.scores[cur] || 0) + total === r.target) hint += " That's exactly " + r.target.toLocaleString() + ". Bank it to win.";
+        hint = T("Keeping these is worth {n}.", { n: fmt(s.score) }); hintCls = "ok";
+        if (!entryOk) hint += T(" You need {n} in a turn to get on the board.", { n: fmt(MIN_ENTRY) });
+        if (over) { hint = T("Banking this would go over {n}. You have to land exactly on it.", { n: fmt(r.target) }); hintCls = "bad"; }
+        else if ((r.scores[cur] || 0) + total === r.target) hint += T(" That's exactly {n}. Bank it to win.", { n: fmt(r.target) });
       }
-      if (forced.length) hint = (r.target - 1000).toLocaleString() + "+ rule: every scoring die is kept for you. " + hint;
+      if (forced.length) hint = T("{n}+ rule: every scoring die is kept for you. ", { n: fmt(r.target - 1000) }) + hint;
     } else if (mine && r.phase === "farkle") {
-      controls = '<button class="btn hot" data-act="pass"' + (busy ? " disabled" : "") + ">Pass the dice</button>";
-      hint = r.bust === "over" ? "The dice you had to keep put you over " + r.target.toLocaleString() + ". Bust. The dice pass in a moment." : "No scoring dice. The dice pass in a moment."; hintCls = "bad";
+      controls = '<button class="btn hot" data-act="pass"' + (busy ? " disabled" : "") + ">" + T("Pass the dice") + "</button>";
+      hint = r.bust === "over" ? T("The dice you had to keep put you over {n}. Bust. The dice pass in a moment.", { n: fmt(r.target) }) : T("No scoring dice. The dice pass in a moment."); hintCls = "bad";
     } else {
-      hint = r.phase === "farkle" ? esc(nameOf(cur)) + (r.bust === "over" ? " went over " + r.target.toLocaleString() + ". Bust." : " farkled.") + " Next player is up in a moment."
-        : (r.phase === "choose" && selIdx.length && s.valid) ? esc(nameOf(cur)) + " is keeping dice worth " + s.score.toLocaleString() + "."
-        : esc(nameOf(cur)) + " is rolling. Watch the felt.";
+      hint = r.phase === "farkle" ? (r.bust === "over" ? T("{name} went over {n}. Bust. Next player is up in a moment.", { name: who, n: fmt(r.target) }) : T("{name} farkled. Next player is up in a moment.", { name: who }))
+        : (r.phase === "choose" && selIdx.length && s.valid) ? T("{name} is keeping dice worth {n}.", { name: who, n: fmt(s.score) })
+        : T("{name} is rolling. Watch the felt.", { name: who });
     }
-    if (!done && room.host === uid && !mine) controls += '<button class="btn ghost small" data-act="skip">Skip ' + esc(nameOf(cur)) + "</button>";
+    if (!done && room.host === uid && !mine) controls += '<button class="btn ghost small" data-act="skip">' + T("Skip {name}", { name: who }) + "</button>";
 
     var potValue = r.phase === "choose" ? total : r.turnScore;
     var center;
     if (done) {
-      center = '<p class="eyebrow mine">Winner</p><div class="winner-name">' + esc(nameOf(r.winner)) + "</div>" +
-        '<p class="small">' + (r.winHow === "six" ? "Rolled six of a kind in one throw." : "Landed on exactly " + r.target.toLocaleString() + ".") + "</p>" + '<div class="tray">' + dice + "</div>";
+      center = '<p class="eyebrow mine">' + T("Winner") + '</p><div class="winner-name">' + esc(nameOf(r.winner)) + "</div>" +
+        '<p class="small">' + (r.winHow === "six" ? T("Rolled six of a kind in one throw.") : T("Landed on exactly {n}.", { n: fmt(r.target) })) + "</p>" + '<div class="tray" dir="ltr">' + dice + "</div>";
     } else {
-      var head = r.phase === "farkle" ? '<div class="stamp">' + (r.bust === "over" ? "Bust" : "Farkle") + "</div>"
-        : '<p class="eyebrow' + (mine ? " mine" : "") + '">' + (mine ? "Your turn" : esc(nameOf(cur)) + "'s turn") + "</p>";
-      center = head + '<div class="pot"><span class="chips' + (potValue ? "" : " empty") + '" aria-hidden="true"></span><span class="pot-n" id="pot">' + potValue.toLocaleString() + "</span></div>" +
-        '<p class="pot-l">This turn</p><div class="tray">' + dice + "</div>";
+      var head = r.phase === "farkle" ? '<div class="stamp">' + T(r.bust === "over" ? "Bust" : "Farkle") + "</div>"
+        : '<p class="eyebrow' + (mine ? " mine" : "") + '">' + (mine ? T("Your turn") : T("{name}'s turn", { name: who })) + "</p>";
+      center = head + '<div class="pot"><span class="chips' + (potValue ? "" : " empty") + '" aria-hidden="true"></span><span class="pot-n" id="pot">' + fmt(potValue) + "</span></div>" +
+        '<p class="pot-l">' + T("This turn") + '</p><div class="tray" dir="ltr">' + dice + "</div>";
     }
     var seats = seatsHTML(r.order, { cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "Farkled") : mine ? "Your turn" : "Rolling" });
-    var log = (r.log || []).slice(-6).map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("");
+    var log = (r.log || []).slice(-6).map(function (l) { return "<li>" + logLine(l) + "</li>"; }).join("");
 
     return tableHTML(seats, center) +
       '<div class="actionbar">' + (controls ? '<div class="actions">' + controls + "</div>" : "") +
       '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + tools + "</div>" +
-      '<div class="below"><div class="panel"><p class="label">Game log · race to ' + r.target.toLocaleString() + ' exactly</p><ul class="log">' + log + "</ul></div>" +
-      alertsHTML() + '<div class="panel"><p class="label">Invite link</p>' + inviteHTML() + "</div>" +
+      '<div class="below"><div class="panel"><p class="label">' + T("Game log · race to {n} exactly", { n: fmt(r.target) }) + '</p><ul class="log">' + log + "</ul></div>" +
+      alertsHTML() + '<div class="panel"><p class="label">' + T("Invite link") + "</p>" + inviteHTML() + "</div>" +
       '<div class="panel">' + rulesHTML() + "</div></div>";
   }
 
@@ -1133,12 +1350,13 @@ ol.rules { padding-left: 20px; }
       var was = alertsOn; alertsOn = true; chime();
       try { if (navigator.vibrate) navigator.vibrate([140, 80, 140]); } catch (err) {}
       if (canNotify() && Notification.permission === "granted") {
-        var o = { body: "This is what your turn alert looks like.", tag: "test", data: { url: location.href } };
-        if (swReg && swReg.showNotification) swReg.showNotification("Your turn · 六賽万点", o).catch(function () {});
-        else { try { new Notification("Your turn · 六賽万点", o); } catch (err) {} }
-      } else toast("Chime played. Allow notifications to also get a pop-up.");
+        var o = { body: T("This is what your turn alert looks like."), tag: "test", data: { url: location.href } };
+        if (swReg && swReg.showNotification) swReg.showNotification(T("Your turn · 六賽万点"), o).catch(function () {});
+        else { try { new Notification(T("Your turn · 六賽万点"), o); } catch (err) {} }
+      } else toast(T("Chime played. Allow notifications to also get a pop-up."));
       alertsOn = was;
     }
+    else if (a === "lang") { LANG = LANG === "ar" ? "en" : "ar"; store.set("fk-lang", LANG); applyLang(); avatarOpen && renderSheet(); renderChat(true); render(); }
     else if (a === "chatopen") setChatOpen(true);
     else if (a === "chatclose") setChatOpen(false);
     else if (a === "quick") sendChat(el.getAttribute("data-t"));
@@ -1155,8 +1373,8 @@ ol.rules { padding-left: 20px; }
     else if (a === "home") { location.hash = ""; route(); }
     else if (a === "copy") {
       var inp = $("#link");
-      try { navigator.clipboard.writeText(location.href).then(function () { toast("Invite link copied"); }, function () { if (inp) inp.select(); toast("Copy the selected link below"); }); }
-      catch (err) { if (inp) inp.select(); toast("Copy the selected link below"); }
+      try { navigator.clipboard.writeText(location.href).then(function () { toast(T("Invite link copied")); }, function () { if (inp) inp.select(); toast(T("Copy the selected link below")); }); }
+      catch (err) { if (inp) inp.select(); toast(T("Copy the selected link below")); }
     }
   });
   document.addEventListener("change", function (e) {
@@ -1191,6 +1409,7 @@ ol.rules { padding-left: 20px; }
 
   /* ---------- boot ---------- */
   async function init() {
+    applyLang();
     render();
     try {
       firebase.initializeApp(window.FIREBASE_CONFIG);

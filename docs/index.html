@@ -154,6 +154,22 @@ input[type=text], select {
 .dealer-seat .av svg { width: 100%; height: 100%; display: block; }
 .dealer-seat .plate { border-color: rgba(227,183,78,.5); }
 .dealer-seat { cursor: pointer; }
+/* challenges: Ro Sham Bo and quick 1-on-1 games */
+.duel-back { position: fixed; inset: 0; z-index: 45; background: rgba(0,0,0,.55); display: grid; place-items: center; padding: 16px; }
+.duel { width: min(400px, 100%); background: var(--room-2); border: 1px solid var(--gold-dim); border-radius: 18px; padding: 20px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.7); }
+.duel h3 { font-family: var(--font-display); font-weight: 800; font-size: 24px; text-transform: uppercase; margin: 0 0 6px; }
+.duel p { color: var(--ivory-dim); margin: 0 0 14px; }
+.duel .stack { display: flex; flex-direction: column; gap: 8px; }
+.duel .row { justify-content: center; }
+.rps { display: flex; justify-content: center; gap: 12px; margin: 10px 0 14px; }
+.rps button { width: 84px; height: 84px; border-radius: 50%; border: 2px solid var(--line); background: var(--room); font-size: 40px; display: grid; place-items: center; padding: 0; }
+.rps button:hover:not(:disabled) { border-color: var(--gold); }
+.rps button:disabled { opacity: .35; }
+.rps small { display: block; font-size: 12px; color: var(--ivory-dim); margin-top: 4px; }
+.reveal { display: flex; justify-content: center; align-items: center; gap: 18px; font-size: 56px; margin: 6px 0 10px; }
+.reveal span { animation: pop .35s cubic-bezier(.2,1.5,.4,1); }
+.reveal i { font-style: normal; font-size: 14px; color: var(--ivory-dim); }
+.seat[data-act="seatmenu"] { cursor: pointer; }
 /* live video inside a seat */
 .av video.vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: #000; }
 .av video.vid.self { transform: scaleX(-1); }
@@ -321,6 +337,7 @@ ol.rules { padding-left: 20px; }
 <div id="toast" class="toast" hidden></div>
 <div id="sheet"></div>
 <div id="rtc-audio" hidden></div>
+<div id="duelroot"></div>
 <div class="chat-sheet" id="chatsheet" role="dialog" aria-label="Table chat">
   <div class="chat-head" id="chathead"><h2 id="chattitle">Table talk</h2><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn ghost small" type="button" data-act="chatpop" id="chatpop">Pop out</button><button class="btn ghost small" type="button" data-act="chatclose" id="chatclose">Close</button></div></div>
   <div class="chat-list" id="chatlist" aria-live="polite"></div>
@@ -523,7 +540,6 @@ ol.rules { padding-left: 20px; }
     "Auto-play in": "لعب تلقائي خلال",
     "On auto": "تلقائي",
     "{name} is on auto.": "{name} يلعب تلقائياً.",
-    "If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.": "إذا لم تتحرك خلال 10 ثوانٍ، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن.",
     "{n} left": "باقي {n}",
     "Each seat shows how many points that player has left to reach {n}.": "يُظهر كل مقعد عدد النقاط المتبقية للاعب ليصل إلى {n}.",
     "Video call": "مكالمة فيديو",
@@ -541,7 +557,40 @@ ol.rules { padding-left: 20px; }
     "Camera or mic blocked. Allow them in your browser settings.": "الكاميرا أو الميكروفون محظوران. اسمح بهما من إعدادات المتصفح.",
     "Couldn't start the camera.": "تعذّر تشغيل الكاميرا.",
     "Pop out": "افصل النافذة",
-    "Dock": "أعِدها للأسفل"
+    "Dock": "أعِدها للأسفل",
+    "If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.": "إذا لم تتحرك خلال 20 ثانية، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن.",
+    "Tap another player's seat to call them out: Ro Sham Bo, or a quick 1-on-1 game.": "اضغط على مقعد لاعب آخر لتتحداه: حجر ورقة مقص، أو لعبة سريعة واحد ضد واحد.",
+    "Challenge {name}": "تحدَّ {name}",
+    "Pick a quick 1-on-1. They have to accept.": "اختر تحدياً سريعاً واحداً ضد واحد. يجب أن يقبل.",
+    "Ro Sham Bo": "حجر ورقة مقص",
+    "Quick game to {n}": "لعبة سريعة حتى {n}",
+    "Cancel": "إلغاء",
+    "Waiting for {name} to accept…": "بانتظار قبول {name}…",
+    "You've been called out!": "لقد تم تحدّيك!",
+    "{name} challenges you to a quick game to {n}!": "{name} يتحدّاك في لعبة سريعة حتى {n}!",
+    "{name} challenges you to Ro Sham Bo!": "{name} يتحدّاك في حجر ورقة مقص!",
+    "Accept": "قبول",
+    "Decline": "رفض",
+    "Challenge declined": "تم رفض التحدي",
+    "{name} declined.": "{name} رفض التحدي.",
+    "OK": "حسناً",
+    "You win!": "فزت!",
+    "{name} wins!": "{name} فاز!",
+    "vs": "ضد",
+    "Ro Sham Bo vs {name}": "حجر ورقة مقص ضد {name}",
+    "Draw! Go again.": "تعادل! مرة أخرى.",
+    "Pick your hand. They can't see it until you both pick.": "اختر يدك. لن يراها خصمك حتى تختارا كلاكما.",
+    "Rock": "حجر",
+    "Paper": "ورقة",
+    "Scissors": "مقص",
+    "Waiting for {name} to pick…": "بانتظار اختيار {name}…",
+    "Duel to {n} vs {name}": "تحدٍّ حتى {n} ضد {name}",
+    "It opens in a new tab, so this table stays open.": "تُفتح في تبويب جديد، فتبقى هذه الطاولة مفتوحة.",
+    "Go to duel table": "اذهب إلى طاولة التحدي",
+    "Setting up the duel table…": "جارٍ تجهيز طاولة التحدي…",
+    "Back to the main table": "العودة إلى الطاولة الرئيسية",
+    "Ro Sham Bo: {w} beats {l} ({a} vs {b})": "حجر ورقة مقص: {w} غلب {l} ({a} ضد {b})",
+    "{w} won the duel against {l} (to {n})": "{w} فاز في التحدي ضد {l} (حتى {n})"
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -712,6 +761,7 @@ ol.rules { padding-left: 20px; }
     code = c; room = null; players = {}; roomLoaded = false; subErr = null; seenRoll = null; sel = new Set(); joining = false;
     chatSeen = {}; chatPrimed = false; myChat = null; chatKeys = ""; setChatOpen(false);
     if (vid.on) stopVideo(true);
+    duelSeen = {}; duelPrimed = false; duelMenu = null;
     if (code && db) subscribe();
     render();
   }
@@ -739,11 +789,11 @@ ol.rules { padding-left: 20px; }
           else if (autoPick && room.phase === "choose" && mineNow) { sel = new Set(bestSel(room)); sharePick(); }
         }
       }
-      maybeJoin(); hostSync(); scheduleFarkle(); scheduleAuto(); render();
+      maybeJoin(); hostSync(); scheduleFarkle(); scheduleAuto(); duelTableTick(); render(); renderDuel();
     }, function (e) { subErr = e; render(); }));
     unsubs.push(rref.collection("players").onSnapshot(function (q) {
       var m = {}; q.docs.forEach(function (d) { m[d.id] = d.data(); });
-      players = m; noteChat(); hostSync(); rtcSync(); render(); renderChat();
+      players = m; noteChat(); noteDuels(); hostSync(); rtcSync(); duelTableTick(); render(); renderChat(); renderDuel();
     }, function () {}));
   }
   function uniqueName(n) {
@@ -922,6 +972,136 @@ ol.rules { padding-left: 20px; }
     return '<div class="panel"><p class="label">' + T("Video call") + "</p>" + body + "</div>";
   }
   window.addEventListener("pagehide", function () { if (vid.on && db && code && players[uid]) myDoc().update({ rtcOn: false, rtc: {} }).catch(function () {}); });
+
+  /* ---------- challenges ---------- */
+  // Tap another player's seat to call them out: Ro Sham Bo, or a quick 1-on-1 game at its own table.
+  // Everything travels through each player's own seat document (duel, duelAns, rps), so no new rules.
+  var HANDS = { rock: "✊", paper: "✋", scissors: "✌️" }, BEATS = { rock: "scissors", paper: "rock", scissors: "paper" };
+  var duelSeen = {}, duelPrimed = false, duelGone = {}, duelMenu = null, duelBusy = false, duelMade = {}, duelPosted = {};
+  function noteDuels() {
+    var fresh = false, now = Date.now();
+    Object.keys(players).forEach(function (id) {
+      var d = players[id].duel;
+      if (d && d.id && !(d.id in duelSeen)) { duelSeen[d.id] = duelPrimed ? now : 0; if (duelPrimed && d.to === uid) fresh = true; }
+    });
+    duelPrimed = true;
+    if (fresh && alertsOn) { chime(); try { if (navigator.vibrate) navigator.vibrate([90, 60, 90]); } catch (e) {} }
+  }
+  function live(id) { return duelSeen[id] > 0 && Date.now() - duelSeen[id] < 90000; }
+  function activeDuel() {
+    var mine = players[uid] && players[uid].duel;
+    if (mine && mine.id && !duelGone[mine.id] && duelSeen[mine.id] > 0 && players[mine.to]) {
+      var a = players[mine.to].duelAns, ans = a && a.id === mine.id ? a : null;
+      if (ans || live(mine.id)) return { d: mine, from: uid, other: mine.to, ans: ans };
+    }
+    var ids = Object.keys(players);
+    for (var i = 0; i < ids.length; i++) {
+      var d = players[ids[i]].duel;
+      if (ids[i] !== uid && d && d.to === uid && d.id && !duelGone[d.id] && duelSeen[d.id] > 0) {
+        var my = players[uid] && players[uid].duelAns, ans2 = my && my.id === d.id ? my : null;
+        if (ans2 || live(d.id)) return { d: d, from: ids[i], other: ids[i], ans: ans2 };
+      }
+    }
+    return null;
+  }
+  function picksOf(id, duelId) { var r = players[id] && players[id].rps; return r && r.id === duelId ? (r.picks || []) : []; }
+  function rpsState(A) {
+    var me = picksOf(uid, A.d.id), them = picksOf(A.other, A.d.id), i = 0;
+    while (i < me.length && i < them.length) {
+      if (me[i] !== them[i]) return { done: true, mine: me[i], theirs: them[i], won: BEATS[me[i]] === them[i] };
+      i++;
+    }
+    return { done: false, round: i, waiting: me.length > i, lastTie: i > 0 ? me[i - 1] : null };
+  }
+  function challenge(to, kind, target) {
+    var id = newSid() + Date.now().toString(36);
+    duelSeen[id] = Date.now(); duelMenu = null;
+    myDoc().update({ duel: { id: id, to: to, kind: kind, target: target || 0, at: Date.now() }, rps: { id: id, picks: [] } }).catch(writeFail);
+    renderDuel();
+  }
+  function answerDuel(A, ok) { myDoc().update({ duelAns: { id: A.d.id, ok: ok }, rps: { id: A.d.id, picks: [] } }).catch(writeFail); }
+  function pickHand(A, hand) {
+    if (duelBusy) return; duelBusy = true;
+    var picks = picksOf(uid, A.d.id).concat([hand]);
+    myDoc().update({ rps: { id: A.d.id, picks: picks } }).catch(writeFail).then(function () { duelBusy = false; });
+  }
+  function closeDuel(A) {
+    if (A) { duelGone[A.d.id] = true; if (A.from === uid && !A.ans) myDoc().update({ duel: null }).catch(function () {}); }
+    duelMenu = null; renderDuel();
+  }
+  function postToChat(roomCode, text) {
+    var ref = db.doc("rooms/" + roomCode + "/players/" + uid);
+    ref.get().then(function (snap) {
+      if (!snap.exists) return;
+      var arr = (snap.data().chat || []).concat([{ t: text.slice(0, 200), at: Date.now() }]).slice(-12);
+      if (roomCode === code) myChat = arr;
+      return ref.update({ chat: arr });
+    }).catch(function () {});
+  }
+  // The challenger's phone sets up the duel table once the other player accepts.
+  function makeDuelTable(A) {
+    if (duelMade[A.d.id]) return; duelMade[A.d.id] = true;
+    var c = genCode();
+    db.doc("rooms/" + c).set({ host: uid, status: "lobby", target: A.d.target || 5000, created: Date.now(), duelOf: code, duelPair: [uid, A.other] })
+      .then(function () { return db.doc("rooms/" + c + "/players/" + uid).set({ name: myName, joined: Date.now(), avatar: myAvatar }); })
+      .then(function () { return myDoc().update({ "duel.room": c }); })
+      .catch(function (e) { duelMade[A.d.id] = false; writeFail(e); });
+  }
+  function duelLink(c) { return location.pathname + location.search + "#t-" + c; }
+  function renderDuel() {
+    var root = $("#duelroot"); if (!root) return;
+    if (!db || !code || !room || !players[uid]) { root.innerHTML = ""; return; }
+    var html = "";
+    var A = activeDuel();
+    if (duelMenu && players[duelMenu] && !A) {
+      var nm = "<bdi>" + esc(nameOf(duelMenu)) + "</bdi>";
+      html = "<h3>" + T("Challenge {name}", { name: nm }) + '</h3><p>' + T("Pick a quick 1-on-1. They have to accept.") + '</p><div class="stack">' +
+        '<button class="btn" data-act="chal" data-k="rps">✊ ' + T("Ro Sham Bo") + "</button>" +
+        [2500, 5000, 10000].map(function (t) { return '<button class="btn ghost" data-act="chal" data-k="game" data-t="' + t + '">🎲 ' + T("Quick game to {n}", { n: fmt(t) }) + "</button>"; }).join("") +
+        '<button class="btn ghost small" data-act="duelclose">' + T("Cancel") + "</button></div>";
+    } else if (A) {
+      var other = "<bdi>" + esc(nameOf(A.other)) + "</bdi>", isGame = A.d.kind === "game";
+      if (!A.ans) {
+        html = A.from === uid
+          ? "<h3>" + T(isGame ? "Quick game to {n}" : "Ro Sham Bo", { n: fmt(A.d.target) }) + "</h3><p>" + T("Waiting for {name} to accept…", { name: other }) + '</p><div class="row"><button class="btn ghost small" data-act="duelclose">' + T("Cancel") + "</button></div>"
+          : "<h3>" + T("You've been called out!") + "</h3><p>" + (isGame ? T("{name} challenges you to a quick game to {n}!", { name: other, n: fmt(A.d.target) }) : T("{name} challenges you to Ro Sham Bo!", { name: other })) + '</p><div class="row"><button class="btn" data-act="duelyes">' + T("Accept") + '</button><button class="btn ghost" data-act="duelno">' + T("Decline") + "</button></div>";
+      } else if (!A.ans.ok) {
+        html = "<h3>" + T("Challenge declined") + "</h3><p>" + T("{name} declined.", { name: A.from === uid ? other : T("You") }) + '</p><div class="row"><button class="btn" data-act="duelclose">' + T("OK") + "</button></div>";
+      } else if (!isGame) {
+        var st = rpsState(A);
+        if (st.done) {
+          if (A.from === uid && !duelPosted[A.d.id]) {
+            duelPosted[A.d.id] = true;
+            var w = st.won ? myName : nameOf(A.other), l = st.won ? nameOf(A.other) : myName;
+            postToChat(code, T("Ro Sham Bo: {w} beats {l} ({a} vs {b})", { w: w, l: l, a: HANDS[st.won ? st.mine : st.theirs], b: HANDS[st.won ? st.theirs : st.mine] }));
+          }
+          html = "<h3>" + (st.won ? T("You win!") : T("{name} wins!", { name: other })) + '</h3><div class="reveal"><span>' + HANDS[st.mine] + "</span><i>" + T("vs") + "</i><span>" + HANDS[st.theirs] + "</span></div>" +
+            '<div class="row"><button class="btn" data-act="duelclose">' + T("Done") + "</button></div>";
+        } else {
+          html = "<h3>" + T("Ro Sham Bo vs {name}", { name: other }) + "</h3>" +
+            (st.lastTie ? '<div class="reveal"><span>' + HANDS[st.lastTie] + "</span><i>" + T("vs") + "</i><span>" + HANDS[st.lastTie] + "</span></div><p>" + T("Draw! Go again.") + "</p>" : "<p>" + T("Pick your hand. They can't see it until you both pick.") + "</p>") +
+            '<div class="rps">' + ["rock", "paper", "scissors"].map(function (h) { return '<button data-act="rps" data-h="' + h + '"' + (st.waiting || duelBusy ? " disabled" : "") + ' aria-label="' + T(h === "rock" ? "Rock" : h === "paper" ? "Paper" : "Scissors") + '">' + HANDS[h] + "</button>"; }).join("") + "</div>" +
+            (st.waiting ? "<p>" + T("Waiting for {name} to pick…", { name: other }) + "</p>" : "");
+        }
+      } else {
+        if (A.from === uid && !A.d.room) makeDuelTable(A);
+        html = "<h3>" + T("Duel to {n} vs {name}", { n: fmt(A.d.target), name: other }) + "</h3>" +
+          (A.d.room ? "<p>" + T("It opens in a new tab, so this table stays open.") + '</p><div class="stack"><a class="btn" target="_blank" rel="noopener" href="' + esc(duelLink(A.d.room)) + '" data-act="duelgo">' + T("Go to duel table") + '</a><button class="btn ghost small" data-act="duelclose">' + T("Close") + "</button></div>"
+            : "<p>" + T("Setting up the duel table…") + "</p>");
+      }
+    }
+    root.innerHTML = html ? '<div class="duel-back"><div class="duel" role="dialog" aria-modal="true">' + html + "</div></div>" : "";
+  }
+  // In a duel table: start as soon as both players sit down, and report the winner back to the main table.
+  var duelStarted = {};
+  function duelTableTick() {
+    if (!room || !room.duelPair || room.host !== uid) return;
+    if (room.status === "lobby" && !duelStarted[code] && room.duelPair.every(function (id) { return players[id]; })) { duelStarted[code] = true; startGame(); }
+    if (room.status === "done" && room.duelOf && !room.duelReported && room.winner) {
+      var w = nameOf(room.winner), l = nameOf(room.duelPair.filter(function (id) { return id !== room.winner; })[0]);
+      db.doc("rooms/" + code).update({ duelReported: true }).then(function () { postToChat(room.duelOf, T("{w} won the duel against {l} (to {n})", { w: w, l: l, n: fmt(room.target) })); }).catch(function () {});
+    }
+  }
 
   /* ---------- turn alerts ---------- */
   // Work while the game is open, including in a background tab or a backgrounded app.
@@ -1147,10 +1327,10 @@ ol.rules { padding-left: 20px; }
   }
 
   // ---------- auto-play ----------
-  // If the player whose turn it is doesn't move within 10 seconds, the game plays for them:
+  // If the player whose turn it is doesn't move within 20 seconds, the game plays for them:
   // it rolls, keeps the best dice (or the must-keep dice), and banks whenever banking is allowed.
   // Their own phone does it; the host's phone steps in a few seconds later if theirs is asleep.
-  var AUTO_MS = 10000, autoT = null, autoKey = "", autoStart = 0, cdT = null;
+  var AUTO_MS = 20000, autoT = null, autoKey = "", autoStart = 0, cdT = null;
   function autoStateKey(r) {
     return r ? [code, r.status, r.turn, r.rollId || 0, r.phase, (r.pick || []).join("")].join("|") : "";
   }
@@ -1338,7 +1518,8 @@ ol.rules { padding-left: 20px; }
         : (o.scores && !(o.scores[id] > 0)) ? '<span class="badge off">' + T("Not on board") + "</span>"
         : (!o.scores && id === room.host) ? '<span class="badge off">' + T("Host") + "</span>" : "";
       var nm = nameOf(id) + (id === uid ? " " + T("(you)") : "");
-      var mine = id === uid ? ' data-act="avatar" role="button" tabindex="0" aria-label="' + T("Change your avatar") + '"' : "";
+      var mine = id === uid ? ' data-act="avatar" role="button" tabindex="0" aria-label="' + T("Change your avatar") + '"'
+        : players[uid] ? ' data-act="seatmenu" data-id="' + esc(id) + '" role="button" tabindex="0" aria-label="' + T("Challenge {name}", { name: esc(nameOf(id)) }) + '"' : "";
       return '<div class="' + cls + '" data-seat="' + esc(id) + '" style="' + st + '"' + mine + ">" + badge + bubble +
         avatarHTML(id, nameOf(id), players[id] && players[id].avatar) +
         '<div class="plate"><span class="nm">' + esc(nm) + "</span>" +
@@ -1378,7 +1559,8 @@ ol.rules { padding-left: 20px; }
         li(T("You need {n} in one turn to get on the board.", { n: n(MIN_ENTRY) })) +
         li(T("Score with all six dice and you roll all six again (hot dice).")) +
         li(T("The winner of a game rolls first in the next one.")) +
-        li(T("If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.")) +
+        li(T("If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.")) +
+        li(T("Tap another player's seat to call them out: Ro Sham Bo, or a quick 1-on-1 game.")) +
         li(T("Each seat shows how many points that player has left to reach {n}.", { n: n(tgt) })) +
         li(T("Tap the dealer to switch between Sofia and Layla.")) +
         li(T("After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.")) +
@@ -1574,7 +1756,8 @@ ol.rules { padding-left: 20px; }
     var who = "<bdi>" + esc(nameOf(cur)) + "</bdi>";
     if (done) {
       controls = room.host === uid ? '<button class="btn" data-act="again">' + T("Play again") + "</button>" : "";
-      hint = room.host === uid ? "" : T("Waiting for {name} to start another game.", { name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" });
+      if (room.duelOf) controls = '<a class="btn" href="' + esc(duelLink(room.duelOf)) + '">' + T("Back to the main table") + "</a>";
+      hint = room.duelOf ? "" : room.host === uid ? "" : T("Waiting for {name} to start another game.", { name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" });
     } else if (!inGame) {
       hint = T("Taking your seat. The host's screen adds you in a moment. If this stays, ask the host to keep the page open.");
     } else if (mine && r.phase === "roll") {
@@ -1667,6 +1850,13 @@ ol.rules { padding-left: 20px; }
     }
     else if (a === "lang") { LANG = LANG === "ar" ? "en" : "ar"; store.set("fk-lang", LANG); applyLang(); avatarOpen && renderSheet(); renderChat(true); render(); }
     else if (a === "dealer") { dealerPick = dealerPick === "sofia" ? "layla" : "sofia"; store.set("fk-dealer", dealerPick); render(); }
+    else if (a === "seatmenu") { duelMenu = el.getAttribute("data-id"); renderDuel(); }
+    else if (a === "chal") challenge(duelMenu, el.getAttribute("data-k"), Number(el.getAttribute("data-t")) || 0);
+    else if (a === "duelyes") { var A1 = activeDuel(); if (A1) answerDuel(A1, true); }
+    else if (a === "duelno") { var A2 = activeDuel(); if (A2) { answerDuel(A2, false); closeDuel(A2); } }
+    else if (a === "rps") { var A3 = activeDuel(); if (A3) pickHand(A3, el.getAttribute("data-h")); }
+    else if (a === "duelclose") closeDuel(activeDuel());
+    else if (a === "duelgo") { var A4 = activeDuel(); setTimeout(function () { closeDuel(A4); }, 300); }
     else if (a === "vidon") startVideo();
     else if (a === "vidoff") stopVideo();
     else if (a === "vidmic") setMic(!vid.mic);

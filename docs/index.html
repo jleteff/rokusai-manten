@@ -154,6 +154,12 @@ input[type=text], select {
 .dealer-seat .av svg { width: 100%; height: 100%; display: block; }
 .dealer-seat .plate { border-color: rgba(227,183,78,.5); }
 .dealer-seat { cursor: pointer; }
+/* live video inside a seat */
+.av video.vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: #000; }
+.av video.vid.self { transform: scaleX(-1); }
+.av.live { border-color: #3fd37a; width: calc(var(--av) * 1.3); height: calc(var(--av) * 1.3); }
+.seat .muted-ic { position: absolute; z-index: 2; inset-inline-end: -2px; top: calc(var(--av) - 16px); width: 18px; height: 18px; border-radius: 50%; background: var(--ember); color: #fff; font-size: 10px; display: grid; place-items: center; font-weight: 800; }
+.vid-note { font-size: 13px; color: var(--ivory-dim); margin: 6px 0 10px; }
 .auto-note { display: inline-block; margin-inline-start: 6px; font-size: 12px; color: var(--ivory-dim); white-space: nowrap; }
 .badge .cd { font-variant-numeric: tabular-nums; }
 .plate .need { display: block; font-size: 10.5px; font-weight: 700; color: #f4d78a; line-height: 1.2; margin-top: 1px; white-space: nowrap; }
@@ -164,7 +170,7 @@ input[type=text], select {
 /* seats */
 .seat { position: absolute; transform: translate(-50%, -50%); width: var(--sw); display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 3; text-align: center; }
 .av {
-  overflow: hidden; flex: 0 0 auto;
+  position: relative; overflow: hidden; flex: 0 0 auto;
   width: var(--av); height: var(--av); border-radius: 50%; background: var(--c, #555); color: #fff;
   display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: calc(var(--av) * .42);
   border: 3px solid #0c1411; box-shadow: 0 6px 14px rgba(0,0,0,.55); letter-spacing: .02em;
@@ -304,6 +310,7 @@ ol.rules { padding-left: 20px; }
 </div>
 <div id="toast" class="toast" hidden></div>
 <div id="sheet"></div>
+<div id="rtc-audio" hidden></div>
 <div class="chat-sheet" id="chatsheet" role="dialog" aria-label="Table chat">
   <div class="chat-head"><h2 id="chattitle">Table talk</h2><button class="btn ghost small" type="button" data-act="chatclose" id="chatclose">Close</button></div>
   <div class="chat-list" id="chatlist" aria-live="polite"></div>
@@ -506,7 +513,23 @@ ol.rules { padding-left: 20px; }
     "Auto-play in": "لعب تلقائي خلال",
     "On auto": "تلقائي",
     "{name} is on auto.": "{name} يلعب تلقائياً.",
-    "If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.": "إذا لم تتحرك خلال 10 ثوانٍ، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن."
+    "If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.": "إذا لم تتحرك خلال 10 ثوانٍ، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن.",
+    "{n} left": "باقي {n}",
+    "Each seat shows how many points that player has left to reach {n}.": "يُظهر كل مقعد عدد النقاط المتبقية للاعب ليصل إلى {n}.",
+    "Video call": "مكالمة فيديو",
+    "Join video": "انضم بالفيديو",
+    "Starting camera…": "جارٍ تشغيل الكاميرا…",
+    "Leave video": "غادر الفيديو",
+    "Mic: on": "الميكروفون: مفعّل",
+    "Mic: off": "الميكروفون: مغلق",
+    "Camera: on": "الكاميرا: مفعّلة",
+    "Camera: off": "الكاميرا: مغلقة",
+    "Muted": "مكتوم",
+    "See and hear each other at the table. Your camera and mic only turn on when you tap Join video.": "شاهدوا واسمعوا بعضكم على الطاولة. لا تعمل الكاميرا والميكروفون إلا عندما تضغط «انضم بالفيديو».",
+    "You're on video. It connects directly between phones; on some cellular networks it may not connect.": "أنت على الفيديو. يتصل مباشرة بين الهواتف، وقد لا يتصل على بعض شبكات الجوال.",
+    "This browser can't do video calls.": "هذا المتصفح لا يدعم مكالمات الفيديو.",
+    "Camera or mic blocked. Allow them in your browser settings.": "الكاميرا أو الميكروفون محظوران. اسمح بهما من إعدادات المتصفح.",
+    "Couldn't start the camera.": "تعذّر تشغيل الكاميرا."
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -626,6 +649,7 @@ ol.rules { padding-left: 20px; }
     var sc = (r.scores && r.scores[id]) || 0;
     return sc >= r.target - 2000 && sc < r.target ? r.target - sc : 0;
   }
+  function pointsLeft(r, id) { var sc = (r.scores && r.scores[id]) || 0; return sc < r.target ? r.target - sc : 0; }
   function lockMode(r, id) { return ((r.scores && r.scores[id]) || 0) >= r.target - 1000; }
   var rollDie = function () { return 1 + Math.floor(Math.random() * 6); };
   var PIPS = { 0: [], 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
@@ -675,6 +699,7 @@ ol.rules { padding-left: 20px; }
     unsubAll();
     code = c; room = null; players = {}; roomLoaded = false; subErr = null; seenRoll = null; sel = new Set(); joining = false;
     chatSeen = {}; chatPrimed = false; myChat = null; chatKeys = ""; setChatOpen(false);
+    if (vid.on) stopVideo(true);
     if (code && db) subscribe();
     render();
   }
@@ -706,7 +731,7 @@ ol.rules { padding-left: 20px; }
     }, function (e) { subErr = e; render(); }));
     unsubs.push(rref.collection("players").onSnapshot(function (q) {
       var m = {}; q.docs.forEach(function (d) { m[d.id] = d.data(); });
-      players = m; noteChat(); hostSync(); render(); renderChat();
+      players = m; noteChat(); hostSync(); rtcSync(); render(); renderChat();
     }, function () {}));
   }
   function uniqueName(n) {
@@ -747,6 +772,144 @@ ol.rules { padding-left: 20px; }
         db.doc("rooms/" + code).update({ pick: p, pickRoll: rid }).catch(function () {});
     }, 180);
   }
+
+  /* ---------- video call ---------- */
+  // Each seated player can join with camera and mic. Video goes phone to phone (WebRTC);
+  // connection details travel through each player's own seat document, so no new database rules.
+  // A relay (TURN) server can be added in firebase-config.js as window.TURN_SERVERS for strict cellular networks.
+  var ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }].concat(window.TURN_SERVERS || []);
+  var vid = { on: false, joining: false, stream: null, mic: true, cam: true, sid: "", peers: {}, els: {} };
+  function newSid() { return Math.random().toString(36).slice(2, 10); }
+  function myDoc() { return db.doc("rooms/" + code + "/players/" + uid); }
+  function writeSig(id, obj) { var u = {}; u["rtc." + id] = obj; return myDoc().update(u); }
+  function flushCands(id, P) {
+    if (!P.ready || !P.pending.length) return;
+    var batch = P.pending.splice(0), u = {};
+    u["rtc." + id + ".cands"] = firebase.firestore.FieldValue.arrayUnion.apply(null, batch);
+    myDoc().update(u).catch(function () {});
+  }
+  function applyCands(id, P) {
+    var pd = players[id], sig = pd && pd.rtc && pd.rtc[uid];
+    if (!sig || !P.pc.remoteDescription || sig.from !== P.remoteSid) return;
+    var list = sig.cands || [];
+    for (var i = P.applied; i < list.length; i++) P.pc.addIceCandidate(list[i]).catch(function () {});
+    P.applied = list.length;
+  }
+  function closePeer(id) {
+    var P = vid.peers[id]; if (!P) return;
+    try { P.pc.close(); } catch (e) {}
+    var a = document.getElementById("rtca-" + id); if (a) a.remove();
+    delete vid.peers[id]; delete vid.els[id];
+  }
+  function makePeer(id, remoteSid) {
+    var pc = new RTCPeerConnection({ iceServers: ICE });
+    var P = { pc: pc, remoteSid: remoteSid, applied: 0, pending: [], ready: false, answered: false, stream: null };
+    vid.stream.getTracks().forEach(function (t) { pc.addTrack(t, vid.stream); });
+    pc.onicecandidate = function (e) { if (e.candidate) { P.pending.push(e.candidate.toJSON()); flushCands(id, P); } };
+    pc.ontrack = function (e) {
+      P.stream = e.streams[0];
+      var a = document.getElementById("rtca-" + id);
+      if (!a) { a = document.createElement("audio"); a.id = "rtca-" + id; a.autoplay = true; a.setAttribute("playsinline", ""); $("#rtc-audio").appendChild(a); }
+      if (a.srcObject !== P.stream) { a.srcObject = P.stream; var pr = a.play(); if (pr && pr.catch) pr.catch(function () {}); }
+      render();
+    };
+    pc.onconnectionstatechange = function () {
+      if (pc.connectionState === "failed") { closePeer(id); setTimeout(rtcSync, 1500); }
+      render();
+    };
+    vid.peers[id] = P;
+    return P;
+  }
+  function rtcSync() {
+    if (!db || !code || !uid) return;
+    Object.keys(vid.peers).forEach(function (id) { if (!players[id] || !players[id].rtcOn || !vid.on) closePeer(id); });
+    if (!vid.on || !vid.stream) return;
+    Object.keys(players).forEach(function (id) {
+      if (id === uid) return;
+      var pd = players[id];
+      if (!pd.rtcOn || !pd.rtcSid) return;
+      var P = vid.peers[id], sig = pd.rtc && pd.rtc[uid];
+      if (uid < id) {
+        // I start this connection: send an offer addressed to their current session.
+        if (!P || P.remoteSid !== pd.rtcSid) {
+          closePeer(id); P = makePeer(id, pd.rtcSid);
+          var pc = P.pc;
+          pc.createOffer().then(function (o) { return pc.setLocalDescription(o); })
+            .then(function () { return writeSig(id, { from: vid.sid, to: P.remoteSid, sdp: { type: "offer", sdp: pc.localDescription.sdp }, cands: [] }); })
+            .then(function () { P.ready = true; flushCands(id, P); }).catch(function () {});
+        } else if (sig && sig.to === vid.sid && sig.from === P.remoteSid && sig.sdp && sig.sdp.type === "answer" && !P.answered && P.pc.signalingState === "have-local-offer") {
+          P.answered = true;
+          P.pc.setRemoteDescription(sig.sdp).then(function () { applyCands(id, P); }).catch(function () {});
+        } else applyCands(id, P);
+      } else if (sig && sig.to === vid.sid && sig.from === pd.rtcSid && sig.sdp && sig.sdp.type === "offer") {
+        // They start it: answer their offer once per session.
+        if (!P || P.remoteSid !== sig.from) {
+          closePeer(id); P = makePeer(id, sig.from);
+          var pc2 = P.pc;
+          pc2.setRemoteDescription(sig.sdp).then(function () { return pc2.createAnswer(); })
+            .then(function (a) { return pc2.setLocalDescription(a); })
+            .then(function () { return writeSig(id, { from: vid.sid, to: sig.from, sdp: { type: "answer", sdp: pc2.localDescription.sdp }, cands: [] }); })
+            .then(function () { P.ready = true; flushCands(id, P); applyCands(id, P); }).catch(function () {});
+        } else applyCands(id, P);
+      }
+    });
+  }
+  function startVideo() {
+    if (vid.on || vid.joining || !players[uid]) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.RTCPeerConnection) { toast(T("This browser can't do video calls.")); return; }
+    vid.joining = true; render();
+    navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 240 }, height: { ideal: 240 }, frameRate: { ideal: 15, max: 20 }, facingMode: "user" },
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })
+      .then(function (stream) {
+        vid.stream = stream; vid.on = true; vid.joining = false; vid.mic = true; vid.cam = true; vid.sid = newSid();
+        return myDoc().update({ rtcOn: true, rtcSid: vid.sid, rtcMic: true, rtc: {} });
+      })
+      .then(function () { rtcSync(); render(); })
+      .catch(function (e) {
+        vid.joining = false;
+        if (vid.stream) { vid.stream.getTracks().forEach(function (t) { t.stop(); }); vid.stream = null; vid.on = false; }
+        toast(e && e.name === "NotAllowedError" ? T("Camera or mic blocked. Allow them in your browser settings.") : T("Couldn't start the camera."));
+        render();
+      });
+  }
+  function stopVideo(silent) {
+    Object.keys(vid.peers).forEach(closePeer);
+    if (vid.stream) vid.stream.getTracks().forEach(function (t) { t.stop(); });
+    vid.stream = null; vid.on = false; vid.els = {};
+    if (!silent && db && code && players[uid]) myDoc().update({ rtcOn: false, rtc: {} }).catch(function () {});
+    render();
+  }
+  function setMic(on) {
+    vid.mic = on; if (vid.stream) vid.stream.getAudioTracks().forEach(function (t) { t.enabled = on; });
+    if (players[uid]) myDoc().update({ rtcMic: on }).catch(function () {});
+    render();
+  }
+  function setCam(on) { vid.cam = on; if (vid.stream) vid.stream.getVideoTracks().forEach(function (t) { t.enabled = on; }); render(); }
+  // Seats are redrawn often, so the video elements live outside the page markup and get moved into each seat after a redraw.
+  function attachVideos() {
+    Array.prototype.forEach.call(document.querySelectorAll(".seat[data-seat]"), function (seat) {
+      var id = seat.getAttribute("data-seat"), av = seat.querySelector(".av");
+      var stream = id === uid ? (vid.on && vid.cam ? vid.stream : null) : (vid.peers[id] && vid.peers[id].stream);
+      if (!av || !stream) return;
+      var v = vid.els[id];
+      if (!v) { v = document.createElement("video"); v.className = "vid" + (id === uid ? " self" : ""); v.muted = true; v.autoplay = true; v.setAttribute("playsinline", ""); vid.els[id] = v; }
+      if (v.srcObject !== stream) v.srcObject = stream;
+      av.appendChild(v); av.classList.add("live");
+      var pr = v.play(); if (pr && pr.catch) pr.catch(function () {});
+      if (players[id] && players[id].rtcMic === false) { var m = document.createElement("span"); m.className = "muted-ic"; m.textContent = "✕"; m.title = T("Muted"); seat.appendChild(m); }
+    });
+  }
+  function videoHTML() {
+    if (!players[uid]) return "";
+    var body = !vid.on
+      ? '<p class="vid-note">' + T("See and hear each other at the table. Your camera and mic only turn on when you tap Join video.") + '</p><div class="row"><button class="btn small" data-act="vidon"' + (vid.joining ? " disabled" : "") + ">" + T(vid.joining ? "Starting camera…" : "Join video") + "</button></div>"
+      : '<p class="vid-note">' + T("You're on video. It connects directly between phones; on some cellular networks it may not connect.") + '</p><div class="row">' +
+        '<button class="btn ghost small pill" data-act="vidmic" aria-pressed="' + vid.mic + '">' + T(vid.mic ? "Mic: on" : "Mic: off") + "</button>" +
+        '<button class="btn ghost small pill" data-act="vidcam" aria-pressed="' + vid.cam + '">' + T(vid.cam ? "Camera: on" : "Camera: off") + "</button>" +
+        '<button class="btn ghost small" data-act="vidoff">' + T("Leave video") + "</button></div>";
+    return '<div class="panel"><p class="label">' + T("Video call") + "</p>" + body + "</div>";
+  }
+  window.addEventListener("pagehide", function () { if (vid.on && db && code && players[uid]) myDoc().update({ rtcOn: false, rtc: {} }).catch(function () {}); });
 
   /* ---------- turn alerts ---------- */
   // Work while the game is open, including in a background tab or a backgrounded app.
@@ -1142,7 +1305,7 @@ ol.rules { padding-left: 20px; }
       return '<div class="' + cls + '" data-seat="' + esc(id) + '" style="' + st + '"' + mine + ">" + badge + bubble +
         avatarHTML(id, nameOf(id), players[id] && players[id].avatar) +
         '<div class="plate"><span class="nm">' + esc(nm) + "</span>" +
-        (o.scores ? '<span class="sc">' + fmt(o.scores[id] || 0) + "</span>" + (needToGoOut(room, id) ? '<span class="need">' + T("Needs {n}", { n: fmt(needToGoOut(room, id)) }) + "</span>" : "") : "") + "</div></div>";
+        (o.scores ? '<span class="sc">' + fmt(o.scores[id] || 0) + "</span>" + (pointsLeft(room, id) ? '<span class="need">' + T("{n} left", { n: fmt(pointsLeft(room, id)) }) + "</span>" : "") : "") + "</div></div>";
     }).join("");
   }
   function tableHTML(seats, center) {
@@ -1179,7 +1342,7 @@ ol.rules { padding-left: 20px; }
         li(T("Score with all six dice and you roll all six again (hot dice).")) +
         li(T("The winner of a game rolls first in the next one.")) +
         li(T("If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.")) +
-        li(T("From {a}, each player's seat shows exactly how many points they need to go out.", { a: n(tgt - 2000) })) +
+        li(T("Each seat shows how many points that player has left to reach {n}.", { n: n(tgt) })) +
         li(T("Tap the dealer to switch between Sofia and Layla.")) +
         li(T("After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.")) +
         li(T("A new triple on a later throw scores whichever is higher: the triple, or 100 per die.")) +
@@ -1308,6 +1471,7 @@ ol.rules { padding-left: 20px; }
     var rollAnim = animate && room.status !== "lobby", roller = room.order ? room.order[room.turn] : null;
     animate = false;
     if (passAnim) { var pa = passAnim; passAnim = null; runPass(pa); }
+    attachVideos();
     if (rollAnim) runRoll(roller);
   }
   function avatarPickHTML() {
@@ -1344,7 +1508,7 @@ ol.rules { padding-left: 20px; }
           '</select><button class="btn" data-act="start"' + (ids.length ? "" : " disabled") + ">" + T("Start game") + "</button></div>"
       : '<p class="status-line">' + T("Playing to {n}. Waiting for {name} to start.", { n: fmt(room.target), name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" }) + "</p>";
     return tableHTML(seats, center) + '<div class="actionbar">' + bar + "</div>" +
-      '<div class="below">' + alertsHTML() + '<div class="panel"><p class="label">' + T("Invite link") + "</p>" + inviteHTML() + '</div><div class="panel">' + rulesHTML() + "</div></div>";
+      '<div class="below">' + videoHTML() + alertsHTML() + '<div class="panel"><p class="label">' + T("Invite link") + "</p>" + inviteHTML() + '</div><div class="panel">' + rulesHTML() + "</div></div>";
   }
   function gameHTML() {
     var r = room, cur = r.order[r.turn], mine = mineTurn(r), done = r.status === "done";
@@ -1427,7 +1591,7 @@ ol.rules { padding-left: 20px; }
       '<div class="actionbar">' + (controls ? '<div class="actions">' + controls + "</div>" : "") +
       '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + tools + "</div>" +
       '<div class="below"><div class="panel"><p class="label">' + T("Game log · race to {n} exactly", { n: fmt(r.target) }) + '</p><ul class="log">' + log + "</ul></div>" +
-      alertsHTML() + '<div class="panel"><p class="label">' + T("Invite link") + "</p>" + inviteHTML() + "</div>" +
+      videoHTML() + alertsHTML() + '<div class="panel"><p class="label">' + T("Invite link") + "</p>" + inviteHTML() + "</div>" +
       '<div class="panel">' + rulesHTML() + "</div></div>";
   }
 
@@ -1466,6 +1630,10 @@ ol.rules { padding-left: 20px; }
     }
     else if (a === "lang") { LANG = LANG === "ar" ? "en" : "ar"; store.set("fk-lang", LANG); applyLang(); avatarOpen && renderSheet(); renderChat(true); render(); }
     else if (a === "dealer") { dealerPick = dealerPick === "sofia" ? "layla" : "sofia"; store.set("fk-dealer", dealerPick); render(); }
+    else if (a === "vidon") startVideo();
+    else if (a === "vidoff") stopVideo();
+    else if (a === "vidmic") setMic(!vid.mic);
+    else if (a === "vidcam") setCam(!vid.cam);
     else if (a === "chatopen") setChatOpen(true);
     else if (a === "chatclose") setChatOpen(false);
     else if (a === "quick") sendChat(el.getAttribute("data-t"));

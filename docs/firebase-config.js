@@ -8,3 +8,7 @@ window.FIREBASE_CONFIG = {
   messagingSenderId: "305144882762",
   appId: "1:305144882762:web:b11f61ff6def165a5f68b3"
 };
+
+// Optional: a relay (TURN) server for video calls on strict cellular networks.
+// Example: window.TURN_SERVERS = [{ urls: "turn:YOUR_TURN_HOST:443?transport=tcp", username: "USER", credential: "PASS" }];
+window.TURN_SERVERS = window.TURN_SERVERS || [];

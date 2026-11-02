@@ -175,6 +175,7 @@ input[type=text], select {
 .reveal span { animation: pop .35s cubic-bezier(.2,1.5,.4,1); }
 .reveal i { font-style: normal; font-size: 14px; color: var(--ivory-dim); }
 .seat[data-act="seatmenu"] { cursor: pointer; }
+.seat.bot-seat .av { font-size: calc(var(--av) * .5); opacity: .85; }
 /* live video inside a seat */
 .av video.vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: #000; }
 .av video.vid.self { transform: scaleX(-1); }
@@ -595,7 +596,20 @@ ol.rules { padding-left: 20px; }
     "Setting up the duel table…": "جارٍ تجهيز طاولة التحدي…",
     "Back to the main table": "العودة إلى الطاولة الرئيسية",
     "Ro Sham Bo: {w} beats {l} ({a} vs {b})": "حجر ورقة مقص: {w} غلب {l} ({a} ضد {b})",
-    "{w} won the duel against {l} (to {n})": "{w} فاز في التحدي ضد {l} (حتى {n})"
+    "{w} won the duel against {l} (to {n})": "{w} فاز في التحدي ضد {l} (حتى {n})",
+    "Bot": "روبوت",
+    "Thinking…": "يفكّر…",
+    "Bots fill empty seats: on": "الروبوتات تملأ المقاعد: مفعّل",
+    "Bots fill empty seats: off": "الروبوتات تملأ المقاعد: متوقف",
+    "With fewer than 5 people, bots fill the empty seats. The host can turn this off in the lobby.": "إذا كان عدد اللاعبين أقل من 5، تملأ الروبوتات المقاعد الفارغة. يمكن للمضيف إيقاف ذلك من الردهة.",
+    "Too easy.": "سهلة جداً.",
+    "Read 'em and weep.": "شاهدوا وابكوا.",
+    "The dice love me.": "النرد يحبني.",
+    "Beep boop. Banked.": "بيب بوب. سجّلت.",
+    "Rigged!": "مغشوشة!",
+    "Ugh.": "أوف.",
+    "I meant to do that.": "كنت أقصد ذلك.",
+    "Recalibrating…": "جارٍ إعادة المعايرة…"
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -798,7 +812,7 @@ ol.rules { padding-left: 20px; }
     }, function (e) { subErr = e; render(); }));
     unsubs.push(rref.collection("players").onSnapshot(function (q) {
       var m = {}; q.docs.forEach(function (d) { m[d.id] = d.data(); });
-      players = m; noteChat(); noteDuels(); hostSync(); rtcSync(); duelTableTick(); render(); renderChat(); renderDuel();
+      players = m; noteChat(); noteDuels(); hostSync(); rtcSync(); duelTableTick(); scheduleAuto(); scheduleFarkle(); render(); renderChat(); renderDuel();
     }, function () {}));
   }
   function uniqueName(n) {
@@ -817,7 +831,7 @@ ol.rules { padding-left: 20px; }
   // The host adds anyone who sits down after the game has started to the end of the turn order.
   function hostSync() {
     if (!room || room.status !== "play" || room.host !== uid || busy) return;
-    var missing = Object.keys(players).filter(function (i) { return room.order.indexOf(i) < 0; }).sort(byJoin);
+    var missing = Object.keys(players).filter(function (i) { return room.order.indexOf(i) < 0 && !players[i].bot; }).sort(byJoin);
     if (!missing.length) return;
     var patch = {
       order: room.order.concat(missing),
@@ -977,6 +991,50 @@ ol.rules { padding-left: 20px; }
     return '<div class="panel"><p class="label">' + T("Video call") + "</p>" + body + "</div>";
   }
   window.addEventListener("pagehide", function () { if (vid.on && db && code && players[uid]) myDoc().update({ rtcOn: false, rtc: {} }).catch(function () {}); });
+
+  /* ---------- bots ---------- */
+  // Tables with fewer than 5 people get bots in the empty seats. The host's phone plays for them.
+  var BOTS = [
+    { name: "Robo Rita", avatar: "🤖", grit: 1.0 }, { name: "Vegas Vinnie", avatar: "🎰", grit: 1.45 }, { name: "Snake Eyes", avatar: "🐍", grit: 1.25 },
+    { name: "Ninja Nao", avatar: "🥷", grit: 0.85 }, { name: "Count Dice-ula", avatar: "🧛", grit: 1.15 }, { name: "Rex", avatar: "🦖", grit: 1.6 },
+    { name: "Zorg", avatar: "👽", grit: 0.75 }, { name: "Big Tony", avatar: "🦍", grit: 1.3 }];
+  var BOT_TABLE_SIZE = 5;
+  function isBot(id) { return !!(players[id] && players[id].bot); }
+  function humanIds() { return Object.keys(players).filter(function (id) { return !players[id].bot; }).sort(byJoin); }
+  function botsWanted(r) { return r && r.bots !== false && !r.duelPair; }
+  // Bank when the turn is worth enough for how many dice are left; braver bots wait for more.
+  function botWantsBank(id, r, total, rest) {
+    var need = r.target - ((r.scores && r.scores[id]) || 0);
+    if (total === need) return true;
+    if (rest === 0) return false;   // hot dice: roll all six again
+    var base = [0, 250, 300, 450, 700, 1000, 1000][rest] || 1000;
+    return total >= base * ((players[id] && players[id].grit) || 1);
+  }
+  var BOT_BRAG = ["Too easy.", "Read 'em and weep.", "The dice love me.", "Beep boop. Banked."];
+  var BOT_SULK = ["Rigged!", "Ugh.", "I meant to do that.", "Recalibrating…"];
+  function botTalk(id, lines) {
+    if (Math.random() > 0.45 || !players[id]) return;
+    var arr = (players[id].chat || []).concat([{ t: T(lines[Math.floor(Math.random() * lines.length)]), at: Date.now() }]).slice(-12);
+    db.doc("rooms/" + code + "/players/" + id).update({ chat: arr }).catch(function () {});
+  }
+  function botMove() {
+    var r = room; if (!r || r.status !== "play" || busy || r.host !== uid) return;
+    var cur = r.order[r.turn]; if (!isBot(cur)) return;
+    var patch = null, banked = 0;
+    if (r.phase === "roll") patch = rollFrom(r, r.held, 0, r.log || [], []);
+    else if (r.phase === "choose") {
+      var idxs = (r.forced && r.forced.length) ? r.forced.slice() : bestSel(r);
+      var sc = scoreSel(idxs.map(function (i) { return r.dice[i]; }), r.bonus);
+      var total = r.turnScore + (sc.valid ? sc.score : 0), rest = r.held.filter(function (h) { return !h; }).length - idxs.length;
+      var bank = botWantsBank(cur, r, total, rest) ? keepPatch(r, idxs, "bank") : null;
+      if (bank) banked = total;
+      patch = bank || keepPatch(r, idxs, "roll");
+    }
+    if (!patch) return;
+    act(db.doc("rooms/" + code).update(patch));
+    if (banked >= 1500) botTalk(cur, BOT_BRAG);
+    else if (patch.phase === "farkle") botTalk(cur, BOT_SULK);
+  }
 
   /* ---------- challenges ---------- */
   // Tap another player's seat to call them out: Ro Sham Bo, or a quick 1-on-1 game at its own table.
@@ -1252,16 +1310,32 @@ ol.rules { padding-left: 20px; }
     } catch (e) { writeFail(e); }
   }
   function startGame() {
-    var ids = Object.keys(players).sort(byJoin);
-    if (!ids.length) return;
-    // The last game's winner rolls first; everyone else keeps their place around the table.
-    var w = ids.indexOf(room.lastWinner);
-    if (w > 0) ids = ids.slice(w).concat(ids.slice(0, w));
-    var scores = {}; ids.forEach(function (i) { scores[i] = 0; });
-    act(db.doc("rooms/" + code).update({
-      status: "play", order: ids, scores: scores, turn: 0, dice: [], held: [false, false, false, false, false, false],
-      turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null,
-      log: [{ k: w > -1 ? "startw" : "start", name: nameOf(ids[0]) }]
+    var humans = humanIds();
+    if (!humans.length) return;
+    var need = botsWanted(room) ? Math.max(0, BOT_TABLE_SIZE - humans.length) : 0;
+    var existing = Object.keys(players).filter(function (id) { return players[id].bot; }).sort(byJoin).slice(0, need);
+    var used = existing.map(function (id) { return players[id].name; });
+    var fresh = BOTS.filter(function (b) { return used.indexOf(b.name) < 0; }).sort(function () { return Math.random() - 0.5; }).slice(0, need - existing.length);
+    var botNames = {};
+    var writes = fresh.map(function (b, k) {
+      var id = "bot" + Date.now().toString(36) + k;
+      existing.push(id); botNames[id] = b.name;
+      return db.doc("rooms/" + code + "/players/" + id).set({ name: b.name, avatar: b.avatar, grit: b.grit, bot: true, joined: Date.now() + k });
+    });
+    act(Promise.all(writes).then(function () {
+      // People and bots alternate around the table.
+      var ids = [], b = existing.slice();
+      humans.forEach(function (h) { ids.push(h); if (b.length) ids.push(b.shift()); });
+      ids = ids.concat(b);
+      // The last game's winner rolls first; everyone else keeps their place around the table.
+      var w = ids.indexOf(room.lastWinner);
+      if (w > 0) ids = ids.slice(w).concat(ids.slice(0, w));
+      var scores = {}; ids.forEach(function (x) { scores[x] = 0; });
+      return db.doc("rooms/" + code).update({
+        status: "play", order: ids, scores: scores, turn: 0, dice: [], held: [false, false, false, false, false, false],
+        turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null,
+        log: [{ k: w > -1 ? "startw" : "start", name: botNames[ids[0]] || nameOf(ids[0]) }]
+      });
     }));
   }
   function act(p) {
@@ -1337,15 +1411,16 @@ ol.rules { padding-left: 20px; }
   // Their own phone does it; the host's phone steps in a few seconds later if theirs is asleep.
   var AUTO_MS = 20000, autoT = null, autoKey = "", autoStart = 0, cdT = null;
   function autoStateKey(r) {
-    return r ? [code, r.status, r.turn, r.rollId || 0, r.phase, (r.pick || []).join("")].join("|") : "";
+    return r ? [code, r.status, r.turn, r.rollId || 0, r.phase, (r.pick || []).join(""), r.order && isBot(r.order[r.turn]) ? "bot" : ""].join("|") : "";
   }
   function scheduleAuto(force) {
     var r = room, k = autoStateKey(r);
     if (!r || r.status !== "play" || (r.phase !== "roll" && r.phase !== "choose")) { clearTimeout(autoT); autoKey = ""; return; }
     if (k === autoKey && !force) return;
     autoKey = k; autoStart = Date.now(); clearTimeout(autoT);
-    var mine = mineTurn(r);
+    var mine = mineTurn(r), bot = isBot(r.order[r.turn]);
     if (!mine && r.host !== uid) return;
+    if (bot) { autoT = setTimeout(function () { if (autoStateKey(room) === k) botMove(); }, 1300 + Math.random() * 900); return; }
     autoT = setTimeout(function () { if (autoStateKey(room) === k) autoMove(); }, mine ? AUTO_MS : AUTO_MS + 3000);
   }
   function autoMove() {
@@ -1377,7 +1452,7 @@ ol.rules { padding-left: 20px; }
     var k = code + ":" + room.rollId + ":" + room.turn;
     if (k === farkleKey) return;
     farkleKey = k; clearTimeout(farkleTimer);
-    var mine = mineTurn(room);
+    var mine = mineTurn(room) || (isBot(room.order[room.turn]) && room.host === uid);
     if (!mine && room.host !== uid) return;
     farkleTimer = setTimeout(function () {
       if (room && room.status === "play" && room.phase === "farkle" && code + ":" + room.rollId + ":" + room.turn === k) pass("auto");
@@ -1407,7 +1482,7 @@ ol.rules { padding-left: 20px; }
   function avatarHTML(id, name, a) {
     var st = ' style="--c:' + colorOf(id || "guest") + '"';
     if (isPhoto(a)) return '<div class="av"' + st + '><img src="' + a + '" alt=""></div>';
-    if (AVATARS.indexOf(a) > -1) return '<div class="av emo"' + st + ">" + a + "</div>";
+    if (AVATARS.indexOf(a) > -1 || BOTS.some(function (b) { return b.avatar === a; })) return '<div class="av emo"' + st + ">" + a + "</div>";
     return '<div class="av"' + st + ">" + esc(initials(name || "?")) + "</div>";
   }
   // Dots are drawn as SVG so every browser shows them (older iPhones and Androids can't lay out a grid inside a button).
@@ -1522,8 +1597,10 @@ ol.rules { padding-left: 20px; }
   // Seats sit on an ellipse with one extra place for the dealer, opposite you.
   function seatsHTML(ids, o) {
     var all = ids.slice(), g;
+    for (g = 0; g < (o.botGhosts || 0); g++) all.push("__bot");
     for (g = 0; g < (o.ghosts || 0); g++) all.push(null);
     var n = all.length, start = Math.max(0, ids.indexOf(uid)), wide = isWide();
+    ids = all;
     var rx = wide ? 44 : 38, ry = wide ? 40 : 43;
     var slots = n + 1, dealerSlot = Math.floor(slots / 2);
     var place = function (t) { return "left:" + (50 + rx * Math.cos(t)).toFixed(2) + "%;top:" + (50 + ry * Math.sin(t)).toFixed(2) + "%"; };
@@ -1533,16 +1610,18 @@ ol.rules { padding-left: 20px; }
       var pos = (k - start + n) % n, slot = pos < dealerSlot ? pos : pos + 1, t = Math.PI / 2 + slot * 2 * Math.PI / slots;
       var st = "left:" + (50 + rx * Math.cos(t)).toFixed(2) + "%;top:" + (50 + ry * Math.sin(t)).toFixed(2) + "%";
       var talk = id ? bubbleFor(id) : "", bubble = talk ? '<span class="bubble' + (Math.sin(t) < -0.3 ? " down" : "") + '">' + esc(talk) + "</span>" : "";
+      if (id === "__bot") return '<div class="seat open bot-seat" style="' + st + '" aria-hidden="true"><div class="av">🤖</div><div class="plate"><span class="nm">' + T("Bot") + "</span></div></div>";
       if (!id) return '<div class="seat open" style="' + st + '" aria-hidden="true"><div class="av">+</div><div class="plate"><span class="nm">' + T("Open seat") + "</span></div></div>";
       var cls = "seat" + (id === uid ? " me" : "") + (id === o.cur ? " turn" : "") + (id === o.winner ? " win" : "");
       var badge = id === o.winner ? '<span class="badge">' + T("Winner") + "</span>"
         : id === o.cur ? '<span class="badge">' + T(o.curBadge || "Rolling") + (o.countdown ? ' · <span class="cd">' + T("{n}s", { n: secondsLeft() }) + "</span>" : "") + "</span>"
+        : isBot(id) ? '<span class="badge off">' + T("Bot") + "</span>"
         : (o.scores && lockMode(room, id)) ? '<span class="badge off">' + T("Final stretch") + "</span>"
         : (o.scores && !(o.scores[id] > 0)) ? '<span class="badge off">' + T("Not on board") + "</span>"
         : (!o.scores && id === room.host) ? '<span class="badge off">' + T("Host") + "</span>" : "";
       var nm = nameOf(id) + (id === uid ? " " + T("(you)") : "");
       var mine = id === uid ? ' data-act="avatar" role="button" tabindex="0" aria-label="' + T("Change your avatar") + '"'
-        : players[uid] ? ' data-act="seatmenu" data-id="' + esc(id) + '" role="button" tabindex="0" aria-label="' + T("Challenge {name}", { name: esc(nameOf(id)) }) + '"' : "";
+        : players[uid] && !isBot(id) ? ' data-act="seatmenu" data-id="' + esc(id) + '" role="button" tabindex="0" aria-label="' + T("Challenge {name}", { name: esc(nameOf(id)) }) + '"' : "";
       return '<div class="' + cls + '" data-seat="' + esc(id) + '" style="' + st + '"' + mine + ">" + badge + bubble +
         avatarHTML(id, nameOf(id), players[id] && players[id].avatar) +
         '<div class="plate"><span class="nm">' + esc(nm) + "</span>" +
@@ -1584,6 +1663,7 @@ ol.rules { padding-left: 20px; }
         li(T("The winner of a game rolls first in the next one.")) +
         li(T("If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.")) +
         li(T("Tap another player's seat to call them out: Ro Sham Bo, or a quick 1-on-1 game.")) +
+        li(T("With fewer than 5 people, bots fill the empty seats. The host can turn this off in the lobby.")) +
         li(T("Each seat shows how many points that player has left to reach {n}.", { n: n(tgt) })) +
         li(T("Tap the dealer to switch between Sofia and Layla.")) +
         li(T("After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.")) +
@@ -1736,8 +1816,9 @@ ol.rules { padding-left: 20px; }
       '<button class="btn" data-act="setname">' + T("Sit down") + "</button></div>";
   }
   function lobbyHTML() {
-    var ids = Object.keys(players).sort(byJoin), isHost = room.host === uid;
-    var seats = seatsHTML(ids, { ghosts: Math.max(0, 6 - ids.length) });
+    var ids = humanIds(), isHost = room.host === uid;
+    var botN = botsWanted(room) ? Math.max(0, BOT_TABLE_SIZE - ids.length) : 0;
+    var seats = seatsHTML(ids, { botGhosts: botN, ghosts: Math.max(0, 6 - ids.length - botN) });
     var center = '<p class="eyebrow">' + T("Table") + '</p><div class="lobby-code">' + esc(code) + "</div>" +
       '<p class="small">' + T("Players seated: {n}.", { n: ids.length }) + " " + T("Send the link so friends can pull up a chair. Tap your seat to pick an avatar.") + "</p>" +
       (room.lastWinner && players[room.lastWinner] ? '<p class="small">' + T("{name} won last game and rolls first.", { name: "<strong><bdi>" + esc(nameOf(room.lastWinner)) + "</bdi></strong>" }) + "</p>" : "") +
@@ -1745,7 +1826,8 @@ ol.rules { padding-left: 20px; }
     var bar = isHost
       ? '<div class="actions"><select id="tg" aria-label="' + T("Play to") + '" style="flex:0 0 auto;width:auto">' +
           [5000, 10000].map(function (t) { return '<option value="' + t + '"' + (room.target === t ? " selected" : "") + ">" + T("Play to {n}", { n: fmt(t) }) + "</option>"; }).join("") +
-          '</select><button class="btn" data-act="start"' + (ids.length ? "" : " disabled") + ">" + T("Start game") + "</button></div>"
+          '</select><button class="btn" data-act="start"' + (ids.length ? "" : " disabled") + ">" + T("Start game") + "</button></div>" +
+          (room.duelPair ? "" : '<div class="tools"><button class="btn ghost small pill" data-act="bots" aria-pressed="' + (room.bots !== false) + '">' + T(room.bots !== false ? "Bots fill empty seats: on" : "Bots fill empty seats: off") + "</button></div>")
       : '<p class="status-line">' + T("Playing to {n}. Waiting for {name} to start.", { n: fmt(room.target), name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" }) + "</p>";
     return tableHTML(seats, center) + '<div class="actionbar">' + bar + "</div>" +
       '<div class="below">' + videoHTML() + alertsHTML() + '<div class="panel"><p class="label">' + T("Invite link") + "</p>" + inviteHTML() + '</div><div class="panel">' + rulesHTML() + "</div></div>";
@@ -1824,8 +1906,8 @@ ol.rules { padding-left: 20px; }
       center = head + '<div class="pot"><span class="chips' + (potValue ? "" : " empty") + '" aria-hidden="true"></span><span class="pot-n" id="pot">' + fmt(potValue) + "</span></div>" +
         '<p class="pot-l">' + T("This turn") + '</p><div class="tray" dir="ltr">' + dice + "</div>";
     }
-    var seats = seatsHTML(r.order, { cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "Farkled") : r.auto === cur ? "On auto" : mine ? "Your turn" : "Rolling",
-      countdown: !done && (r.phase === "roll" || r.phase === "choose") });
+    var seats = seatsHTML(r.order, { cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "Farkled") : isBot(cur) ? "Thinking…" : r.auto === cur ? "On auto" : mine ? "Your turn" : "Rolling",
+      countdown: !done && !isBot(cur) && (r.phase === "roll" || r.phase === "choose") });
     var log = (r.log || []).slice(-6).map(function (l) { return "<li>" + logLine(l) + "</li>"; }).join("");
 
     return tableHTML(seats, center) +
@@ -1871,6 +1953,7 @@ ol.rules { padding-left: 20px; }
     }
     else if (a === "lang") { LANG = LANG === "ar" ? "en" : "ar"; store.set("fk-lang", LANG); applyLang(); avatarOpen && renderSheet(); renderChat(true); render(); }
     else if (a === "dealer") { dealerPick = dealerPick === "sofia" ? "layla" : "sofia"; store.set("fk-dealer", dealerPick); render(); }
+    else if (a === "bots") { if (room && room.host === uid) act(db.doc("rooms/" + code).update({ bots: room.bots === false })); }
     else if (a === "seatmenu") { duelMenu = el.getAttribute("data-id"); renderDuel(); }
     else if (a === "chal") challenge(duelMenu, el.getAttribute("data-k"), Number(el.getAttribute("data-t")) || 0);
     else if (a === "duelyes") { var A1 = activeDuel(); if (A1) answerDuel(A1, true); }

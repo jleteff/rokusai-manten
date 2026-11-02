@@ -154,6 +154,9 @@ input[type=text], select {
 .dealer-seat .av svg { width: 100%; height: 100%; display: block; }
 .dealer-seat .plate { border-color: rgba(227,183,78,.5); }
 .dealer-seat { cursor: pointer; }
+.dealer-seat .eye-w { display: none; }
+.dealer-seat .av.wink .eye-o { display: none; }
+.dealer-seat .av.wink .eye-w { display: inline; }
 /* challenges: Ro Sham Bo and quick 1-on-1 games */
 .duel-back { position: fixed; inset: 0; z-index: 45; background: rgba(0,0,0,.55); display: grid; place-items: center; padding: 16px; }
 .duel { width: min(400px, 100%); background: var(--room-2); border: 1px solid var(--gold-dim); border-radius: 18px; padding: 20px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.7); }
@@ -1413,50 +1416,62 @@ ol.rules { padding-left: 20px; }
   }
   // Seats sit on an ellipse around the rail. You are always at the bottom; the rest follow clockwise in turn order.
   // Two house dealers; each player picks one by tapping her (saved on their own phone).
-  // Sofia: white dress shirt open at the collar, black vest, brunette ponytail, blue eyes.
+  // Sofia: casino glam. Open-collar white shirt, satin vest, brunette ponytail, blue bedroom eyes. She winks when she passes the dice.
   var DEALER_SOFIA = '<svg viewBox="0 0 100 100" aria-hidden="true"><defs>' +
     '<clipPath id="dsc"><circle cx="50" cy="50" r="50"/></clipPath>' +
-    '<radialGradient id="dsbg" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#8a2a3e"/><stop offset="1" stop-color="#360b16"/></radialGradient>' +
-    '<linearGradient id="dshair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7d4a27"/><stop offset=".55" stop-color="#4f2c16"/><stop offset="1" stop-color="#2b170a"/></linearGradient>' +
-    '<linearGradient id="dsskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d3b6"/><stop offset="1" stop-color="#ebbb96"/></linearGradient>' +
-    '<linearGradient id="dslip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8344f"/><stop offset="1" stop-color="#a51d36"/></linearGradient></defs>' +
+    '<radialGradient id="dsbg" cx="50%" cy="36%" r="72%"><stop offset="0" stop-color="#9b2c45"/><stop offset=".6" stop-color="#5a1426"/><stop offset="1" stop-color="#2c0812"/></radialGradient>' +
+    '<linearGradient id="dshair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a5229"/><stop offset=".5" stop-color="#55301a"/><stop offset="1" stop-color="#2a1609"/></linearGradient>' +
+    '<linearGradient id="dsskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7d5b8"/><stop offset="1" stop-color="#eab995"/></linearGradient>' +
+    '<linearGradient id="dsvest" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0e0e12"/><stop offset=".5" stop-color="#2a2a33"/><stop offset="1" stop-color="#0e0e12"/></linearGradient>' +
+    '<linearGradient id="dslip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0304f"/><stop offset="1" stop-color="#a0142f"/></linearGradient></defs>' +
     '<g clip-path="url(#dsc)"><rect width="100" height="100" fill="url(#dsbg)"/>' +
-    // ponytail with a curl at the end
-    '<path d="M63 28 C84 27 93 46 88 66 C85 79 76 87 67 85 C72 82 75 78 74 74 C80 62 77 48 65 39 Z" fill="url(#dshair)"/>' +
-    '<path d="M69 37 C81 45 83 60 77 73" stroke="#8b5530" stroke-width="1.2" fill="none" opacity=".6"/>' +
-    // neck and open collar with a thin gold chain
-    '<path d="M43 59 L57 59 L59 72 L50 86 L41 72 Z" fill="#e9b691"/>' +
-    '<path d="M10 100 C13 82 27 73 41 71 L50 86 L59 71 C73 73 87 82 90 100 Z" fill="#fbfaf6"/>' +
-    '<path d="M10 100 C13 86 22 78 33 75 L43 100 Z" fill="#17171c"/><path d="M90 100 C87 86 78 78 67 75 L57 100 Z" fill="#17171c"/>' +
-    '<path d="M41 71 L49.5 86 L44 87.5 L36 74 Z" fill="#fff" stroke="#d9d4c8" stroke-width=".6"/><path d="M59 71 L50.5 86 L56 87.5 L64 74 Z" fill="#fff" stroke="#d9d4c8" stroke-width=".6"/>' +
-    '<path d="M44.5 71 Q50 78.5 55.5 71" stroke="#e3b74e" stroke-width=".8" fill="none"/><circle cx="50" cy="77.6" r="1.3" fill="#e3b74e"/>' +
+    // big glossy ponytail with waves
+    '<path d="M62 27 C86 24 96 44 91 64 C88 77 80 88 69 88 C76 83 79 77 77 71 C84 60 82 45 66 37 Z" fill="url(#dshair)"/>' +
+    '<path d="M70 35 C83 43 86 58 80 72 M74 38 C82 47 83 56 80 64" stroke="#a8693a" stroke-width="1.1" fill="none" opacity=".55"/>' +
+    // neck, collarbones, deep open collar, pendant
+    '<path d="M43 58 L57 58 L60 72 L50 92 L40 72 Z" fill="#eab48e"/>' +
+    '<path d="M43.5 78 Q46.5 79.5 49 79 M56.5 78 Q53.5 79.5 51 79" stroke="#cf9670" stroke-width=".7" fill="none" stroke-linecap="round"/>' +
+    '<path d="M9 100 C12 82 26 73 40 71 L50 92 L60 71 C74 73 88 82 91 100 Z" fill="#fbfaf6"/>' +
+    '<path d="M9 100 C12 86 21 78 32 75 L44 100 Z" fill="url(#dsvest)"/><path d="M91 100 C88 86 79 78 68 75 L56 100 Z" fill="url(#dsvest)"/>' +
+    '<path d="M32 75 L44 100 M68 75 L56 100" stroke="#e3b74e" stroke-width=".7" opacity=".8"/>' +
+    '<path d="M40 71 L49.5 92 L43.5 93 L35 73.5 Z" fill="#fff" stroke="#d9d4c8" stroke-width=".6"/><path d="M60 71 L50.5 92 L56.5 93 L65 73.5 Z" fill="#fff" stroke="#d9d4c8" stroke-width=".6"/>' +
+    '<path d="M44 70.5 Q50 80 56 70.5" stroke="#e3b74e" stroke-width=".8" fill="none"/><path d="M50 79.6 L48.8 82 L50 84.4 L51.2 82 Z" fill="#e3b74e"/>' +
     // face, ears, gold hoops
-    '<ellipse cx="50" cy="43" rx="16.5" ry="20.5" fill="url(#dsskin)"/>' +
-    '<ellipse cx="33.8" cy="46" rx="2.5" ry="3.8" fill="#e9b691"/><ellipse cx="66.2" cy="46" rx="2.5" ry="3.8" fill="#e9b691"/>' +
-    '<circle cx="33.8" cy="52.6" r="2.2" fill="none" stroke="#e3b74e" stroke-width="1"/><circle cx="66.2" cy="52.6" r="2.2" fill="none" stroke="#e3b74e" stroke-width="1"/>' +
-    // hair with volume and a side-swept wave
-    '<path d="M32 46 C28.5 24 41 15 51.5 16 C65 16 73 26 68 45 C66.5 34 61 27 53 25.5 C46 27 39 30 35.5 37 C33.8 40 32.8 43 32 46 Z" fill="url(#dshair)"/>' +
-    '<path d="M33.5 41 C34 28 44 20.5 55 21.5 C47 24 41 30 38.5 39.5 C37 38 35 39 33.5 41 Z" fill="#3a2010"/>' +
-    '<path d="M54 17.5 C49 21 45.5 25 43 30" stroke="#8b5530" stroke-width="1" fill="none" opacity=".7"/>' +
-    '<rect x="64.6" y="31.2" width="3" height="5" rx="1.3" fill="#2a160b" transform="rotate(24 66 33.7)"/>' +
-    // smoky eyes, lashes, blue irises
-    '<ellipse cx="43" cy="40.4" rx="4.8" ry="2.9" fill="#6e3346" opacity=".5"/><ellipse cx="57" cy="40.4" rx="4.8" ry="2.9" fill="#6e3346" opacity=".5"/>' +
-    '<path d="M38.4 36.2 Q43 33.2 47 35.6" stroke="#3f2312" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
-    '<path d="M53 35.6 Q57 33.2 61.6 36.2" stroke="#3f2312" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
-    '<ellipse cx="43" cy="42.2" rx="3.7" ry="2.4" fill="#fff"/><ellipse cx="57" cy="42.2" rx="3.7" ry="2.4" fill="#fff"/>' +
-    '<circle cx="43" cy="42.4" r="2" fill="#2f86e8"/><circle cx="57" cy="42.4" r="2" fill="#2f86e8"/>' +
-    '<circle cx="43" cy="42.4" r=".9" fill="#0b1626"/><circle cx="57" cy="42.4" r=".9" fill="#0b1626"/>' +
-    '<circle cx="43.7" cy="41.7" r=".55" fill="#fff"/><circle cx="57.7" cy="41.7" r=".55" fill="#fff"/>' +
-    '<path d="M38.8 41.4 Q43 38.1 47.2 41.1 L48.8 39.9" stroke="#140b06" stroke-width="1.3" fill="none" stroke-linecap="round"/>' +
-    '<path d="M52.8 41.1 Q57 38.1 61.2 41.4 M51.2 39.9 L52.8 41.1" stroke="#140b06" stroke-width="1.3" fill="none" stroke-linecap="round"/>' +
-    '<path d="M39.2 40.6 L37.6 39 M40.8 39.6 L39.8 37.8 M42.6 39 L42.2 37.2 M57.4 39 L57.8 37.2 M59.2 39.6 L60.2 37.8 M60.8 40.6 L62.4 39" stroke="#140b06" stroke-width=".75" stroke-linecap="round"/>' +
-    // nose, blush, beauty mark, glossy lips
-    '<path d="M50 45 Q48.5 50 50.7 50.7" stroke="#cf987a" stroke-width="1" fill="none" stroke-linecap="round"/>' +
-    '<ellipse cx="39.5" cy="49" rx="3.4" ry="1.9" fill="#ea8f8a" opacity=".4"/><ellipse cx="60.5" cy="49" rx="3.4" ry="1.9" fill="#ea8f8a" opacity=".4"/>' +
-    '<circle cx="58.8" cy="53" r=".6" fill="#4a2914"/>' +
-    '<path d="M44 54.4 Q47.2 52.4 50 53.7 Q52.8 52.4 56 54.4 Q53.4 58.9 50 59 Q46.6 58.9 44 54.4 Z" fill="url(#dslip)"/>' +
-    '<path d="M44.6 54.6 Q50 56 55.4 54.6" stroke="#8c1830" stroke-width=".55" fill="none"/>' +
-    '<ellipse cx="51.6" cy="57.2" rx="1.6" ry=".55" fill="#fff" opacity=".45"/>' +
+    '<ellipse cx="50" cy="42.5" rx="16.3" ry="20.3" fill="url(#dsskin)"/>' +
+    '<ellipse cx="33.9" cy="45.5" rx="2.4" ry="3.7" fill="#eab48e"/><ellipse cx="66.1" cy="45.5" rx="2.4" ry="3.7" fill="#eab48e"/>' +
+    '<circle cx="33.9" cy="52.4" r="2.5" fill="none" stroke="#e3b74e" stroke-width="1.1"/><circle cx="66.1" cy="52.4" r="2.5" fill="none" stroke="#e3b74e" stroke-width="1.1"/>' +
+    // full hair with a loose curl framing her face
+    '<path d="M31 47 C27 23 40 13 51.5 14 C66 14 75 25 69 45 C67.5 33.5 61.5 26.5 53 25 C45.5 26.5 38.5 30 35 37.5 C33 41 31.8 44 31 47 Z" fill="url(#dshair)"/>' +
+    '<path d="M34 40 C34 27 45 19.5 56.5 21 C47.5 23.5 41 30 38.5 39 C37 37.5 35.5 38.5 34 40 Z" fill="#3b200f"/>' +
+    '<path d="M35.2 38 C31.5 45 32.5 53 35.5 58 C36.5 54 35 50.5 36.8 46.5 C37.6 44 37 41 35.2 38 Z" fill="url(#dshair)"/>' +
+    '<path d="M55 16 C49 20 45.5 24.5 43 30 M60 18 C57 20 55 23 54 26" stroke="#a8693a" stroke-width="1" fill="none" opacity=".7"/>' +
+    '<rect x="64.8" y="30.6" width="3" height="5" rx="1.3" fill="#2a160b" transform="rotate(24 66.2 33.1)"/>' +
+    // arched brows
+    '<path d="M38.4 35.2 Q42.5 31.6 47.2 34.6" stroke="#3a1f0f" stroke-width="1.6" fill="none" stroke-linecap="round"/>' +
+    '<path d="M52.8 34.6 Q57.5 31.6 61.6 35.2" stroke="#3a1f0f" stroke-width="1.6" fill="none" stroke-linecap="round"/>' +
+    // left eye: half-lidded, smoky
+    '<ellipse cx="43" cy="40.2" rx="5" ry="3" fill="#7a3550" opacity=".55"/>' +
+    '<ellipse cx="43" cy="42.3" rx="3.8" ry="2.3" fill="#fff"/><circle cx="43.2" cy="42.6" r="1.95" fill="#2f86e8"/><circle cx="43.2" cy="42.6" r=".9" fill="#0b1626"/><circle cx="43.8" cy="42" r=".5" fill="#fff"/>' +
+    '<path d="M38.9 41.3 Q43 38.7 47.2 41 L47.2 42.2 Q43 40.8 38.9 42.5 Z" fill="#8a4060"/>' +
+    '<path d="M38.7 42.2 Q43 40.3 47.3 42 L49.4 40.4" stroke="#120905" stroke-width="1.35" fill="none" stroke-linecap="round"/>' +
+    '<path d="M39 41.8 L37.4 40.2 M40.6 41.1 L39.6 39.3 M42.4 40.7 L42 38.9" stroke="#120905" stroke-width=".75" stroke-linecap="round"/>' +
+    // right eye: open (normal) and winking (shown while she passes the dice)
+    '<g class="eye-o"><ellipse cx="57" cy="40.2" rx="5" ry="3" fill="#7a3550" opacity=".55"/>' +
+    '<ellipse cx="57" cy="42.3" rx="3.8" ry="2.3" fill="#fff"/><circle cx="57.2" cy="42.6" r="1.95" fill="#2f86e8"/><circle cx="57.2" cy="42.6" r=".9" fill="#0b1626"/><circle cx="57.8" cy="42" r=".5" fill="#fff"/>' +
+    '<path d="M52.8 41 Q57 38.7 61.1 41.3 L61.1 42.5 Q57 40.8 52.8 42.2 Z" fill="#8a4060"/>' +
+    '<path d="M50.6 40.4 L52.7 42 Q57 40.3 61.3 42.2" stroke="#120905" stroke-width="1.35" fill="none" stroke-linecap="round"/>' +
+    '<path d="M61 41.8 L62.6 40.2 M59.4 41.1 L60.4 39.3 M57.6 40.7 L58 38.9" stroke="#120905" stroke-width=".75" stroke-linecap="round"/></g>' +
+    '<g class="eye-w"><ellipse cx="57" cy="40.8" rx="5" ry="2.6" fill="#7a3550" opacity=".55"/>' +
+    '<path d="M52.6 41.8 Q57 44.6 61.4 41.6" stroke="#120905" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+    '<path d="M54.4 43.2 L53.8 44.8 M57 43.9 L57 45.6 M59.6 43.2 L60.2 44.8" stroke="#120905" stroke-width=".75" stroke-linecap="round"/></g>' +
+    // nose, blush, beauty mark, smirk
+    '<path d="M50 44.6 Q48.5 49.6 50.7 50.3" stroke="#cf967a" stroke-width="1" fill="none" stroke-linecap="round"/>' +
+    '<ellipse cx="39.4" cy="48.6" rx="3.5" ry="2" fill="#ec8a88" opacity=".42"/><ellipse cx="60.6" cy="48.6" rx="3.5" ry="2" fill="#ec8a88" opacity=".42"/>' +
+    '<circle cx="59" cy="52.6" r=".65" fill="#4a2914"/>' +
+    '<path d="M44.2 54.8 Q47.4 52.8 50 54 Q52.8 52.4 56.4 53.2 Q54 58.6 50 58.8 Q46.6 58.6 44.2 54.8 Z" fill="url(#dslip)"/>' +
+    '<path d="M44.8 54.9 Q50 56.1 55.8 53.5" stroke="#850f28" stroke-width=".55" fill="none"/>' +
+    '<path d="M56 53.2 Q57 52.9 57.4 52.2" stroke="#c98a6f" stroke-width=".6" fill="none" stroke-linecap="round"/>' +
+    '<ellipse cx="51.4" cy="57.1" rx="1.8" ry=".55" fill="#fff" opacity=".5"/>' +
     "</g></svg>";
   // Layla: emerald hijab with a gold pin, kohl-lined eyes, the same dealer vest and white shirt.
   var DEALER_LAYLA = '<svg viewBox="0 0 100 100" aria-hidden="true"><defs>' +
@@ -1664,6 +1679,7 @@ ol.rules { padding-left: 20px; }
       ], { duration: 900, easing: "cubic-bezier(.4,.1,.3,1)", fill: "both" });
       a.onfinish = function () { cup.remove(); };
       var dav = document.querySelector("#dealer .av");
+      if (dav) { dav.classList.add("wink"); setTimeout(function () { var d2 = document.querySelector("#dealer .av"); if (d2) d2.classList.remove("wink"); }, 900); }
       if (dav) dav.animate([{ transform: "scale(1)" }, { transform: "scale(1.12) rotate(-4deg)" }, { transform: "scale(1)" }], { duration: 360 });
     }, 520 + 6 * 45);
   }

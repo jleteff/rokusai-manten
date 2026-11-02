@@ -3,130 +3,215 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Farkle Night</title>
+<meta name="theme-color" content="#0b1311">
+<title>10,000</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=DM+Sans:wght@400;500;700&display=swap">
 <style>
-/* Layout: a dark baize table on the left (dice, turn score, actions), a brass scoreboard on the right; stacks on phones. */
+/* Layout: a felt card-room table seen from above. Players sit on the rail around it (you are always at the bottom seat),
+   dice and the turn's pot sit in the middle, and your actions live in a bar under the table. */
 :root {
-  --table: #0e1a1d;
-  --table-2: #152428;
-  --line: #28393d;
-  --ivory: #f3ecd9;
-  --ivory-dim: #a9a590;
-  --brass: #d1a84a;
-  --ember: #e4573b;
+  --room: #0b1311;
+  --room-2: #131d1a;
+  --line: #26352f;
+  --felt: #0f6142;
+  --felt-hi: #1a8458;
+  --felt-lo: #0a442e;
+  --rail: #3c2517;
+  --rail-hi: #5c3a23;
+  --gold: #e3b74e;
+  --gold-dim: #a8873b;
+  --ivory: #f4eedb;
+  --ivory-dim: #a7b0a7;
+  --ember: #ec5b3d;
   --ink: #1b1a17;
-  --good: #7fc88a;
+  --good: #8ad69d;
   --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html, body { min-height: 100%; }
+html { background: var(--room); }
 body {
-  background: var(--table);
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse 120% 70% at 50% 0%, #1a2a24 0%, var(--room) 62%) no-repeat, var(--room);
   color: var(--ivory);
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.45;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 20px 40px;
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+  padding-top: max(12px, env(safe-area-inset-top, 0px));
+  padding-bottom: 0;
 }
 h1, h2, h3, p { margin: 0; text-wrap: balance; }
 button { font: inherit; color: inherit; cursor: pointer; }
-:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
-.app { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.brand { font-family: var(--font-display); font-weight: 900; font-size: 34px; letter-spacing: .02em; text-transform: uppercase; line-height: 1; }
-.brand b { color: var(--brass); font-weight: 900; }
-.label { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ivory-dim); font-weight: 700; }
-.code { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: .12em; color: var(--brass); }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.app { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
 
-.btn { border: 0; border-radius: 6px; padding: 12px 20px; font-weight: 700; background: var(--brass); color: var(--ink); min-height: 46px; }
-.btn:hover:not(:disabled) { filter: brightness(1.08); }
-.btn:disabled { opacity: .4; cursor: not-allowed; }
-.btn.ghost { background: transparent; color: var(--ivory); border: 1.5px solid var(--line); }
-.btn.hot { background: var(--ember); color: #fff; }
-.btn.small { padding: 8px 14px; min-height: 36px; font-size: 13px; }
+/* header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: baseline; gap: 8px; }
+.brand b { font-family: var(--font-display); font-weight: 900; font-size: 34px; line-height: 1; color: var(--gold); letter-spacing: .01em; }
+.brand span { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ivory-dim); font-weight: 700; }
+.chip-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--room-2); border-radius: 999px; padding: 6px 12px; min-height: 36px; }
+.chip-btn .code { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: .12em; color: var(--gold); }
+.chip-btn .lbl { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ivory-dim); font-weight: 700; }
 
-.panel { background: var(--table-2); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
-.home { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.home h2, .lobby h2 { font-family: var(--font-display); font-weight: 800; font-size: 28px; text-transform: uppercase; letter-spacing: .02em; margin-bottom: 10px; }
-.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+/* buttons + inputs */
+.btn { border: 0; border-radius: 10px; padding: 12px 18px; font-weight: 700; background: var(--gold); color: var(--ink); min-height: 50px; font-size: 16px; box-shadow: 0 3px 0 var(--gold-dim); }
+.btn:hover:not(:disabled) { filter: brightness(1.07); }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--gold-dim); }
+.btn:disabled { opacity: .38; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ivory); border: 1.5px solid var(--line); box-shadow: none; }
+.btn.bank { background: var(--ivory); color: var(--ink); box-shadow: 0 3px 0 #b9b19a; }
+.btn.hot { background: var(--ember); color: #fff; box-shadow: 0 3px 0 #9c3420; }
+.btn.small { padding: 7px 12px; min-height: 36px; font-size: 13px; border-radius: 999px; }
+.btn.pill[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
 input[type=text], select {
-  background: var(--table); color: var(--ivory); border: 1.5px solid var(--line); border-radius: 6px;
+  background: var(--room); color: var(--ivory); border: 1.5px solid var(--line); border-radius: 8px;
   padding: 11px 12px; font: inherit; min-height: 46px; width: 100%; min-width: 0;
 }
-.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ivory-dim); font-weight: 700; }
 .muted { color: var(--ivory-dim); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.panel { background: var(--room-2); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.panel h2 { font-family: var(--font-display); font-weight: 800; font-size: 26px; text-transform: uppercase; letter-spacing: .02em; margin-bottom: 8px; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 
-.game { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
-.banner { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-.banner h2 { font-family: var(--font-display); font-weight: 900; font-size: clamp(28px, 6vw, 44px); text-transform: uppercase; line-height: 1; }
-.banner h2.mine { color: var(--brass); }
-.turnscore { text-align: right; }
-.turnscore .n { font-family: var(--font-display); font-weight: 900; font-size: 54px; line-height: 1; font-variant-numeric: tabular-nums; }
-.dice { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(10px, 3vw, 18px); max-width: 420px; margin: 0 auto 22px; padding: 8px 0 14px; }
-@media (min-width: 640px) { .dice { grid-template-columns: repeat(6, 1fr); max-width: none; } }
+/* home */
+.hero { text-align: center; padding: 22px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.hero h1 { font-family: var(--font-display); font-weight: 900; font-size: clamp(72px, 22vw, 150px); line-height: .9; color: var(--gold); letter-spacing: .01em; text-shadow: 0 6px 0 #00000055; }
+.hero p { color: var(--ivory-dim); max-width: 34ch; }
+.hero-dice { display: flex; gap: 10px; margin-bottom: 6px; --d: 38px; }
+.hero-dice .die { transform: rotate(var(--r)); }
+.home-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* the table */
+.table { position: relative; width: 100%; max-width: 500px; margin: 22px auto 14px; aspect-ratio: 3 / 4; --d: min(12.5vw, 54px); --sw: 86px; --av: 44px; }
+.table.wide { max-width: 980px; aspect-ratio: 16 / 9; --d: 62px; --sw: 112px; --av: 56px; margin-top: 30px; margin-bottom: 26px; }
+.rail {
+  position: absolute; inset: 8% 12%; border-radius: 50%;
+  background: linear-gradient(160deg, var(--rail-hi), var(--rail) 55%, #24150c);
+  border: 2px solid #1a0f08;
+  box-shadow: 0 26px 50px rgba(0,0,0,.65), inset 0 2px 0 rgba(255,255,255,.08);
+}
+.table.wide .rail { inset: 10% 7%; }
+.felt {
+  position: absolute; inset: 7%; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 42%, var(--felt-hi) 0%, var(--felt) 52%, var(--felt-lo) 100%);
+  box-shadow: inset 0 0 0 2px rgba(227,183,78,.45), inset 0 12px 40px rgba(0,0,0,.5);
+}
+.table.wide .felt { inset: 9% 5%; }
+.felt::after { content: ""; position: absolute; inset: 9%; border-radius: 50%; border: 1px solid rgba(255,255,255,.07); }
+.center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 58%; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; z-index: 2; }
+.table.wide .center { width: 52%; }
+.eyebrow { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; color: rgba(244,238,219,.75); }
+.eyebrow.mine { color: var(--gold); }
+.pot { display: flex; align-items: flex-end; justify-content: center; gap: 12px; }
+.pot-n { font-family: var(--font-display); font-weight: 900; font-size: clamp(34px, 10vw, 52px); line-height: .9; color: var(--ivory); font-variant-numeric: tabular-nums; text-shadow: 0 3px 0 rgba(0,0,0,.35); }
+.pot-l { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: rgba(244,238,219,.6); font-weight: 700; margin-top: -4px; }
+.chips { position: relative; width: 26px; height: 9px; border-radius: 50%; background: var(--gold); margin-bottom: 4px; box-shadow: 0 -5px 0 #c0392b, 0 -10px 0 #f4eedb, 0 -15px 0 #2f6fd6, 0 -20px 0 var(--gold); }
+.chips.empty { opacity: .25; }
+.tray { display: grid; grid-template-columns: repeat(3, var(--d)); gap: calc(var(--d) * .22); justify-content: center; padding: 6px 0; }
+.table.wide .tray { grid-template-columns: repeat(6, var(--d)); }
+.stamp { font-family: var(--font-display); font-weight: 900; font-size: clamp(34px, 11vw, 58px); color: var(--ember); border: 4px solid var(--ember); border-radius: 10px; padding: 0 14px; line-height: 1.05; text-transform: uppercase; transform: rotate(-7deg); background: rgba(10,20,16,.55); animation: stamp .35s cubic-bezier(.2,1.6,.4,1); }
+@keyframes stamp { from { transform: rotate(-7deg) scale(1.8); opacity: 0; } to { transform: rotate(-7deg) scale(1); opacity: 1; } }
+.winner-name { font-family: var(--font-display); font-weight: 900; font-size: clamp(38px, 12vw, 70px); color: var(--gold); line-height: .95; text-transform: uppercase; overflow-wrap: anywhere; }
+.lobby-code { font-family: var(--font-display); font-weight: 900; font-size: clamp(44px, 14vw, 72px); color: var(--gold); letter-spacing: .1em; line-height: 1; }
+.center p.small { font-size: 13px; color: rgba(244,238,219,.8); max-width: 26ch; }
+
+/* dice */
 .die {
-  aspect-ratio: 1; width: 100%; max-width: 96px; margin: 0 auto; border: 0; border-radius: 16%;
-  background: linear-gradient(145deg, #fbf5e3, #e0d7bb); padding: 13%;
+  width: var(--d); aspect-ratio: 1; border: 0; border-radius: 18%;
+  background: linear-gradient(145deg, #fffaea, #e2d9bd); padding: 14%;
   display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 4%;
-  box-shadow: 0 6px 0 #a89f7e, 0 12px 18px rgba(0,0,0,.45);
+  box-shadow: 0 4px 0 #a99f7f, 0 9px 14px rgba(0,0,0,.45);
   transition: transform .15s, box-shadow .15s;
 }
 .die i { border-radius: 50%; }
 .die i.on { background: var(--ink); box-shadow: inset 0 2px 2px rgba(0,0,0,.5); }
 .die:disabled { cursor: default; }
-.die.free:not(:disabled):hover { transform: translateY(-4px); }
-.die.sel { transform: translateY(-10px); box-shadow: 0 0 0 4px var(--brass), 0 16px 20px rgba(0,0,0,.5); }
-.die.held { background: linear-gradient(145deg, #8f7b45, #6d5d33); box-shadow: 0 6px 0 #4a3f22, 0 12px 18px rgba(0,0,0,.45); }
+.die.free:not(:disabled):hover { transform: translateY(-3px); }
+.die.sel { transform: translateY(-8px); box-shadow: 0 0 0 4px var(--gold), 0 14px 18px rgba(0,0,0,.5); }
+.die.held { background: linear-gradient(145deg, #d8b860, #a8853a); box-shadow: 0 4px 0 #6e5520, 0 9px 14px rgba(0,0,0,.45); opacity: .85; }
 .die.held i.on { background: #2a2210; }
-.die.blank { opacity: .35; }
-.die.bust { box-shadow: 0 0 0 4px var(--ember), 0 12px 18px rgba(0,0,0,.45); }
+.die.blank { opacity: .3; }
+.die.bust { box-shadow: 0 0 0 3px var(--ember), 0 9px 14px rgba(0,0,0,.45); }
 .die.tumble { animation: tumble .55s cubic-bezier(.3,.7,.3,1); }
 @keyframes tumble {
-  0% { transform: translateY(-40px) rotate(-200deg) scale(.7); opacity: 0; }
-  60% { transform: translateY(4px) rotate(18deg) scale(1.04); opacity: 1; }
+  0% { transform: translateY(-46px) rotate(-220deg) scale(.6); opacity: 0; }
+  60% { transform: translateY(4px) rotate(16deg) scale(1.05); opacity: 1; }
   100% { transform: none; }
 }
-@media (prefers-reduced-motion: reduce) { .die.tumble { animation: none; } .die { transition: none; } }
-.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.hint { margin-top: 12px; min-height: 22px; }
+
+/* seats */
+.seat { position: absolute; transform: translate(-50%, -50%); width: var(--sw); display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 3; text-align: center; }
+.av {
+  width: var(--av); height: var(--av); border-radius: 50%; background: var(--c, #555); color: #fff;
+  display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: calc(var(--av) * .42);
+  border: 3px solid #0c1411; box-shadow: 0 6px 14px rgba(0,0,0,.55); letter-spacing: .02em;
+}
+.plate { background: rgba(7,12,10,.9); border: 1px solid var(--line); border-radius: 9px; padding: 3px 8px 4px; min-width: 70px; max-width: var(--sw); }
+.plate .nm { display: block; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plate .sc { display: block; font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--gold); font-variant-numeric: tabular-nums; line-height: 1.05; }
+.table.wide .plate .nm { font-size: 13px; }
+.table.wide .plate .sc { font-size: 21px; }
+.seat.me .plate { border-color: rgba(244,238,219,.35); }
+.seat.turn .av { border-color: var(--gold); animation: glow 1.6s ease-in-out infinite; }
+.seat.turn .plate { border-color: var(--gold); }
+.seat.win .av { border-color: var(--gold); box-shadow: 0 0 0 5px rgba(227,183,78,.4), 0 0 30px rgba(227,183,78,.7); }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 0 3px rgba(227,183,78,.25), 0 0 14px rgba(227,183,78,.35); } 50% { box-shadow: 0 0 0 6px rgba(227,183,78,.4), 0 0 28px rgba(227,183,78,.7); } }
+.badge { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); z-index: 1; font-size: 9px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; background: var(--gold); color: var(--ink); padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.badge.off { background: var(--room-2); color: var(--ivory-dim); border: 1px solid var(--line); }
+.seat.open .av { background: rgba(0,0,0,.25); border: 2px dashed rgba(244,238,219,.25); color: rgba(244,238,219,.4); box-shadow: none; }
+.seat.open .plate { opacity: .55; }
+
+/* action bar */
+.actionbar {
+  position: sticky; bottom: 0; z-index: 5; width: 100%; max-width: 620px; margin: 0 auto;
+  padding: 14px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--room) 78%, rgba(11,19,17,0));
+  display: flex; flex-direction: column; gap: 8px; align-items: stretch;
+}
+.actions { display: flex; gap: 10px; }
+.actions .btn:not(.small) { flex: 1 1 0; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.hint { text-align: center; min-height: 20px; font-size: 14px; }
 .hint.bad { color: var(--ember); }
 .hint.ok { color: var(--good); }
-.tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.status-line { text-align: center; color: var(--ivory-dim); }
 
-.board { display: flex; flex-direction: column; gap: 8px; list-style: none; padding: 0; margin: 12px 0 0; }
-.p { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--table); }
-.p.turn { border-color: var(--brass); box-shadow: inset 4px 0 0 var(--brass); }
-.p .nm { font-weight: 700; overflow-wrap: anywhere; min-width: 0; }
-.p .sc { font-family: var(--font-display); font-weight: 900; font-size: 28px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--brass); }
-.p .bar { grid-column: 1 / -1; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
-.p .bar span { display: block; height: 100%; background: var(--brass); }
-.tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ivory-dim); margin-left: 6px; font-weight: 700; }
-.log { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ivory-dim); }
+/* below the table */
+.below { width: 100%; max-width: 620px; margin: 6px auto 28px; display: flex; flex-direction: column; gap: 12px; }
+.log { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ivory-dim); }
 .log li:last-child { color: var(--ivory); }
-details { margin-top: 14px; }
-summary { cursor: pointer; font-weight: 700; }
-.rules { margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: var(--ivory-dim); display: flex; flex-direction: column; gap: 3px; }
 .invite { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-.invite input { flex: 1 1 220px; }
-.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ivory); color: var(--ink); padding: 10px 16px; border-radius: 8px; font-weight: 700; max-width: calc(100vw - 32px); z-index: 20; }
-.winner { font-family: var(--font-display); font-weight: 900; font-size: clamp(34px, 8vw, 64px); text-transform: uppercase; color: var(--brass); line-height: 1; }
+.invite input { flex: 1 1 200px; }
+details summary { cursor: pointer; font-weight: 700; }
+.rules { margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: var(--ivory-dim); display: flex; flex-direction: column; gap: 4px; }
+.kinds { overflow-x: auto; margin-top: 12px; }
+.kinds table { border-collapse: collapse; font-size: 13px; width: 100%; min-width: 300px; font-variant-numeric: tabular-nums; }
+.kinds th, .kinds td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--line); }
+.kinds th:first-child { text-align: left; }
+.kinds thead th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ivory-dim); font-weight: 700; }
+.kinds td { color: var(--gold); }
 
-@media (max-width: 820px) {
-  .home, .game { grid-template-columns: minmax(0, 1fr); }
-  .game .side { order: -1; }
+.toast { position: fixed; left: 50%; bottom: calc(110px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ivory); color: var(--ink); padding: 10px 16px; border-radius: 10px; font-weight: 700; max-width: calc(100vw - 32px); z-index: 20; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+
+@media (max-width: 640px) {
+  .home-cards { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .die.tumble, .stamp, .seat.turn .av { animation: none; }
+  .die, .btn { transition: none; }
 }
 </style>
 </head>
 <body>
-
 <div class="app">
   <div class="top">
-    <div class="brand">Farkle <b>Night</b></div>
+    <div class="brand"><b>10,000</b><span>Dice</span></div>
     <div id="topright"></div>
   </div>
   <div id="warn"></div>
@@ -147,28 +232,29 @@ summary { cursor: pointer; font-weight: 700; }
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   };
 
-  /* ---------- Farkle rules ---------- */
+  /* ---------- 10,000 house rules ---------- */
   var MIN_ENTRY = 1000;
-  var FULL_HOUSE = 1500;   // three of a kind plus a pair, all five dice set aside together
+  var THREE_PAIRS = 1500, STRAIGHT = 1500, FULL_HOUSE = 1500, TWO_TRIPLETS = 2500;
+  // 1s: 1,000 / 2,000 / 3,000 / 4,000. Other numbers: number x 100 for three, doubling for each extra die.
+  function kindScore(v, c) { return v === 1 ? 1000 * (c - 2) : v * 100 * Math.pow(2, c - 3); }
   function counts(vals) { var c = [0, 0, 0, 0, 0, 0, 0]; vals.forEach(function (v) { c[v]++; }); return c; }
-  // Scores a chosen set of dice. valid = every chosen die contributes to the score.
+  // Scores a chosen set of dice from one throw. valid = every chosen die contributes to the score.
   function scoreSel(vals) {
     if (!vals.length) return { score: 0, valid: false };
     var c = counts(vals), n = vals.length, score = 0, v, w;
-    if (n === 6 && c.slice(1).every(function (x) { return x === 1; })) return { score: 1500, valid: true };
-    var pairs = c.slice(1).filter(function (x) { return x === 2; }).length;
-    if (n === 6 && pairs === 3) return { score: 1500, valid: true };
     var best = { score: 0, valid: false };
+    function offer(sc) { if (sc > best.score) best = { score: sc, valid: true }; }
+    if (n === 6 && c.slice(1).every(function (x) { return x === 1; })) offer(STRAIGHT);
+    if (n === 6 && c.slice(1).filter(function (x) { return x === 2; }).length === 3) offer(THREE_PAIRS);
+    if (n === 6 && c.slice(1).filter(function (x) { return x === 3; }).length === 2) offer(TWO_TRIPLETS);
     var plain = true;
     for (v = 1; v <= 6; v++) {
-      if (c[v] >= 3) {
-        var base = v === 1 ? 1000 : v * 100;
-        score += base * Math.pow(2, c[v] - 3);
-      } else if (v === 1) score += c[v] * 100;
+      if (c[v] >= 3) score += kindScore(v, c[v]);
+      else if (v === 1) score += c[v] * 100;
       else if (v === 5) score += c[v] * 50;
       else if (c[v] > 0) { plain = false; break; }
     }
-    if (plain) best = { score: score, valid: true };
+    if (plain) offer(score);
     // Full house: three of a kind plus a pair (the pair does not have to score on its own).
     // A leftover sixth die counts only if it is a 1 or a 5.
     if (n === 5 || n === 6) {
@@ -184,7 +270,7 @@ summary { cursor: pointer; font-weight: 700; }
             else if (left[k] === 1 && k === 5) extra += 50;
             else ok = false;
           }
-          if (ok && FULL_HOUSE + extra > best.score) best = { score: FULL_HOUSE + extra, valid: true };
+          if (ok) offer(FULL_HOUSE + extra);
         }
       }
     }
@@ -193,8 +279,7 @@ summary { cursor: pointer; font-weight: 700; }
   function hasScore(vals) {
     var c = counts(vals), v;
     if (c[1] || c[5]) return true;
-    for (v = 2; v <= 6; v++) if (c[v] >= 3) return true;
-    // A full house always contains a triple, which is already caught above.
+    for (v = 2; v <= 6; v++) if (c[v] >= 3) return true;   // also covers full houses and two triplets
     if (vals.length === 6) {
       if (c.slice(1).every(function (x) { return x === 1; })) return true;
       if (c.slice(1).filter(function (x) { return x === 2; }).length === 3) return true;
@@ -222,7 +307,7 @@ summary { cursor: pointer; font-weight: 700; }
   var code = null, room = null, players = {}, roomLoaded = false, subErr = null;
   var unsubs = [], busy = false, joining = false, seenRoll = null, animate = false;
   var sel = new Set(), selKey = "", autoPick = store.get("fk-auto") === "1";
-  var toastT = null, loadT = null, canWrite = null, joinErr = false;
+  var toastT = null, loadT = null, joinErr = false;
 
   function toast(msg) {
     var t = $("#toast"); t.textContent = msg; t.hidden = false;
@@ -241,6 +326,8 @@ summary { cursor: pointer; font-weight: 700; }
   }
   function nameOf(id) { return (players[id] && players[id].name) || "Someone"; }
   function mineTurn(r) { return r.order[r.turn] === uid; }
+  function byJoin(a, b) { return (players[a].joined || 0) - (players[b].joined || 0); }
+
   /* ---------- routing / subscriptions ---------- */
   function parseHash() {
     var m = /^#t-([A-Za-z0-9]{3,8})$/.exec(location.hash || "");
@@ -268,7 +355,7 @@ summary { cursor: pointer; font-weight: 700; }
         var key = (room.turn) + ":" + (room.rollId || 0);
         if (key !== selKey) {
           selKey = key; sel = new Set();
-          if (autoPick && room.phase === "choose" && room.order[room.turn] === uid) sel = new Set(bestSel(room));
+          if (autoPick && room.phase === "choose" && room.order && room.order[room.turn] === uid) sel = new Set(bestSel(room));
         }
       }
       maybeJoin(); hostSync(); scheduleFarkle(); render();
@@ -285,7 +372,7 @@ summary { cursor: pointer; font-weight: 700; }
     return out;
   }
   function maybeJoin() {
-    if (!room || room.status === "done" || !myName || players[uid] || joining || joinErr || canWrite === false) return;
+    if (!room || room.status === "done" || !myName || players[uid] || joining || joinErr) return;
     joining = true;
     db.doc("rooms/" + code + "/players/" + uid).set({ name: uniqueName(myName), joined: Date.now() })
       .catch(function (e) { joining = false; joinErr = true; writeFail(e); render(); });
@@ -294,12 +381,11 @@ summary { cursor: pointer; font-weight: 700; }
   // The host adds anyone who sits down after the game has started to the end of the turn order.
   function hostSync() {
     if (!room || room.status !== "play" || room.host !== uid || busy) return;
-    var missing = Object.keys(players).filter(function (i) { return room.order.indexOf(i) < 0; })
-      .sort(function (a, b) { return (players[a].joined || 0) - (players[b].joined || 0); });
+    var missing = Object.keys(players).filter(function (i) { return room.order.indexOf(i) < 0; }).sort(byJoin);
     if (!missing.length) return;
     var patch = {
       order: room.order.concat(missing),
-      log: pushLog(room, missing.map(nameOf).join(", ") + " joined the game.")
+      log: pushLog(room, missing.map(nameOf).join(", ") + " sat down at the table.")
     };
     // Dotted paths merge into the scores map instead of replacing it.
     missing.forEach(function (i) { patch["scores." + i] = 0; });
@@ -317,7 +403,7 @@ summary { cursor: pointer; font-weight: 700; }
     } catch (e) { writeFail(e); }
   }
   function startGame() {
-    var ids = Object.keys(players).sort(function (a, b) { return (players[a].joined || 0) - (players[b].joined || 0); });
+    var ids = Object.keys(players).sort(byJoin);
     if (!ids.length) return;
     var scores = {}; ids.forEach(function (i) { scores[i] = 0; });
     act(db.doc("rooms/" + code).update({
@@ -331,14 +417,9 @@ summary { cursor: pointer; font-weight: 700; }
     return Promise.resolve(p).catch(writeFail).then(function () { busy = false; render(); });
   }
   function pushLog(r, line) { return (r.log || []).concat([line]).slice(-8); }
-  function endTurn(r, scores, finalFrom, log) {
+  function endTurn(r, scores, log) {
     var next = (r.turn + 1) % r.order.length;
-    if (finalFrom >= 0 && next === finalFrom) {
-      var best = r.order[0];
-      r.order.forEach(function (i) { if (scores[i] > scores[best]) best = i; });
-      return { status: "done", scores: scores, finalFrom: finalFrom, winner: best, phase: "done", dice: r.dice, turnScore: 0, log: log.concat([nameOf(best) + " wins with " + scores[best] + "."]).slice(-8) };
-    }
-    return { scores: scores, finalFrom: finalFrom, turn: next, dice: [], held: [false, false, false, false, false, false], turnScore: 0, phase: "roll", log: log };
+    return { scores: scores, finalFrom: -1, turn: next, dice: [], held: [false, false, false, false, false, false], turnScore: 0, phase: "roll", log: log };
   }
   function rollFrom(r, held, turnScore, log) {
     var h = held.slice(), hot = false, i;
@@ -348,7 +429,7 @@ summary { cursor: pointer; font-weight: 700; }
     for (i = 0; i < 6; i++) if (!h[i]) { dice[i] = rollDie(); free.push(dice[i]); }
     var who = nameOf(r.order[r.turn]);
     if (!hasScore(free)) {
-      return { dice: dice, held: h, turnScore: 0, phase: "farkle", rollId: (r.rollId || 0) + 1, log: pushLog({ log: log }, "FARKLE. " + who + " loses " + turnScore + "." ) };
+      return { dice: dice, held: h, turnScore: 0, phase: "farkle", rollId: (r.rollId || 0) + 1, log: pushLog({ log: log }, "FARKLE. " + who + " loses " + turnScore.toLocaleString() + ".") };
     }
     return { dice: dice, held: h, turnScore: turnScore, phase: "choose", rollId: (r.rollId || 0) + 1, log: hot ? pushLog({ log: log }, who + " has hot dice and rolls all six.") : log };
   }
@@ -367,14 +448,14 @@ summary { cursor: pointer; font-weight: 700; }
       var newScore = (r.scores[cur] || 0) + total;
       if (newScore > r.target) return;   // must land exactly on the target
       var scores = Object.assign({}, r.scores); scores[cur] = newScore;
-      var log = pushLog(r, me + " banks " + total + ".");
+      var log = pushLog(r, me + " banks " + total.toLocaleString() + ".");
       if (newScore === r.target) {
         act(db.doc("rooms/" + code).update({
           status: "done", phase: "done", winner: cur, scores: scores, turnScore: 0, dice: r.dice, held: held,
           log: pushLog({ log: log }, me + " lands exactly on " + r.target.toLocaleString() + " and wins.")
         }));
       } else {
-        act(db.doc("rooms/" + code).update(endTurn(r, scores, -1, log)));
+        act(db.doc("rooms/" + code).update(endTurn(r, scores, log)));
       }
     } else {
       act(db.doc("rooms/" + code).update(rollFrom(r, held, total, r.log || [])));
@@ -397,45 +478,83 @@ summary { cursor: pointer; font-weight: 700; }
   function pass(reason) {
     var r = room;
     var log = reason === "auto" ? (r.log || []) : pushLog(r, reason === "skip" ? nameOf(r.order[r.turn]) + " was skipped." : nameOf(r.order[r.turn]) + " passes the dice.");
-    act(db.doc("rooms/" + code).update(endTurn(r, r.scores, r.finalFrom, log)));
+    act(db.doc("rooms/" + code).update(endTurn(r, r.scores, log)));
   }
   function playAgain() {
     act(db.doc("rooms/" + code).update({ status: "lobby", phase: "roll", dice: [], winner: null, finalFrom: -1, log: [] }));
   }
   function setTarget(v) { act(db.doc("rooms/" + code).update({ target: Number(v) })); }
 
-  /* ---------- rendering ---------- */
+  /* ---------- rendering helpers ---------- */
+  function isWide() { return window.innerWidth >= 760; }
+  var SEAT_COLORS = ["#c0392b", "#2f6fd6", "#8e44ad", "#d35400", "#b03a6f", "#16857a", "#7a5cc4", "#9a6b1f"];
+  function colorOf(id) { var h = 0; for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return SEAT_COLORS[h % SEAT_COLORS.length]; }
+  function initials(n) {
+    var p = String(n).trim().split(/\s+/);
+    var a = (p[0] || "?").charAt(0), b = p[1] ? p[1].charAt(0) : (p[0] || "").charAt(1);
+    return (a + b).toUpperCase();
+  }
   function dieHTML(v, cls, i, dis) {
     var cells = "", k, on = PIPS[v] || [];
     for (k = 0; k < 9; k++) cells += '<i class="' + (on.indexOf(k) > -1 ? "on" : "") + '"></i>';
     return '<button class="die ' + cls + '" data-act="die" data-i="' + i + '"' + (dis ? " disabled" : "") +
       ' aria-label="Die ' + (i + 1) + (v ? ", showing " + v : ", not rolled") + '">' + cells + "</button>";
   }
+  // Seats sit on an ellipse around the rail. You are always at the bottom; the rest follow clockwise in turn order.
+  function seatsHTML(ids, o) {
+    var all = ids.slice(), g;
+    for (g = 0; g < (o.ghosts || 0); g++) all.push(null);
+    var n = all.length, start = Math.max(0, ids.indexOf(uid)), wide = isWide();
+    var rx = wide ? 44 : 38, ry = wide ? 40 : 43;
+    return all.map(function (id, k) {
+      var pos = (k - start + n) % n, t = Math.PI / 2 + pos * 2 * Math.PI / n;
+      var st = "left:" + (50 + rx * Math.cos(t)).toFixed(2) + "%;top:" + (50 + ry * Math.sin(t)).toFixed(2) + "%";
+      if (!id) return '<div class="seat open" style="' + st + '" aria-hidden="true"><div class="av">+</div><div class="plate"><span class="nm">Open seat</span></div></div>';
+      var cls = "seat" + (id === uid ? " me" : "") + (id === o.cur ? " turn" : "") + (id === o.winner ? " win" : "");
+      var badge = id === o.winner ? '<span class="badge">Winner</span>'
+        : id === o.cur ? '<span class="badge">' + (o.curBadge || "Rolling") + "</span>"
+        : (o.scores && !(o.scores[id] > 0)) ? '<span class="badge off">Not on board</span>'
+        : (!o.scores && id === room.host) ? '<span class="badge off">Host</span>' : "";
+      var nm = nameOf(id) + (id === uid ? " (you)" : "");
+      return '<div class="' + cls + '" style="' + st + '">' + badge +
+        '<div class="av" style="--c:' + colorOf(id) + '">' + esc(initials(nameOf(id))) + "</div>" +
+        '<div class="plate"><span class="nm">' + esc(nm) + "</span>" +
+        (o.scores ? '<span class="sc">' + (o.scores[id] || 0).toLocaleString() + "</span>" : "") + "</div></div>";
+    }).join("");
+  }
+  function tableHTML(seats, center) {
+    return '<div class="table' + (isWide() ? " wide" : "") + '"><div class="rail"><div class="felt"></div></div>' + seats +
+      '<div class="center">' + center + "</div></div>";
+  }
   function inviteHTML() {
     return '<div class="invite"><input type="text" id="link" readonly value="' + esc(location.href) + '" aria-label="Table link">' +
       '<button class="btn small" data-act="copy">Copy link</button></div>';
   }
   function rulesHTML() {
-    return '<details><summary>How scoring works</summary><ul class="rules">' +
-      "<li>Roll six dice. Set aside at least one scoring die, then roll the rest or bank.</li>" +
+    var rows = [1, 2, 3, 4, 5, 6].map(function (v) {
+      return "<tr><th>" + v + "s</th>" + [3, 4, 5, 6].map(function (c) { return "<td>" + kindScore(v, c).toLocaleString() + "</td>"; }).join("") + "</tr>";
+    }).join("");
+    return '<details><summary>House rules and scoring</summary><ul class="rules">' +
+      "<li>Roll six dice. Each roll, set aside at least one scoring die, then roll the rest or bank.</li>" +
       "<li>Single 1 = 100. Single 5 = 50.</li>" +
-      "<li>Three of a kind = number × 100 (three 1s = 1000). Each extra die doubles it.</li>" +
-      "<li>Straight 1–6 or three pairs = 1500.</li>" +
-      "<li>Full house (three of a kind plus a pair, all five dice set aside together) = " + FULL_HOUSE.toLocaleString() + ". You can then roll the last die.</li>" +
+      "<li>Three pairs = " + THREE_PAIRS.toLocaleString() + ". Straight 1–6 = " + STRAIGHT.toLocaleString() + ". Two triplets = " + TWO_TRIPLETS.toLocaleString() + ". Full house (three of a kind plus a pair) = " + FULL_HOUSE.toLocaleString() + ". These count only when rolled in one throw.</li>" +
       "<li>Score all six dice and you roll all six again (hot dice).</li>" +
-      "<li>No scoring dice on a roll is a Farkle: you lose the turn's points.</li>" +
+      "<li>No scoring dice on a roll is a Farkle: you lose the turn's points and the dice pass.</li>" +
       "<li>You need " + MIN_ENTRY.toLocaleString() + " in one turn to get on the board.</li>" +
-      "<li>You must finish on the exact target. You can't bank a turn that would go over it. Keep rolling, or risk a Farkle.</li></ul></details>";
+      "<li>Finish on exactly the target. You can't bank a turn that would go over it.</li></ul>" +
+      '<div class="kinds"><table><thead><tr><th>Of a kind</th><th>Three</th><th>Four</th><th>Five</th><th>Six</th></tr></thead><tbody>' + rows + "</tbody></table></div></details>";
   }
+
+  /* ---------- screens ---------- */
   function render() {
     var v = $("#view"), tr = $("#topright");
-    $("#warn").innerHTML = (canWrite === false || joinErr)
-      ? '<div class="panel" style="border-color:var(--ember)"><h2 style="font-family:var(--font-display);font-size:26px;text-transform:uppercase;margin-bottom:6px">You can watch, but not play</h2><p class="muted">Couldn\'t save your seat at the table. Check your connection and reload the page.</p></div>'
+    $("#warn").innerHTML = joinErr
+      ? '<div class="panel" style="border-color:var(--ember)"><h2>You can watch, but not play</h2><p class="muted">Couldn\'t save your seat at the table. Check your connection and reload the page.</p></div>'
       : "";
-    if (!db) { tr.innerHTML = ""; v.innerHTML = '<div class="panel"><h2>Can\'t connect</h2><p class="muted">The game couldn\'t reach Firebase. Check public/firebase-config.js and that Anonymous sign-in is turned on.</p></div>'; return; }
-    tr.innerHTML = code ? '<span class="label">Table </span><span class="code">' + esc(code) + "</span>" : "";
+    if (!db) { tr.innerHTML = ""; v.innerHTML = '<div class="panel"><h2>Can\'t connect</h2><p class="muted">The game couldn\'t reach Firebase. Check docs/firebase-config.js and that Anonymous sign-in is turned on.</p></div>'; return; }
+    tr.innerHTML = code ? '<button class="chip-btn" data-act="copy" aria-label="Copy the invite link for table ' + esc(code) + '"><span class="lbl">Table</span><span class="code">' + esc(code) + '</span><span class="lbl">Invite</span></button>' : "";
     if (!code) { v.innerHTML = homeHTML(); return; }
-    if (subErr) { v.innerHTML = '<div class="panel"><h2>Can\'t reach the table</h2><p class="muted">' + (subErr.code === "slow" ? "Still waiting for the table to answer. It may load in a moment." : "You may not have access to this page.") + '</p><div class="row" style="margin-top:14px"><a class="btn ghost" href="#">Back</a></div></div>'; return; }
+    if (subErr) { v.innerHTML = '<div class="panel"><h2>Can\'t reach the table</h2><p class="muted">' + (subErr.code === "slow" ? "Still waiting for the table to answer. It may load in a moment." : "Something went wrong loading this table.") + '</p><div class="row" style="margin-top:14px"><button class="btn ghost" data-act="home">Back</button></div></div>'; return; }
     if (!roomLoaded) { v.innerHTML = '<div class="panel muted">Finding table ' + esc(code) + "…</div>"; return; }
     if (!room) { v.innerHTML = '<div class="panel"><h2>No table ' + esc(code) + '</h2><p class="muted">Check the code, or start a new table.</p><div class="row" style="margin-top:14px"><button class="btn" data-act="home">Back</button></div></div>'; return; }
     if (!myName) { v.innerHTML = nameGate(); return; }
@@ -443,37 +562,38 @@ summary { cursor: pointer; font-weight: 700; }
     animate = false;
   }
   function homeHTML() {
-    return '<div class="home"><div class="panel"><h2>New table</h2><p class="muted" style="margin-bottom:16px">Start a game and send the link to your friends.</p>' +
+    var deco = [[1, "-8deg"], [5, "6deg"], [1, "-3deg"], [5, "10deg"]].map(function (d, i) { return '<span style="--r:' + d[1] + '">' + dieHTML(d[0], "", i, true) + "</span>"; }).join("");
+    return '<div class="hero"><div class="hero-dice" aria-hidden="true">' + deco + '</div><h1>10,000</h1><p>Six dice. Push your luck. First to land on exactly ten thousand wins.</p></div>' +
+      '<div class="home-cards"><div class="panel"><h2>New table</h2><p class="muted" style="margin-bottom:14px">Start a game and send the link to your friends.</p>' +
       '<div class="field"><label class="label" for="nm">Your name</label><input type="text" id="nm" maxlength="20" value="' + esc(myName) + '" autocomplete="nickname"></div>' +
       '<button class="btn" data-act="create">Create table</button></div>' +
-      '<div class="panel"><h2>Join a table</h2><p class="muted" style="margin-bottom:16px">Got a code from a friend? Or just open their link.</p>' +
+      '<div class="panel"><h2>Join a table</h2><p class="muted" style="margin-bottom:14px">Got a code from a friend? Or just open their link.</p>' +
       '<div class="field"><label class="label" for="jc">Table code</label><input type="text" id="jc" maxlength="8" placeholder="K7M2" autocapitalize="characters"></div>' +
-      '<button class="btn ghost" data-act="join">Join</button></div></div>' + '<div class="panel">' + rulesHTML() + "</div>";
+      '<button class="btn ghost" data-act="join">Join</button></div></div>' +
+      '<div class="panel" style="margin:14px 0 28px">' + rulesHTML() + "</div>";
   }
   function nameGate() {
-    return '<div class="panel" style="max-width:460px"><h2 style="font-family:var(--font-display);font-size:28px;text-transform:uppercase;margin-bottom:10px">What should we call you?</h2>' +
+    return '<div class="panel" style="max-width:460px;margin:20px auto"><h2>Pull up a chair</h2><p class="muted" style="margin-bottom:14px">What should the table call you?</p>' +
       '<div class="field"><label class="label" for="nm">Your name</label><input type="text" id="nm" maxlength="20" autocomplete="nickname"></div>' +
       '<button class="btn" data-act="setname">Sit down</button></div>';
   }
   function lobbyHTML() {
-    var ids = Object.keys(players).sort(function (a, b) { return (players[a].joined || 0) - (players[b].joined || 0); });
-    var isHost = room.host === uid;
-    var list = ids.map(function (i) {
-      return '<li class="p"><span class="nm">' + esc(players[i].name) + (i === uid ? '<span class="tag">you</span>' : "") + (i === room.host ? '<span class="tag">host</span>' : "") + "</span></li>";
-    }).join("");
-    return '<div class="panel lobby"><h2>Waiting for players</h2><p class="muted">Share this link. Players appear as they open it.</p>' + inviteHTML() +
-      '<ul class="board">' + list + "</ul>" +
-      '<div class="row" style="margin-top:18px">' +
-      (isHost
-        ? '<label class="label" for="tg">Play to</label><select id="tg" data-act="target" style="width:auto">' +
-          [3000, 5000, 10000].map(function (t) { return '<option value="' + t + '"' + (room.target === t ? " selected" : "") + ">" + t.toLocaleString() + "</option>"; }).join("") +
-          '</select><button class="btn" data-act="start"' + (ids.length ? "" : " disabled") + ">Start game</button>"
-        : '<span class="muted">Playing to ' + room.target.toLocaleString() + ". Waiting for " + esc(nameOf(room.host)) + " to start.</span>") +
-      "</div>" + rulesHTML() + "</div>";
+    var ids = Object.keys(players).sort(byJoin), isHost = room.host === uid;
+    var seats = seatsHTML(ids, { ghosts: Math.max(0, 6 - ids.length) });
+    var center = '<p class="eyebrow">Table</p><div class="lobby-code">' + esc(code) + "</div>" +
+      '<p class="small">' + ids.length + (ids.length === 1 ? " player" : " players") + " seated. Send the link so friends can pull up a chair.</p>" +
+      '<button class="btn small" data-act="copy">Copy invite link</button>';
+    var bar = isHost
+      ? '<div class="actions"><select id="tg" aria-label="Play to" style="flex:0 0 auto;width:auto">' +
+          [5000, 10000].map(function (t) { return '<option value="' + t + '"' + (room.target === t ? " selected" : "") + ">Play to " + t.toLocaleString() + "</option>"; }).join("") +
+          '</select><button class="btn" data-act="start"' + (ids.length ? "" : " disabled") + ">Start game</button></div>"
+      : '<p class="status-line">Playing to ' + room.target.toLocaleString() + ". Waiting for " + esc(nameOf(room.host)) + " to start.</p>";
+    return tableHTML(seats, center) + '<div class="actionbar">' + bar + "</div>" +
+      '<div class="below"><div class="panel"><p class="label">Invite link</p>' + inviteHTML() + "</div><div class=\"panel\">" + rulesHTML() + "</div></div>";
   }
   function gameHTML() {
     var r = room, cur = r.order[r.turn], mine = mineTurn(r), done = r.status === "done";
-    var inGame = r.order.indexOf(uid) > -1 || r.host === uid;
+    var inGame = r.order.indexOf(uid) > -1;
     var selIdx = Array.from(sel), s = scoreSel(selIdx.map(function (i) { return r.dice[i]; }));
     var total = r.turnScore + (s.valid ? s.score : 0);
     var freeCount = r.held.filter(function (h) { return !h; }).length;
@@ -492,46 +612,56 @@ summary { cursor: pointer; font-weight: 700; }
 
     var controls = "", hint = "", hintCls = "", tools = "";
     if (done) {
-      controls = r.host === uid || room.host === uid ? '<button class="btn" data-act="again">Play again</button>' : '<span class="muted">Waiting for the host to start another game.</span>';
+      controls = room.host === uid ? '<button class="btn" data-act="again">Play again</button>' : "";
+      hint = room.host === uid ? "" : "Waiting for " + esc(nameOf(room.host)) + " to start another game.";
     } else if (!inGame) {
-      hint = (canWrite === false || joinErr) ? "You're watching live. The host can add you as a player on their device." : "Joining the game. The host's screen adds you in a moment. If this stays, ask the host to keep the page open.";
+      hint = "Taking your seat. The host's screen adds you in a moment. If this stays, ask the host to keep the page open.";
     } else if (mine && r.phase === "roll") {
-      controls = '<button class="btn" data-act="roll"' + (busy ? " disabled" : "") + ">Roll six dice</button>";
+      controls = '<button class="btn" data-act="roll"' + (busy ? " disabled" : "") + ">Roll the dice</button>";
+      hint = r.scores[uid] > 0 ? "Your turn." : "Your turn. You need " + MIN_ENTRY.toLocaleString() + " this turn to get on the board.";
     } else if (mine && r.phase === "choose") {
       var rest = freeCount - selIdx.length, entryOk = (r.scores[cur] > 0) || total >= MIN_ENTRY;
       var over = (r.scores[cur] || 0) + total > r.target;
-      controls = '<button class="btn" data-act="keeproll"' + (s.valid && s.score > 0 && !busy ? "" : " disabled") + ">" + (rest === 0 && s.valid ? "Hot dice: roll all 6" : "Set aside, roll " + Math.max(rest, 0)) + "</button>" +
-        '<button class="btn ghost" data-act="bank"' + (s.valid && s.score > 0 && entryOk && !over && !busy ? "" : " disabled") + ">Bank " + total.toLocaleString() + "</button>";
+      controls = '<button class="btn" data-act="keeproll"' + (s.valid && s.score > 0 && !busy ? "" : " disabled") + ">" + (rest === 0 && s.valid ? "Hot dice: roll all 6" : "Keep, roll " + Math.max(rest, 0)) + "</button>" +
+        '<button class="btn bank" data-act="bank"' + (s.valid && s.score > 0 && entryOk && !over && !busy ? "" : " disabled") + ">Bank " + total.toLocaleString() + "</button>";
       tools = '<div class="tools"><button class="btn ghost small" data-act="autopick"' + (busy ? " disabled" : "") + '>Pick best dice</button>' +
-        '<button class="btn ghost small" data-act="autotoggle" aria-pressed="' + autoPick + '">Auto-pick each roll: ' + (autoPick ? "on" : "off") + "</button></div>";
-      if (!selIdx.length) hint = "Tap the scoring dice you want to keep, or use Pick best dice.";
+        '<button class="btn ghost small pill" data-act="autotoggle" aria-pressed="' + autoPick + '">Auto-pick each roll: ' + (autoPick ? "on" : "off") + "</button></div>";
+      if (!selIdx.length) hint = "Tap the scoring dice you want to keep.";
       else if (!s.valid) { hint = "Every die you keep must score."; hintCls = "bad"; }
-      else { hint = "Keeping these is worth " + s.score + "."; hintCls = "ok"; if (!entryOk) hint += " You need " + MIN_ENTRY.toLocaleString() + " in a turn to get on the board."; if (over) { hint = "Banking this would go over " + r.target.toLocaleString() + ". You have to land exactly on it."; hintCls = "bad"; } else if ((r.scores[cur] || 0) + total === r.target) { hint += " That's exactly " + r.target.toLocaleString() + ". Bank it to win."; } }
+      else {
+        hint = "Keeping these is worth " + s.score.toLocaleString() + "."; hintCls = "ok";
+        if (!entryOk) hint += " You need " + MIN_ENTRY.toLocaleString() + " in a turn to get on the board.";
+        if (over) { hint = "Banking this would go over " + r.target.toLocaleString() + ". You have to land exactly on it."; hintCls = "bad"; }
+        else if ((r.scores[cur] || 0) + total === r.target) hint += " That's exactly " + r.target.toLocaleString() + ". Bank it to win.";
+      }
     } else if (mine && r.phase === "farkle") {
-      controls = '<button class="btn hot" data-act="pass"' + (busy ? " disabled" : "") + ">Farkle! Next player</button>";
-      hint = "No scoring dice. Passing the dice in a moment."; hintCls = "bad";
+      controls = '<button class="btn hot" data-act="pass"' + (busy ? " disabled" : "") + ">Pass the dice</button>";
+      hint = "No scoring dice. The dice pass in a moment."; hintCls = "bad";
     } else {
-      hint = r.phase === "farkle" ? esc(nameOf(cur)) + " farkled. Next player is up in a moment." : esc(nameOf(cur)) + " is thinking…";
+      hint = r.phase === "farkle" ? esc(nameOf(cur)) + " farkled. Next player is up in a moment." : esc(nameOf(cur)) + " is rolling. Watch the felt.";
     }
     if (!done && room.host === uid && !mine) controls += '<button class="btn ghost small" data-act="skip">Skip ' + esc(nameOf(cur)) + "</button>";
 
-    var board = r.order.map(function (i) {
-      var sc = r.scores[i] || 0, pct = Math.min(100, Math.round(sc / r.target * 100));
-      return '<li class="p' + (i === cur && !done ? " turn" : "") + '"><span class="nm">' + esc(nameOf(i)) + (i === uid ? '<span class="tag">you</span>' : "") + '</span><span class="sc">' + sc.toLocaleString() + '</span><span class="bar"><span style="width:' + pct + '%"></span></span></li>';
-    }).join("");
-    var log = (r.log || []).map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("");
+    var potValue = r.phase === "choose" ? total : r.turnScore;
+    var center;
+    if (done) {
+      center = '<p class="eyebrow mine">Winner</p><div class="winner-name">' + esc(nameOf(r.winner)) + "</div>" +
+        '<p class="small">Landed on exactly ' + r.target.toLocaleString() + ".</p>" + '<div class="tray">' + dice + "</div>";
+    } else {
+      var head = r.phase === "farkle" ? '<div class="stamp">Farkle</div>'
+        : '<p class="eyebrow' + (mine ? " mine" : "") + '">' + (mine ? "Your turn" : esc(nameOf(cur)) + "'s turn") + "</p>";
+      center = head + '<div class="pot"><span class="chips' + (potValue ? "" : " empty") + '" aria-hidden="true"></span><span class="pot-n" id="pot">' + potValue.toLocaleString() + "</span></div>" +
+        '<p class="pot-l">This turn</p><div class="tray">' + dice + "</div>";
+    }
+    var seats = seatsHTML(r.order, { cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? "Farkled" : mine ? "Your turn" : "Rolling" });
+    var log = (r.log || []).slice(-6).map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("");
 
-    var head = done
-      ? '<div><p class="label">Winner</p><div class="winner">' + esc(nameOf(r.winner)) + "</div></div>"
-      : '<div><p class="label">' + (mine ? "Your turn" : "Now playing") + '</p><h2 class="' + (mine ? "mine" : "") + '">' + (mine ? "Roll them" : esc(nameOf(cur))) + "</h2></div>" +
-        '<div class="turnscore"><p class="label">This turn</p><div class="n">' + (r.phase === "choose" ? total : r.turnScore).toLocaleString() + "</div></div>";
-    var last = "";
-
-    return '<div class="game"><div class="panel"><div class="banner">' + head + "</div>" +
-      '<div class="dice">' + dice + "</div>" +
-      '<div class="actions">' + controls + "</div>" +
-      '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + tools + last + "</div>" +
-      '<div class="panel side"><p class="label">Race to ' + r.target.toLocaleString() + ' exactly</p><ul class="board">' + board + '</ul><ul class="log">' + log + "</ul>" + rulesHTML() + "</div></div>";
+    return tableHTML(seats, center) +
+      '<div class="actionbar">' + (controls ? '<div class="actions">' + controls + "</div>" : "") +
+      '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + tools + "</div>" +
+      '<div class="below"><div class="panel"><p class="label">Table talk · race to ' + r.target.toLocaleString() + ' exactly</p><ul class="log">' + log + "</ul></div>" +
+      '<div class="panel"><p class="label">Invite link</p>' + inviteHTML() + "</div>" +
+      '<div class="panel">' + rulesHTML() + "</div></div>";
   }
 
   /* ---------- events ---------- */
@@ -561,14 +691,19 @@ summary { cursor: pointer; font-weight: 700; }
     else if (a === "home") { location.hash = ""; route(); }
     else if (a === "copy") {
       var inp = $("#link");
-      try { navigator.clipboard.writeText(location.href).then(function () { toast("Link copied"); }, function () { inp.select(); toast("Press copy on the selected link"); }); }
-      catch (err) { inp.select(); toast("Press copy on the selected link"); }
+      try { navigator.clipboard.writeText(location.href).then(function () { toast("Invite link copied"); }, function () { if (inp) inp.select(); toast("Copy the selected link below"); }); }
+      catch (err) { if (inp) inp.select(); toast("Copy the selected link below"); }
     }
   });
   document.addEventListener("change", function (e) {
     if (e.target.id === "tg") setTarget(e.target.value);
   });
   window.addEventListener("hashchange", route);
+  var wasWide = isWide(), resizeT = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(function () { if (isWide() !== wasWide) { wasWide = isWide(); render(); } }, 150);
+  });
 
   /* ---------- boot ---------- */
   async function init() {

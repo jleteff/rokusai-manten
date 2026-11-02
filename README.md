@@ -1,6 +1,6 @@
-# Farkle Night
+# 10,000
 
-A live multiplayer Farkle game. Everyone opens one link on their own phone. No accounts for players.
+A live multiplayer game of 10,000 (the dice game, also known as Farkle). Everyone opens one link on their own phone. No accounts for players.
 The page is static (hosted free on GitHub Pages). Game state lives in Firestore. Players sign in anonymously.
 
 ## Set it up (about 10 minutes, all in a browser)

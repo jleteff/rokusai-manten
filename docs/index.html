@@ -153,6 +153,8 @@ input[type=text], select {
 .dealer-seat .av { width: var(--av-d); height: var(--av-d); padding: 0; background: #3a0d18; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(227,183,78,.35), 0 8px 18px rgba(0,0,0,.6); }
 .dealer-seat .av svg { width: 100%; height: 100%; display: block; }
 .dealer-seat .plate { border-color: rgba(227,183,78,.5); }
+.dealer-seat { cursor: pointer; }
+.dealer-seat:hover .av { outline: 2px dashed rgba(227,183,78,.6); outline-offset: 3px; }
 .dealer-seat .plate .nm { color: var(--gold); letter-spacing: .12em; text-transform: uppercase; font-size: 10.5px; }
 
 /* seats */
@@ -489,7 +491,9 @@ ol.rules { padding-left: 20px; }
     "{name} was skipped.": "تم تخطي {name}.",
     "{name} passes the dice.": "{name} مرّر النرد.",
     "Die {i}, showing {v}": "النرد {i}، يظهر {v}",
-    "Die {i}, not rolled": "النرد {i}، لم يُرمَ بعد"
+    "Die {i}, not rolled": "النرد {i}، لم يُرمَ بعد",
+    "Change dealer": "غيّر الموزّعة",
+    "Tap the dealer to switch between Sofia and Layla.": "اضغط على الموزّعة للتبديل بين صوفيا وليلى."
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -974,47 +978,90 @@ ol.rules { padding-left: 20px; }
       ' aria-label="' + (v ? T("Die {i}, showing {v}", { i: i + 1, v: v }) : T("Die {i}, not rolled", { i: i + 1 })) + '">' + cells + "</button>";
   }
   // Seats sit on an ellipse around the rail. You are always at the bottom; the rest follow clockwise in turn order.
-  // The house dealer: white dress shirt, black vest and bow tie, brunette ponytail, blue eyes.
-  var DEALER_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true"><defs>' +
-    '<clipPath id="dlc"><circle cx="50" cy="50" r="50"/></clipPath>' +
-    '<radialGradient id="dlbg" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#8a2a3e"/><stop offset="1" stop-color="#360b16"/></radialGradient>' +
-    '<linearGradient id="dlhair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a4726"/><stop offset=".55" stop-color="#4f2c16"/><stop offset="1" stop-color="#2e190c"/></linearGradient>' +
-    '<linearGradient id="dlskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d2b4"/><stop offset="1" stop-color="#ecbd98"/></linearGradient></defs>' +
-    '<g clip-path="url(#dlc)"><rect width="100" height="100" fill="url(#dlbg)"/>' +
-    // ponytail swinging out behind her right shoulder
-    '<path d="M64 29 C83 29 91 47 86 66 C83 77 75 84 68 83 C76 70 77 53 66 40 Z" fill="url(#dlhair)"/>' +
-    '<path d="M70 38 C80 46 81 60 76 72" stroke="#8b5530" stroke-width="1.2" fill="none" opacity=".6"/>' +
-    // neck, shirt, vest, collar, bow tie
-    '<path d="M43 60 L57 60 L58.5 75 L41.5 75 Z" fill="#e8b48e"/>' +
-    '<path d="M10 100 C13 82 27 73 41 71 L59 71 C73 73 87 82 90 100 Z" fill="#fbfaf6"/>' +
+  // Two house dealers; each player picks one by tapping her (saved on their own phone).
+  // Sofia: white dress shirt open at the collar, black vest, brunette ponytail, blue eyes.
+  var DEALER_SOFIA = '<svg viewBox="0 0 100 100" aria-hidden="true"><defs>' +
+    '<clipPath id="dsc"><circle cx="50" cy="50" r="50"/></clipPath>' +
+    '<radialGradient id="dsbg" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#8a2a3e"/><stop offset="1" stop-color="#360b16"/></radialGradient>' +
+    '<linearGradient id="dshair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7d4a27"/><stop offset=".55" stop-color="#4f2c16"/><stop offset="1" stop-color="#2b170a"/></linearGradient>' +
+    '<linearGradient id="dsskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d3b6"/><stop offset="1" stop-color="#ebbb96"/></linearGradient>' +
+    '<linearGradient id="dslip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8344f"/><stop offset="1" stop-color="#a51d36"/></linearGradient></defs>' +
+    '<g clip-path="url(#dsc)"><rect width="100" height="100" fill="url(#dsbg)"/>' +
+    // ponytail with a curl at the end
+    '<path d="M63 28 C84 27 93 46 88 66 C85 79 76 87 67 85 C72 82 75 78 74 74 C80 62 77 48 65 39 Z" fill="url(#dshair)"/>' +
+    '<path d="M69 37 C81 45 83 60 77 73" stroke="#8b5530" stroke-width="1.2" fill="none" opacity=".6"/>' +
+    // neck and open collar with a thin gold chain
+    '<path d="M43 59 L57 59 L59 72 L50 86 L41 72 Z" fill="#e9b691"/>' +
+    '<path d="M10 100 C13 82 27 73 41 71 L50 86 L59 71 C73 73 87 82 90 100 Z" fill="#fbfaf6"/>' +
     '<path d="M10 100 C13 86 22 78 33 75 L43 100 Z" fill="#17171c"/><path d="M90 100 C87 86 78 78 67 75 L57 100 Z" fill="#17171c"/>' +
-    '<path d="M41 71 L50 85 L44.5 87 L37 74 Z" fill="#fff" stroke="#d9d4c8" stroke-width=".6"/><path d="M59 71 L50 85 L55.5 87 L63 74 Z" fill="#fff" stroke="#d9d4c8" stroke-width=".6"/>' +
-    '<path d="M43.5 84 L50 87.2 L56.5 84 L56.5 90.6 L50 87.8 L43.5 90.6 Z" fill="#17171c"/><circle cx="50" cy="87.5" r="1.3" fill="#2a2a31"/>' +
-    '<circle cx="50" cy="94" r=".9" fill="#d9d4c8"/>' +
-    // face, ears, gold earrings
-    '<ellipse cx="50" cy="43" rx="16.5" ry="20.5" fill="url(#dlskin)"/>' +
-    '<ellipse cx="33.8" cy="46" rx="2.5" ry="3.8" fill="#e8b48e"/><ellipse cx="66.2" cy="46" rx="2.5" ry="3.8" fill="#e8b48e"/>' +
-    '<circle cx="33.8" cy="51.6" r="1.6" fill="#e3b74e"/><circle cx="66.2" cy="51.6" r="1.6" fill="#e3b74e"/>' +
-    // hair swept back with a side part, hair tie
-    '<path d="M32.5 45 C29.5 25 41 16.5 51.5 17.5 C64 17.5 71.5 27 67.5 45 C66.5 34.5 61 27.5 53 26 C47.5 27.5 41.5 29.5 37.5 35.5 C35 38.5 33.5 41.5 32.5 45 Z" fill="url(#dlhair)"/>' +
-    '<path d="M53 18.5 C49 22 46 25 44 29" stroke="#8b5530" stroke-width="1" fill="none" opacity=".7"/>' +
+    '<path d="M41 71 L49.5 86 L44 87.5 L36 74 Z" fill="#fff" stroke="#d9d4c8" stroke-width=".6"/><path d="M59 71 L50.5 86 L56 87.5 L64 74 Z" fill="#fff" stroke="#d9d4c8" stroke-width=".6"/>' +
+    '<path d="M44.5 71 Q50 78.5 55.5 71" stroke="#e3b74e" stroke-width=".8" fill="none"/><circle cx="50" cy="77.6" r="1.3" fill="#e3b74e"/>' +
+    // face, ears, gold hoops
+    '<ellipse cx="50" cy="43" rx="16.5" ry="20.5" fill="url(#dsskin)"/>' +
+    '<ellipse cx="33.8" cy="46" rx="2.5" ry="3.8" fill="#e9b691"/><ellipse cx="66.2" cy="46" rx="2.5" ry="3.8" fill="#e9b691"/>' +
+    '<circle cx="33.8" cy="52.6" r="2.2" fill="none" stroke="#e3b74e" stroke-width="1"/><circle cx="66.2" cy="52.6" r="2.2" fill="none" stroke="#e3b74e" stroke-width="1"/>' +
+    // hair with volume and a side-swept wave
+    '<path d="M32 46 C28.5 24 41 15 51.5 16 C65 16 73 26 68 45 C66.5 34 61 27 53 25.5 C46 27 39 30 35.5 37 C33.8 40 32.8 43 32 46 Z" fill="url(#dshair)"/>' +
+    '<path d="M33.5 41 C34 28 44 20.5 55 21.5 C47 24 41 30 38.5 39.5 C37 38 35 39 33.5 41 Z" fill="#3a2010"/>' +
+    '<path d="M54 17.5 C49 21 45.5 25 43 30" stroke="#8b5530" stroke-width="1" fill="none" opacity=".7"/>' +
     '<rect x="64.6" y="31.2" width="3" height="5" rx="1.3" fill="#2a160b" transform="rotate(24 66 33.7)"/>' +
-    // brows, blue eyes with liner, nose, blush, red lips
-    '<path d="M38.5 36.6 Q43 33.8 47 36" stroke="#4a2914" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
-    '<path d="M53 36 Q57 33.8 61.5 36.6" stroke="#4a2914" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
-    '<ellipse cx="43" cy="42.2" rx="3.7" ry="2.5" fill="#fff"/><ellipse cx="57" cy="42.2" rx="3.7" ry="2.5" fill="#fff"/>' +
+    // smoky eyes, lashes, blue irises
+    '<ellipse cx="43" cy="40.4" rx="4.8" ry="2.9" fill="#6e3346" opacity=".5"/><ellipse cx="57" cy="40.4" rx="4.8" ry="2.9" fill="#6e3346" opacity=".5"/>' +
+    '<path d="M38.4 36.2 Q43 33.2 47 35.6" stroke="#3f2312" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+    '<path d="M53 35.6 Q57 33.2 61.6 36.2" stroke="#3f2312" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+    '<ellipse cx="43" cy="42.2" rx="3.7" ry="2.4" fill="#fff"/><ellipse cx="57" cy="42.2" rx="3.7" ry="2.4" fill="#fff"/>' +
     '<circle cx="43" cy="42.4" r="2" fill="#2f86e8"/><circle cx="57" cy="42.4" r="2" fill="#2f86e8"/>' +
     '<circle cx="43" cy="42.4" r=".9" fill="#0b1626"/><circle cx="57" cy="42.4" r=".9" fill="#0b1626"/>' +
-    '<circle cx="43.7" cy="41.7" r=".5" fill="#fff"/><circle cx="57.7" cy="41.7" r=".5" fill="#fff"/>' +
-    '<path d="M39 41.4 Q43 38.4 47 41.2 L48.2 40.4" stroke="#1a0f08" stroke-width="1.1" fill="none" stroke-linecap="round"/>' +
-    '<path d="M53 41.2 Q57 38.4 61 41.4 M51.8 40.4 L53 41.2" stroke="#1a0f08" stroke-width="1.1" fill="none" stroke-linecap="round"/>' +
-    '<path d="M39.6 40.6 L38.4 39.4 M41.4 39.7 L40.6 38.3 M58.6 39.7 L59.4 38.3 M60.4 40.6 L61.6 39.4" stroke="#1a0f08" stroke-width=".7" stroke-linecap="round"/>' +
+    '<circle cx="43.7" cy="41.7" r=".55" fill="#fff"/><circle cx="57.7" cy="41.7" r=".55" fill="#fff"/>' +
+    '<path d="M38.8 41.4 Q43 38.1 47.2 41.1 L48.8 39.9" stroke="#140b06" stroke-width="1.3" fill="none" stroke-linecap="round"/>' +
+    '<path d="M52.8 41.1 Q57 38.1 61.2 41.4 M51.2 39.9 L52.8 41.1" stroke="#140b06" stroke-width="1.3" fill="none" stroke-linecap="round"/>' +
+    '<path d="M39.2 40.6 L37.6 39 M40.8 39.6 L39.8 37.8 M42.6 39 L42.2 37.2 M57.4 39 L57.8 37.2 M59.2 39.6 L60.2 37.8 M60.8 40.6 L62.4 39" stroke="#140b06" stroke-width=".75" stroke-linecap="round"/>' +
+    // nose, blush, beauty mark, glossy lips
     '<path d="M50 45 Q48.5 50 50.7 50.7" stroke="#cf987a" stroke-width="1" fill="none" stroke-linecap="round"/>' +
-    '<ellipse cx="39.5" cy="49" rx="3.3" ry="1.8" fill="#ea8f8a" opacity=".35"/><ellipse cx="60.5" cy="49" rx="3.3" ry="1.8" fill="#ea8f8a" opacity=".35"/>' +
-    '<path d="M44.5 54.6 Q47.3 52.9 50 54 Q52.7 52.9 55.5 54.6 Q53 58.1 50 58.2 Q47 58.1 44.5 54.6 Z" fill="#c82f48"/>' +
-    '<path d="M45 54.7 Q50 55.9 55 54.7" stroke="#9a1f35" stroke-width=".55" fill="none"/>' +
-    '<path d="M47.6 56.6 Q50 57.3 52.4 56.6" stroke="#f08a99" stroke-width=".6" fill="none" opacity=".7"/>' +
+    '<ellipse cx="39.5" cy="49" rx="3.4" ry="1.9" fill="#ea8f8a" opacity=".4"/><ellipse cx="60.5" cy="49" rx="3.4" ry="1.9" fill="#ea8f8a" opacity=".4"/>' +
+    '<circle cx="58.8" cy="53" r=".6" fill="#4a2914"/>' +
+    '<path d="M44 54.4 Q47.2 52.4 50 53.7 Q52.8 52.4 56 54.4 Q53.4 58.9 50 59 Q46.6 58.9 44 54.4 Z" fill="url(#dslip)"/>' +
+    '<path d="M44.6 54.6 Q50 56 55.4 54.6" stroke="#8c1830" stroke-width=".55" fill="none"/>' +
+    '<ellipse cx="51.6" cy="57.2" rx="1.6" ry=".55" fill="#fff" opacity=".45"/>' +
     "</g></svg>";
+  // Layla: emerald hijab with a gold pin, kohl-lined eyes, the same dealer vest and white shirt.
+  var DEALER_LAYLA = '<svg viewBox="0 0 100 100" aria-hidden="true"><defs>' +
+    '<clipPath id="dlyc"><circle cx="50" cy="50" r="50"/></clipPath>' +
+    '<radialGradient id="dlybg" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#5a2457"/><stop offset="1" stop-color="#220a20"/></radialGradient>' +
+    '<linearGradient id="dlyscarf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d8a69"/><stop offset=".6" stop-color="#0f5f48"/><stop offset="1" stop-color="#083b2d"/></linearGradient>' +
+    '<linearGradient id="dlyskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6b98f"/><stop offset="1" stop-color="#d49e74"/></linearGradient></defs>' +
+    '<g clip-path="url(#dlyc)"><rect width="100" height="100" fill="url(#dlybg)"/>' +
+    // shirt and vest at the shoulders
+    '<path d="M8 100 C11 83 25 75 40 73 L60 73 C75 75 89 83 92 100 Z" fill="#fbfaf6"/>' +
+    '<path d="M8 100 C11 87 20 80 31 77 L38 100 Z" fill="#17171c"/><path d="M92 100 C89 87 80 80 69 77 L62 100 Z" fill="#17171c"/>' +
+    // hijab: frames the face, wraps under the chin and drapes over the chest
+    '<path d="M50 11 C29 11 20 29 21.5 48 C22.5 61 28 71 34 77 L27 100 L73 100 L66 77 C72 71 77.5 61 78.5 48 C80 29 71 11 50 11 Z" fill="url(#dlyscarf)"/>' +
+    '<path d="M27 100 L34 77 C40 82 60 82 66 77 L73 100 Z" fill="#0c5341"/>' +
+    '<path d="M30 62 C34 72 42 78 50 79 C58 78 66 72 70 62" stroke="#0a4a39" stroke-width="1.2" fill="none"/>' +
+    '<path d="M38 82 C44 88 56 88 62 82" stroke="#1d8a69" stroke-width="1" fill="none" opacity=".7"/>' +
+    // face in the opening, underscarf band on the forehead
+    '<ellipse cx="50" cy="46" rx="14" ry="18" fill="url(#dlyskin)"/>' +
+    '<path d="M35.5 37 C38.5 27.5 61.5 27.5 64.5 37 C60 33 40 33 35.5 37 Z" fill="#0a4436"/>' +
+    '<path d="M36 36 C34 44 34.5 53 38 60 C35 52 34.5 44 36 36 Z M64 36 C66 44 65.5 53 62 60 C65 52 65.5 44 64 36 Z" fill="#0a4436"/>' +
+    '<circle cx="64.5" cy="64" r="1.8" fill="#e3b74e"/><circle cx="64.5" cy="64" r=".7" fill="#fff6d6"/>' +
+    // brows, kohl-lined almond eyes, warm brown irises
+    '<path d="M39.5 39.3 Q43.5 36.6 47.4 38.6" stroke="#24150b" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
+    '<path d="M52.6 38.6 Q56.5 36.6 60.5 39.3" stroke="#24150b" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
+    '<path d="M39.4 44.4 Q43.4 41.4 47.4 44.2 Q43.4 46.5 39.4 44.4 Z" fill="#fff"/><path d="M52.6 44.2 Q56.6 41.4 60.6 44.4 Q56.6 46.5 52.6 44.2 Z" fill="#fff"/>' +
+    '<circle cx="43.4" cy="44.1" r="1.75" fill="#6b4423"/><circle cx="56.6" cy="44.1" r="1.75" fill="#6b4423"/>' +
+    '<circle cx="43.4" cy="44.1" r=".8" fill="#1a0f08"/><circle cx="56.6" cy="44.1" r=".8" fill="#1a0f08"/>' +
+    '<circle cx="44" cy="43.5" r=".45" fill="#fff"/><circle cx="57.2" cy="43.5" r=".45" fill="#fff"/>' +
+    '<path d="M38.8 44.6 Q43.4 40.6 47.6 44.1 L49 43" stroke="#120a05" stroke-width="1.2" fill="none" stroke-linecap="round"/>' +
+    '<path d="M52.4 44.1 Q56.6 40.6 61.2 44.6 M51 43 L52.4 44.1" stroke="#120a05" stroke-width="1.2" fill="none" stroke-linecap="round"/>' +
+    '<path d="M39.6 44.9 Q43.4 46.9 47.2 44.5 M52.8 44.5 Q56.6 46.9 60.4 44.9" stroke="#120a05" stroke-width=".7" fill="none" stroke-linecap="round"/>' +
+    // nose, blush, soft rose lips
+    '<path d="M50 47.5 Q48.6 52.3 50.6 52.9" stroke="#b9815c" stroke-width="1" fill="none" stroke-linecap="round"/>' +
+    '<ellipse cx="41" cy="51.2" rx="3" ry="1.6" fill="#d9776f" opacity=".3"/><ellipse cx="59" cy="51.2" rx="3" ry="1.6" fill="#d9776f" opacity=".3"/>' +
+    '<path d="M45.3 56.2 Q47.8 54.8 50 55.7 Q52.2 54.8 54.7 56.2 Q52.5 59.2 50 59.3 Q47.5 59.2 45.3 56.2 Z" fill="#b3465b"/>' +
+    '<path d="M45.8 56.3 Q50 57.4 54.2 56.3" stroke="#8a2f42" stroke-width=".5" fill="none"/>' +
+    "</g></svg>";
+  var DEALERS = { sofia: DEALER_SOFIA, layla: DEALER_LAYLA };
+  var dealerPick = DEALERS[store.get("fk-dealer")] ? store.get("fk-dealer") : "sofia";
   // Seats sit on an ellipse with one extra place for the dealer, opposite you.
   function seatsHTML(ids, o) {
     var all = ids.slice(), g;
@@ -1024,7 +1071,7 @@ ol.rules { padding-left: 20px; }
     var slots = n + 1, dealerSlot = Math.floor(slots / 2);
     var place = function (t) { return "left:" + (50 + rx * Math.cos(t)).toFixed(2) + "%;top:" + (50 + ry * Math.sin(t)).toFixed(2) + "%"; };
     var td = Math.PI / 2 + dealerSlot * 2 * Math.PI / slots;
-    var dealer = '<div class="seat dealer-seat" id="dealer" style="' + place(td) + '"><div class="av">' + DEALER_SVG + '</div><div class="plate"><span class="nm">' + T("Dealer") + '</span></div></div>';
+    var dealer = '<div class="seat dealer-seat" id="dealer" style="' + place(td) + '" data-act="dealer" role="button" tabindex="0" aria-label="' + T("Change dealer") + '"><div class="av">' + DEALERS[dealerPick] + '</div><div class="plate"><span class="nm">' + T("Dealer") + '</span></div></div>';
     return dealer + all.map(function (id, k) {
       var pos = (k - start + n) % n, slot = pos < dealerSlot ? pos : pos + 1, t = Math.PI / 2 + slot * 2 * Math.PI / slots;
       var st = "left:" + (50 + rx * Math.cos(t)).toFixed(2) + "%;top:" + (50 + ry * Math.sin(t)).toFixed(2) + "%";
@@ -1077,6 +1124,7 @@ ol.rules { padding-left: 20px; }
         li(T("You need {n} in one turn to get on the board.", { n: n(MIN_ENTRY) })) +
         li(T("Score with all six dice and you roll all six again (hot dice).")) +
         li(T("The winner of a game rolls first in the next one.")) +
+        li(T("Tap the dealer to switch between Sofia and Layla.")) +
         li(T("After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.")) +
         li(T("A new triple on a later throw scores whichever is higher: the triple, or 100 per die.")) +
         li(T("You must land on exactly {n}. You can't bank a turn that would go over.", { n: n(tgt) })) +
@@ -1357,6 +1405,7 @@ ol.rules { padding-left: 20px; }
       alertsOn = was;
     }
     else if (a === "lang") { LANG = LANG === "ar" ? "en" : "ar"; store.set("fk-lang", LANG); applyLang(); avatarOpen && renderSheet(); renderChat(true); render(); }
+    else if (a === "dealer") { dealerPick = dealerPick === "sofia" ? "layla" : "sofia"; store.set("fk-dealer", dealerPick); render(); }
     else if (a === "chatopen") setChatOpen(true);
     else if (a === "chatclose") setChatOpen(false);
     else if (a === "quick") sendChat(el.getAttribute("data-t"));

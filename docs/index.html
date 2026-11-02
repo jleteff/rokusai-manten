@@ -154,6 +154,8 @@ input[type=text], select {
 .dealer-seat .av svg { width: 100%; height: 100%; display: block; }
 .dealer-seat .plate { border-color: rgba(227,183,78,.5); }
 .dealer-seat { cursor: pointer; }
+.auto-note { display: inline-block; margin-inline-start: 6px; font-size: 12px; color: var(--ivory-dim); white-space: nowrap; }
+.badge .cd { font-variant-numeric: tabular-nums; }
 .plate .need { display: block; font-size: 10.5px; font-weight: 700; color: #f4d78a; line-height: 1.2; margin-top: 1px; white-space: nowrap; }
 .seat.turn .plate .need { color: var(--gold); }
 .dealer-seat:hover .av { outline: 2px dashed rgba(227,183,78,.6); outline-offset: 3px; }
@@ -499,7 +501,12 @@ ol.rules { padding-left: 20px; }
     "Needs {n}": "يحتاج {n}",
     "Your turn. You need exactly {n} to go out.": "دورك. تحتاج إلى {n} بالضبط لتنهي اللعبة.",
     " {n} left to go out after this.": " يتبقى {n} لتنهي بعد هذا.",
-    "From {a}, each player's seat shows exactly how many points they need to go out.": "من {a}، يُظهر مقعد كل لاعب عدد النقاط التي يحتاجها بالضبط لينهي."
+    "From {a}, each player's seat shows exactly how many points they need to go out.": "من {a}، يُظهر مقعد كل لاعب عدد النقاط التي يحتاجها بالضبط لينهي.",
+    "{n}s": "{n} ث",
+    "Auto-play in": "لعب تلقائي خلال",
+    "On auto": "تلقائي",
+    "{name} is on auto.": "{name} يلعب تلقائياً.",
+    "If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.": "إذا لم تتحرك خلال 10 ثوانٍ، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن."
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -510,7 +517,7 @@ ol.rules { padding-left: 20px; }
   // Log entries are stored as codes so each phone shows them in its own language.
   var LOGS = { start: "Game on. {name} rolls first.", startw: "{name} won last game and rolls first.", sat: "{names} sat down at the table.",
     six: "{name} rolls six {v}s in one throw and wins on the spot!", farkle: "FARKLE. {name} loses {n}.", over: "{name} has to keep {n} and goes over {t}. Bust.",
-    hot: "{name} has hot dice and rolls all six.", bank: "{name} banks {n}.", exact: "{name} lands exactly on {t} and wins.", skip: "{name} was skipped.", pass: "{name} passes the dice." };
+    hot: "{name} has hot dice and rolls all six.", auto: "{name} is on auto.", bank: "{name} banks {n}.", exact: "{name} lands exactly on {t} and wins.", skip: "{name} was skipped.", pass: "{name} passes the dice." };
   function logLine(e) {
     if (typeof e === "string") return esc(e);
     if (!e || !LOGS[e.k]) return "";
@@ -695,7 +702,7 @@ ol.rules { padding-left: 20px; }
           else if (autoPick && room.phase === "choose" && mineNow) { sel = new Set(bestSel(room)); sharePick(); }
         }
       }
-      maybeJoin(); hostSync(); scheduleFarkle(); render();
+      maybeJoin(); hostSync(); scheduleFarkle(); scheduleAuto(); render();
     }, function (e) { subErr = e; render(); }));
     unsubs.push(rref.collection("players").onSnapshot(function (q) {
       var m = {}; q.docs.forEach(function (d) { m[d.id] = d.data(); });
@@ -868,7 +875,7 @@ ol.rules { padding-left: 20px; }
     var scores = {}; ids.forEach(function (i) { scores[i] = 0; });
     act(db.doc("rooms/" + code).update({
       status: "play", order: ids, scores: scores, turn: 0, dice: [], held: [false, false, false, false, false, false],
-      turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null,
+      turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null,
       log: [{ k: w > -1 ? "startw" : "start", name: nameOf(ids[0]) }]
     }));
   }
@@ -879,7 +886,7 @@ ol.rules { padding-left: 20px; }
   function pushLog(r, line) { return (r.log || []).concat([line]).slice(-8); }
   function endTurn(r, scores, log) {
     var next = (r.turn + 1) % r.order.length;
-    return { scores: scores, finalFrom: -1, turn: next, dice: [], held: [false, false, false, false, false, false], turnScore: 0, phase: "roll", bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, log: log };
+    return { scores: scores, finalFrom: -1, turn: next, dice: [], held: [false, false, false, false, false, false], turnScore: 0, phase: "roll", bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null, log: log };
   }
   function rollFrom(r, held, turnScore, log, bonus) {
     bonus = bonus || [];
@@ -913,34 +920,70 @@ ol.rules { padding-left: 20px; }
     var r = room; if (!mineTurn(r) || r.phase !== "roll") return;
     act(db.doc("rooms/" + code).update(rollFrom(r, r.held, 0, r.log || [], [])));
   }
-  function commit(kind) {
-    var r = room; if (!mineTurn(r) || r.phase !== "choose") return;
-    clearTimeout(pickT);
-    var idxs = Array.from(sel), keptVals = idxs.map(function (i) { return r.dice[i]; }), s = scoreSel(keptVals, r.bonus);
-    if (!s.valid || s.score <= 0) return;
+  // Builds the update for keeping these dice and then rolling on or banking. null if not allowed.
+  function keepPatch(r, idxs, kind) {
+    var keptVals = idxs.map(function (i) { return r.dice[i]; }), s = scoreSel(keptVals, r.bonus);
+    if (!s.valid || s.score <= 0) return null;
     // Any triple kept now makes further dice of that number worth 100 for the rest of the turn.
     var bonus = (r.bonus || []).slice(), kc = counts(keptVals);
     for (var bv = 1; bv <= 6; bv++) if (kc[bv] >= 3 && bonus.indexOf(bv) < 0) bonus.push(bv);
     var held = r.held.slice(); idxs.forEach(function (i) { held[i] = true; });
     var cur = r.order[r.turn], total = r.turnScore + s.score, me = nameOf(cur);
-    if (kind === "bank") {
-      if (!(r.scores[cur] > 0) && total < MIN_ENTRY) return;
-      var newScore = (r.scores[cur] || 0) + total;
-      if (newScore > r.target) return;   // must land exactly on the target
-      var scores = Object.assign({}, r.scores); scores[cur] = newScore;
-      var log = pushLog(r, { k: "bank", name: me, n: total });
-      if (newScore === r.target) {
-        act(db.doc("rooms/" + code).update({
-          status: "done", phase: "done", winner: cur, winHow: "exact", scores: scores, turnScore: 0, dice: r.dice, held: held, pick: [], pickRoll: -1,
-          log: pushLog({ log: log }, { k: "exact", name: me, t: r.target })
-        }));
-      } else {
-        act(db.doc("rooms/" + code).update(endTurn(r, scores, log)));
-      }
-    } else {
-      act(db.doc("rooms/" + code).update(rollFrom(r, held, total, r.log || [], bonus)));
-    }
+    if (kind !== "bank") return rollFrom(r, held, total, r.log || [], bonus);
+    if (!(r.scores[cur] > 0) && total < MIN_ENTRY) return null;
+    var newScore = (r.scores[cur] || 0) + total;
+    if (newScore > r.target) return null;   // must land exactly on the target
+    var scores = Object.assign({}, r.scores); scores[cur] = newScore;
+    var log = pushLog(r, { k: "bank", name: me, n: total });
+    if (newScore === r.target) return { status: "done", phase: "done", winner: cur, winHow: "exact", scores: scores, turnScore: 0, dice: r.dice, held: held, pick: [], pickRoll: -1, auto: null,
+      log: pushLog({ log: log }, { k: "exact", name: me, t: r.target }) };
+    return endTurn(r, scores, log);
   }
+  function commit(kind) {
+    var r = room; if (!mineTurn(r) || r.phase !== "choose") return;
+    clearTimeout(pickT);
+    var patch = keepPatch(r, Array.from(sel), kind);
+    if (patch) act(db.doc("rooms/" + code).update(patch));
+  }
+
+  // ---------- auto-play ----------
+  // If the player whose turn it is doesn't move within 10 seconds, the game plays for them:
+  // it rolls, keeps the best dice (or the must-keep dice), and banks whenever banking is allowed.
+  // Their own phone does it; the host's phone steps in a few seconds later if theirs is asleep.
+  var AUTO_MS = 10000, autoT = null, autoKey = "", autoStart = 0, cdT = null;
+  function autoStateKey(r) {
+    return r ? [code, r.status, r.turn, r.rollId || 0, r.phase, (r.pick || []).join("")].join("|") : "";
+  }
+  function scheduleAuto(force) {
+    var r = room, k = autoStateKey(r);
+    if (!r || r.status !== "play" || (r.phase !== "roll" && r.phase !== "choose")) { clearTimeout(autoT); autoKey = ""; return; }
+    if (k === autoKey && !force) return;
+    autoKey = k; autoStart = Date.now(); clearTimeout(autoT);
+    var mine = mineTurn(r);
+    if (!mine && r.host !== uid) return;
+    autoT = setTimeout(function () { if (autoStateKey(room) === k) autoMove(); }, mine ? AUTO_MS : AUTO_MS + 3000);
+  }
+  function autoMove() {
+    var r = room; if (!r || r.status !== "play" || busy) return;
+    var cur = r.order[r.turn];
+    var base = r.auto === cur ? r : Object.assign({}, r, { log: pushLog(r, { k: "auto", name: nameOf(cur) }) });
+    var patch = null;
+    if (r.phase === "roll") patch = rollFrom(base, r.held, 0, base.log, []);
+    else if (r.phase === "choose") {
+      var idxs = (r.forced && r.forced.length) ? r.forced.slice() : bestSel(r);
+      patch = keepPatch(base, idxs, "bank") || keepPatch(base, idxs, "roll");
+    }
+    if (!patch) return;
+    if (patch.turn === undefined && patch.status !== "done") patch.auto = cur;   // still this player's turn
+    if (mineTurn(r)) sel = new Set();
+    act(db.doc("rooms/" + code).update(patch));
+  }
+  function secondsLeft() { return Math.max(0, Math.ceil((autoStart + AUTO_MS - Date.now()) / 1000)); }
+  function tickCountdown() {
+    var left = secondsLeft();
+    Array.prototype.forEach.call(document.querySelectorAll(".cd"), function (el) { el.textContent = T("{n}s", { n: left }); });
+  }
+
   // After a Farkle the dice stay on screen for a moment, then the turn passes by itself.
   // The player who farkled passes quickly. The host passes later, in case that player left.
   var farkleTimer = null, farkleKey = "";
@@ -1090,7 +1133,7 @@ ol.rules { padding-left: 20px; }
       if (!id) return '<div class="seat open" style="' + st + '" aria-hidden="true"><div class="av">+</div><div class="plate"><span class="nm">' + T("Open seat") + "</span></div></div>";
       var cls = "seat" + (id === uid ? " me" : "") + (id === o.cur ? " turn" : "") + (id === o.winner ? " win" : "");
       var badge = id === o.winner ? '<span class="badge">' + T("Winner") + "</span>"
-        : id === o.cur ? '<span class="badge">' + T(o.curBadge || "Rolling") + "</span>"
+        : id === o.cur ? '<span class="badge">' + T(o.curBadge || "Rolling") + (o.countdown ? ' · <span class="cd">' + T("{n}s", { n: secondsLeft() }) + "</span>" : "") + "</span>"
         : (o.scores && lockMode(room, id)) ? '<span class="badge off">' + T("Final stretch") + "</span>"
         : (o.scores && !(o.scores[id] > 0)) ? '<span class="badge off">' + T("Not on board") + "</span>"
         : (!o.scores && id === room.host) ? '<span class="badge off">' + T("Host") + "</span>" : "";
@@ -1135,6 +1178,7 @@ ol.rules { padding-left: 20px; }
         li(T("You need {n} in one turn to get on the board.", { n: n(MIN_ENTRY) })) +
         li(T("Score with all six dice and you roll all six again (hot dice).")) +
         li(T("The winner of a game rolls first in the next one.")) +
+        li(T("If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.")) +
         li(T("From {a}, each player's seat shows exactly how many points they need to go out.", { a: n(tgt - 2000) })) +
         li(T("Tap the dealer to switch between Sofia and Layla.")) +
         li(T("After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.")) +
@@ -1361,6 +1405,7 @@ ol.rules { padding-left: 20px; }
         : (r.phase === "choose" && selIdx.length && s.valid) ? T("{name} is keeping dice worth {n}.", { name: who, n: fmt(s.score) })
         : T("{name} is rolling. Watch the felt.", { name: who });
     }
+    if (mine && !done && (r.phase === "roll" || r.phase === "choose")) hint += ' <span class="auto-note">' + T("Auto-play in") + ' <span class="cd">' + T("{n}s", { n: secondsLeft() }) + "</span></span>";
     if (!done && room.host === uid && !mine) controls += '<button class="btn ghost small" data-act="skip">' + T("Skip {name}", { name: who }) + "</button>";
 
     var potValue = r.phase === "choose" ? total : r.turnScore;
@@ -1374,7 +1419,8 @@ ol.rules { padding-left: 20px; }
       center = head + '<div class="pot"><span class="chips' + (potValue ? "" : " empty") + '" aria-hidden="true"></span><span class="pot-n" id="pot">' + fmt(potValue) + "</span></div>" +
         '<p class="pot-l">' + T("This turn") + '</p><div class="tray" dir="ltr">' + dice + "</div>";
     }
-    var seats = seatsHTML(r.order, { cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "Farkled") : mine ? "Your turn" : "Rolling" });
+    var seats = seatsHTML(r.order, { cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "Farkled") : r.auto === cur ? "On auto" : mine ? "Your turn" : "Rolling",
+      countdown: !done && (r.phase === "roll" || r.phase === "choose") });
     var log = (r.log || []).slice(-6).map(function (l) { return "<li>" + logLine(l) + "</li>"; }).join("");
 
     return tableHTML(seats, center) +
@@ -1394,11 +1440,11 @@ ol.rules { padding-left: 20px; }
       if (animating) return;
       var i = Number(el.getAttribute("data-i"));
       if (sel.has(i)) sel.delete(i); else sel.add(i);
-      sharePick(); render();
+      scheduleAuto(true); sharePick(); render();
     } else if (a === "create") { var n = $("#nm"); myName = n.value.trim(); if (!myName) { n.focus(); return; } store.set("fk-name", myName); createTable(); }
     else if (a === "join") { var c = $("#jc").value.trim().toUpperCase(); var nm = $("#nm") ? $("#nm").value.trim() : ""; if (nm) { myName = nm; store.set("fk-name", nm); } if (c) location.hash = "t-" + c; }
     else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); maybeJoin(); render(); }
-    else if (a === "autopick") { if (room && mineTurn(room) && room.phase === "choose") { sel = new Set(bestSel(room)); sharePick(); render(); } }
+    else if (a === "autopick") { if (room && mineTurn(room) && room.phase === "choose") { sel = new Set(bestSel(room)); scheduleAuto(true); sharePick(); render(); } }
     else if (a === "autotoggle") {
       autoPick = !autoPick; store.set("fk-auto", autoPick ? "1" : "0");
       if (autoPick && room && mineTurn(room) && room.phase === "choose" && !sel.size) { sel = new Set(bestSel(room)); sharePick(); }
@@ -1469,6 +1515,8 @@ ol.rules { padding-left: 20px; }
     if (!document.hidden) { clearInterval(titleT); document.title = baseTitle; }
   });
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").then(function (r) { swReg = r; }, function () {});
+
+  setInterval(tickCountdown, 500);
 
   /* ---------- boot ---------- */
   async function init() {

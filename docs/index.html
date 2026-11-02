@@ -271,7 +271,7 @@ summary { cursor: pointer; font-weight: 700; }
           if (autoPick && room.phase === "choose" && room.order[room.turn] === uid) sel = new Set(bestSel(room));
         }
       }
-      maybeJoin(); hostSync(); render();
+      maybeJoin(); hostSync(); scheduleFarkle(); render();
     }, function (e) { subErr = e; render(); }));
     unsubs.push(rref.collection("players").onSnapshot(function (q) {
       var m = {}; q.docs.forEach(function (d) { m[d.id] = d.data(); });
@@ -380,9 +380,23 @@ summary { cursor: pointer; font-weight: 700; }
       act(db.doc("rooms/" + code).update(rollFrom(r, held, total, r.log || [])));
     }
   }
+  // After a Farkle the dice stay on screen for a moment, then the turn passes by itself.
+  // The player who farkled passes quickly. The host passes later, in case that player left.
+  var farkleTimer = null, farkleKey = "";
+  function scheduleFarkle() {
+    if (!room || room.status !== "play" || room.phase !== "farkle") { clearTimeout(farkleTimer); farkleKey = ""; return; }
+    var k = code + ":" + room.rollId + ":" + room.turn;
+    if (k === farkleKey) return;
+    farkleKey = k; clearTimeout(farkleTimer);
+    var mine = mineTurn(room);
+    if (!mine && room.host !== uid) return;
+    farkleTimer = setTimeout(function () {
+      if (room && room.status === "play" && room.phase === "farkle" && code + ":" + room.rollId + ":" + room.turn === k) pass("auto");
+    }, mine ? 2500 : 7000);
+  }
   function pass(reason) {
     var r = room;
-    var log = pushLog(r, reason === "skip" ? nameOf(r.order[r.turn]) + " was skipped." : nameOf(r.order[r.turn]) + " passes the dice.");
+    var log = reason === "auto" ? (r.log || []) : pushLog(r, reason === "skip" ? nameOf(r.order[r.turn]) + " was skipped." : nameOf(r.order[r.turn]) + " passes the dice.");
     act(db.doc("rooms/" + code).update(endTurn(r, r.scores, r.finalFrom, log)));
   }
   function playAgain() {
@@ -494,9 +508,10 @@ summary { cursor: pointer; font-weight: 700; }
       else if (!s.valid) { hint = "Every die you keep must score."; hintCls = "bad"; }
       else { hint = "Keeping these is worth " + s.score + "."; hintCls = "ok"; if (!entryOk) hint += " You need " + MIN_ENTRY.toLocaleString() + " in a turn to get on the board."; if (over) { hint = "Banking this would go over " + r.target.toLocaleString() + ". You have to land exactly on it."; hintCls = "bad"; } else if ((r.scores[cur] || 0) + total === r.target) { hint += " That's exactly " + r.target.toLocaleString() + ". Bank it to win."; } }
     } else if (mine && r.phase === "farkle") {
-      controls = '<button class="btn hot" data-act="pass"' + (busy ? " disabled" : "") + ">Farkle. Pass the dice</button>";
+      controls = '<button class="btn hot" data-act="pass"' + (busy ? " disabled" : "") + ">Farkle! Next player</button>";
+      hint = "No scoring dice. Passing the dice in a moment."; hintCls = "bad";
     } else {
-      hint = r.phase === "farkle" ? esc(nameOf(cur)) + " farkled." : esc(nameOf(cur)) + " is thinking…";
+      hint = r.phase === "farkle" ? esc(nameOf(cur)) + " farkled. Next player is up in a moment." : esc(nameOf(cur)) + " is thinking…";
     }
     if (!done && room.host === uid && !mine) controls += '<button class="btn ghost small" data-act="skip">Skip ' + esc(nameOf(cur)) + "</button>";
 

@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1311">
+<!-- The game is already dark: ask dark-mode browser extensions (Noir, Dark Reader, etc.) not to recolor it. -->
+<meta name="color-scheme" content="dark">
+<meta name="darkreader-lock">
 <title>六賽万点 · Six Dice</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=DM+Sans:wght@400;500;700&family=Cairo:wght@400;600;700;800;900&display=swap">
 <!-- Only the four title characters are downloaded from this font. -->
@@ -134,12 +137,12 @@ input[type=text], select {
   transition: transform .15s, box-shadow .15s;
 }
 .die svg { display: block; width: 100%; height: 100%; pointer-events: none; }
-.die svg circle { fill: #15130f; }
+.die svg circle { fill: #15130f !important; }
 .die:disabled { cursor: default; }
 .die.free:not(:disabled):hover { transform: translateY(-3px); }
 .die.sel { transform: translateY(-8px); box-shadow: 0 0 0 4px var(--gold), 0 14px 18px rgba(0,0,0,.5); }
 .die.held { background: linear-gradient(145deg, #d8b860, #a8853a); box-shadow: 0 4px 0 #6e5520, 0 9px 14px rgba(0,0,0,.45); opacity: .85; }
-.die.held svg circle { fill: #241c0b; }
+.die.held svg circle { fill: #241c0b !important; }
 .die.blank { opacity: .3; }
 .die.bust { box-shadow: 0 0 0 3px var(--ember), 0 9px 14px rgba(0,0,0,.45); }
 /* dice in flight (thrown from a seat, scooped by the dealer) */
@@ -1411,7 +1414,7 @@ ol.rules { padding-left: 20px; }
   var PIP_XY = [[27, 27], [50, 27], [73, 27], [27, 50], [50, 50], [73, 50], [27, 73], [50, 73], [73, 73]];
   function pipsSVG(v) {
     return '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">' + (PIPS[v] || []).map(function (k) {
-      return '<circle cx="' + PIP_XY[k][0] + '" cy="' + PIP_XY[k][1] + '" r="10.5"/>';
+      return '<circle cx="' + PIP_XY[k][0] + '" cy="' + PIP_XY[k][1] + '" r="10.5" fill="#15130f"/>';
     }).join("") + "</svg>";
   }
   function dieHTML(v, cls, i, dis) {

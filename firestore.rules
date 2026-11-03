@@ -13,8 +13,8 @@ service cloud.firestore {
       function myTurn() {
         return resource.data.status == 'play' && resource.data.order[resource.data.turn] == request.auth.uid;
       }
-      // What the player whose turn it is may change. Never the host, the seats (order), bans, the lock,
-      // bots or the target.
+      // What the player whose turn it is may change. Never the host, the seats (order), bans, the lock
+      // or the target.
       function playFieldsOnly() {
         return changed().hasOnly(['dice', 'held', 'turnScore', 'phase', 'rollId', 'pick', 'pickRoll', 'forced', 'bust',
           'bonus', 'auto', 'log', 'scores', 'turn', 'finalFrom', 'finalists', 'finalDone', 'rolloff', 'status',
@@ -46,18 +46,13 @@ service cloud.firestore {
         function banned() { return request.auth.uid in room().get('banned', []); }
 
         allow read: if signedIn();
-        // You can sit yourself down (not as a bot) unless the host removed you or locked the table.
-        // Only the host can add bots.
-        allow create: if signedIn() && (
-          (pid == request.auth.uid && !banned() && request.resource.data.get('bot', false) != true &&
-            (room().get('locked', false) != true || roomHost())) ||
-          (roomHost() && request.resource.data.get('bot', false) == true)
-        );
-        // You can update your own seat (name, avatar, chat, challenges). The host can update bots.
-        allow update: if signedIn() && (
-          (pid == request.auth.uid && !banned() && request.resource.data.get('bot', false) != true) ||
-          (roomHost() && resource.data.get('bot', false) == true)
-        );
+        // There are no bots: a seat is always the signed-in person sitting in it, never anyone else.
+        // You can't sit down if the host removed you or locked the table.
+        allow create: if signedIn() && pid == request.auth.uid && !banned() &&
+          !('bot' in request.resource.data) &&
+          (room().get('locked', false) != true || roomHost());
+        // You can update your own seat (name, avatar, chat, challenges), and only your own.
+        allow update: if signedIn() && pid == request.auth.uid && !banned() && !('bot' in request.resource.data);
         // The host can remove anyone. You can always get up yourself.
         allow delete: if signedIn() && (roomHost() || pid == request.auth.uid);
       }

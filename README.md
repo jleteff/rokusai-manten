@@ -3,13 +3,13 @@
 **Play:** https://jleteff.github.io/rokusai-manten/
 
 "Six dice, ten thousand points." A live multiplayer game of 10,000, the dice game also known as Farkle. Everyone opens one link on their own phone. No accounts for players.
-The page is static (hosted free on GitHub Pages). Game state lives in Firestore. Players sign in anonymously.
+The page is static (hosted free on GitHub Pages). Game state lives in Firestore. Every player signs in with an email-and-password account.
 
 ## Set it up (about 10 minutes, all in a browser)
 
 ### 1. Firebase (the live game data)
 1. https://console.firebase.google.com > *Add project*. Name it, skip Google Analytics.
-2. *Build > Authentication > Get started > Sign-in method > Anonymous > Enable.*
+2. *Build > Authentication > Get started > Sign-in method > Email/Password > Enable.* (Anonymous sign-in is no longer used; you can turn it off.)
 3. *Build > Firestore Database > Create database.* Pick a nearby location, start in **production mode**.
 4. *Firestore > Rules* tab. Replace everything with the contents of `firestore.rules` in this repo, then **Publish**.
 5. *Project settings (gear) > General > Your apps > Web (`</>`).* Register an app (skip "Firebase Hosting"). Copy the `firebaseConfig` values.
@@ -33,7 +33,8 @@ Open the address, create a table, send the link (it ends in `#t-XXXX`) to your f
 - `docs/index.html` is the whole game: lobby, dice, scoring, scoreboard.
 - Each table is a Firestore document at `rooms/{code}`, with seats in `rooms/{code}/players`.
 - `firestore.rules` lets only the player whose turn it is change the game. The host can change anything.
-- Players are Firebase anonymous users. Clearing browser data means a new identity.
+- Players are Firebase email/password accounts. The database rules (`firestore.rules`) only let signed-in accounts in, let the host remove and ban players and lock a table, refuse bots, and only let the player whose turn it is make game moves on their own score.
+- Dice are still rolled on each phone, so a determined player could fake their own rolls. Moving rolls to a server (Cloud Functions, Blaze plan) closes that.
 
 ## Known limits
 - Anyone with a table link can sit down. Latecomers are added by the host's screen, so the host keeps the page open.

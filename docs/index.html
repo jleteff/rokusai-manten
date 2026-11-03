@@ -201,6 +201,7 @@ input[type=text], select {
 .seat.bot-seat .av { font-size: calc(var(--av) * .5); opacity: .85; }
 .auto-note { display: inline-block; margin-inline-start: 6px; font-size: 12px; color: var(--ivory-dim); white-space: nowrap; }
 .badge .cd { font-variant-numeric: tabular-nums; }
+.oldver { margin: 6px auto; max-width: 560px; font-size: 13px; text-align: center; color: var(--gold); background: rgba(7,12,10,.85); border: 1px solid var(--gold-dim); border-radius: 9px; padding: 6px 10px; }
 .plate .need.live { color: var(--gold); }
 .plate .need { display: block; font-size: 10.5px; font-weight: 700; color: #f4d78a; line-height: 1.2; margin-top: 1px; white-space: nowrap; }
 .seat.turn .plate .need { color: var(--gold); }
@@ -395,6 +396,10 @@ ol.rules { padding-left: 20px; }
     "Copy the invite link for table {code}": "انسخ رابط الدعوة للطاولة {code}",
     "Switch language": "تغيير اللغة",
     "You can watch, but not play": "يمكنك المشاهدة فقط",
+    "Update the game": "حدّث اللعبة",
+    "This table is running a newer version. Update to keep playing.": "هذه الطاولة تعمل بإصدار أحدث. حدّث اللعبة لتكمل اللعب.",
+    "Update now": "حدّث الآن",
+    "{names} should reload the game to get the latest rules.": "على {names} إعادة تحميل اللعبة للحصول على أحدث القواعد.",
     "Couldn't save your seat at the table. Check your connection and reload the page.": "تعذّر حفظ مقعدك على الطاولة. تحقّق من الاتصال وأعد تحميل الصفحة.",
     "Can't connect": "تعذّر الاتصال",
     "The game couldn't reach Firebase. Check docs/firebase-config.js and that Anonymous sign-in is turned on.": "تعذّر وصول اللعبة إلى Firebase. تحقّق من ملف docs/firebase-config.js ومن تفعيل تسجيل الدخول المجهول.",
@@ -781,6 +786,16 @@ ol.rules { padding-left: 20px; }
   var db = null;
   var uid = null, myName = store.get("fk-name") || "";
   var code = null, room = null, players = {}, roomLoaded = false, subErr = null;
+  // Bump APP_VER whenever the game rules change. Each phone writes its version on its seat;
+  // a phone that's behind stops playing and asks to update, so mixed versions can't break a game.
+  var APP_VER = 2;
+  function tableVer() { var v = 0; Object.keys(players).forEach(function (i) { if (!players[i].bot) v = Math.max(v, players[i].ver || 0); }); return v; }
+  function staleApp() { return !!code && tableVer() > APP_VER; }
+  function oldPhones() {
+    if (!room || room.status !== "play" || !players[uid] || players[uid].ver !== APP_VER) return [];
+    return (room.order || []).filter(function (i) { return players[i] && !players[i].bot && i !== uid && (players[i].ver || 0) < APP_VER; });
+  }
+  function freshURL() { var u = new URL(location.href); u.searchParams.set("v", Date.now()); return u.toString(); }
   var unsubs = [], busy = false, joining = false, seenRoll = null, animate = false;
   var sel = new Set(), selKey = "", autoPick = store.get("fk-auto") === "1";
   var toastT = null, loadT = null, joinErr = false, pickT = null;
@@ -865,7 +880,9 @@ ol.rules { padding-left: 20px; }
     }, function (e) { subErr = e; render(); }));
     unsubs.push(rref.collection("players").onSnapshot(function (q) {
       var m = {}; q.docs.forEach(function (d) { m[d.id] = d.data(); });
-      players = m; noteChat(); noteDuels(); hostSync(); duelTableTick(); scheduleAuto(); scheduleFarkle(); render(); renderChat(); renderDuel();
+      players = m;
+      if (m[uid] && (m[uid].ver || 0) < APP_VER) myDoc().update({ ver: APP_VER }).catch(function () {});
+      noteChat(); noteDuels(); hostSync(); duelTableTick(); scheduleAuto(); scheduleFarkle(); render(); renderChat(); renderDuel();
     }, function () {}));
   }
   function uniqueName(n) {
@@ -877,12 +894,13 @@ ol.rules { padding-left: 20px; }
   function maybeJoin() {
     if (!room || room.status === "done" || !myName || players[uid] || joining || joinErr) return;
     joining = true;
-    db.doc("rooms/" + code + "/players/" + uid).set({ name: uniqueName(myName), joined: Date.now(), avatar: myAvatar })
+    db.doc("rooms/" + code + "/players/" + uid).set({ name: uniqueName(myName), joined: Date.now(), avatar: myAvatar, ver: APP_VER })
       .catch(function (e) { joining = false; joinErr = true; writeFail(e); render(); });
   }
 
   // The host adds anyone who sits down after the game has started to the end of the turn order.
   function hostSync() {
+    if (staleApp()) return;
     if (!room || room.status !== "play" || room.host !== uid || busy) return;
     var missing = Object.keys(players).filter(function (i) { return room.order.indexOf(i) < 0 && !players[i].bot; }).sort(byJoin);
     if (!missing.length) return;
@@ -897,6 +915,7 @@ ol.rules { padding-left: 20px; }
 
   // The active player's taps are shared so everyone at the table sees the pick as it happens.
   function sharePick() {
+    if (staleApp()) return;
     clearTimeout(pickT);
     var r = room;
     if (!r || !mineTurn(r) || r.phase !== "choose") return;
@@ -937,6 +956,7 @@ ol.rules { padding-left: 20px; }
     db.doc("rooms/" + code + "/players/" + id).update({ chat: arr }).catch(function () {});
   }
   function botMove() {
+    if (staleApp()) return;
     var r = room; if (!r || r.status !== "play" || busy || r.host !== uid) return;
     var cur = r.order[r.turn]; if (!isBot(cur)) return;
     var patch = null, banked = 0;
@@ -1326,12 +1346,13 @@ ol.rules { padding-left: 20px; }
       var scores = {}; ids.forEach(function (x) { scores[x] = 0; });
       return db.doc("rooms/" + code).update({
         status: "play", order: ids, scores: scores, turn: 0, dice: [], held: [false, false, false, false, false, false],
-        turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, finalists: [], rolloff: null, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null,
+        turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, finalists: [], finalDone: [], rolloff: null, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null,
         log: [{ k: w > -1 ? "startw" : "start", name: botNames[ids[0]] || nameOf(ids[0]) }]
       });
     }));
   }
   function act(p) {
+    if (staleApp()) { render(); return; }
     if (busy) return; busy = true;
     return Promise.resolve(p).catch(writeFail).then(function () { busy = false; render(); });
   }
@@ -1339,17 +1360,29 @@ ol.rules { padding-left: 20px; }
   var FRESH_TURN = { dice: [], held: [false, false, false, false, false, false], turnScore: 0, phase: "roll", bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null };
   function endTurn(r, scores, log) {
     if (r.rolloff) return rolloffNext(r, scores, log);
-    var next = (r.turn + 1) % r.order.length;
-    // Final round: once play comes back around to whoever hit the target first, it's decided.
-    if (r.finalFrom >= 0 && next === r.finalFrom) return finishFinalRound(r, scores, log);
-    return Object.assign({ scores: scores, finalFrom: r.finalFrom >= 0 ? r.finalFrom : -1, finalists: r.finalists || [], turn: next, log: log }, FRESH_TURN);
+    var n = r.order.length, cur = r.order[r.turn], k, idx, id;
+    // Final round: once anyone sits on exactly the target, every other player gets one last turn.
+    // finalDone remembers who has had it, so the round always ends, even if a turn was skipped.
+    var hit = r.order.filter(function (x) { return (scores[x] || 0) === r.target; });
+    if (hit.length) {
+      var finalists = (r.finalists || []).filter(function (x) { return hit.indexOf(x) > -1; });
+      hit.forEach(function (x) { if (finalists.indexOf(x) < 0) finalists.push(x); });
+      var done = (r.finalDone || []).slice(); if (done.indexOf(cur) < 0) done.push(cur);
+      for (k = 1; k <= n; k++) {
+        idx = (r.turn + k) % n; id = r.order[idx];
+        if (done.indexOf(id) < 0 && hit.indexOf(id) < 0)
+          return Object.assign({ scores: scores, finalFrom: r.finalFrom >= 0 ? r.finalFrom : r.turn, finalists: finalists, finalDone: done, turn: idx, log: log }, FRESH_TURN);
+      }
+      return finishFinalRound(Object.assign({}, r, { finalists: finalists }), scores, log);
+    }
+    return Object.assign({ scores: scores, finalFrom: -1, finalists: [], finalDone: [], turn: (r.turn + 1) % n, log: log }, FRESH_TURN);
   }
   // One player hit the target: they win. Several: 決戦 (Kessen), a roll-off.
   function finishFinalRound(r, scores, log) {
     var f = r.finalists || [];
-    if (f.length <= 1) return { status: "done", phase: "done", winner: f[0], winHow: "exact", scores: scores, turnScore: 0, auto: null, finalFrom: -1,
+    if (f.length <= 1) return { status: "done", phase: "done", winner: f[0], winHow: "exact", scores: scores, turnScore: 0, auto: null, finalFrom: -1, finalDone: [],
       log: pushLog({ log: log }, { k: "exact", name: nameOf(f[0]), t: r.target }) };
-    return Object.assign({ scores: scores, finalFrom: -1, turn: r.order.indexOf(f[0]), rolloff: { players: f.slice(), i: 0, round: 1, results: {} },
+    return Object.assign({ scores: scores, finalFrom: -1, finalDone: [], turn: r.order.indexOf(f[0]), rolloff: { players: f.slice(), i: 0, round: 1, results: {} },
       log: pushLog({ log: log }, { k: "kessen", names: f.map(nameOf).join(", ") }) }, FRESH_TURN);
   }
   function rolloffNext(r, scores, log) {
@@ -1447,14 +1480,20 @@ ol.rules { padding-left: 20px; }
   // 20 seconds before auto-play steps in, then 5 seconds per move while a player stays on auto.
   var AUTO_FIRST = 20000, AUTO_NEXT = 5000, AUTO_MS = AUTO_FIRST, autoT = null, autoKey = "", autoStart = 0, cdT = null;
   function autoStateKey(r) {
-    return r ? [code, r.status, r.turn, r.rollId || 0, r.phase, (r.pick || []).join(""), r.order && isBot(r.order[r.turn]) ? "bot" : "", r.auto || ""].join("|") : "";
+    return r ? [code, r.status, r.turn, r.rollId || 0, r.phase, (r.pick || []).join(""), r.order && isBot(r.order[r.turn]) ? "bot" : "", r.auto || "", r.order && r.scores ? r.scores[r.order[r.turn]] || 0 : ""].join("|") : "";
   }
   function scheduleAuto(force) {
+    if (staleApp()) { clearTimeout(autoT); autoKey = ""; return; }
     var r = room, k = autoStateKey(r);
     if (!r || r.status !== "play" || (r.phase !== "roll" && r.phase !== "choose")) { clearTimeout(autoT); autoKey = ""; return; }
     if (k === autoKey && !force) return;
     autoKey = k; autoStart = Date.now(); clearTimeout(autoT);
     var mine = mineTurn(r), bot = isBot(r.order[r.turn]);
+    if (!r.rolloff && r.phase === "roll" && ((r.scores || {})[r.order[r.turn]] || 0) === r.target) {
+      // Already on the target: their turn is over, pass it along (their phone first, the host's as backup).
+      if (mine || r.host === uid) autoT = setTimeout(function () { if (autoStateKey(room) === k) pass("auto"); }, mine || bot ? 1200 : 4200);
+      return;
+    }
     if (!mine && r.host !== uid) return;
     if (bot) { autoT = setTimeout(function () { if (autoStateKey(room) === k) botMove(); }, 1300 + Math.random() * 900); return; }
     AUTO_MS = r.auto === r.order[r.turn] ? AUTO_NEXT : AUTO_FIRST;
@@ -1486,6 +1525,7 @@ ol.rules { padding-left: 20px; }
   // The player who farkled passes quickly. The host passes later, in case that player left.
   var farkleTimer = null, farkleKey = "";
   function scheduleFarkle() {
+    if (staleApp()) return;
     if (!room || room.status !== "play" || room.phase !== "farkle") { clearTimeout(farkleTimer); farkleKey = ""; return; }
     var k = code + ":" + room.rollId + ":" + room.turn;
     if (k === farkleKey) return;
@@ -1502,9 +1542,9 @@ ol.rules { padding-left: 20px; }
     act(db.doc("rooms/" + code).update(endTurn(r, r.scores, log)));
   }
   function playAgain() {
-    act(db.doc("rooms/" + code).update({ status: "lobby", phase: "roll", dice: [], winner: null, lastWinner: room.winner || null, finalFrom: -1, finalists: [], rolloff: null, log: [] }));
+    act(db.doc("rooms/" + code).update({ status: "lobby", phase: "roll", dice: [], winner: null, lastWinner: room.winner || null, finalFrom: -1, finalists: [], finalDone: [], rolloff: null, log: [] }));
   }
-  function setTarget(v) { act(db.doc("rooms/" + code).update({ target: Number(v) })); }
+  function setTarget(v) { if (staleApp()) { render(); return; } act(db.doc("rooms/" + code).update({ target: Number(v) })); }
 
   /* ---------- rendering helpers ---------- */
   function isWide() { return window.innerWidth >= 760; }
@@ -1868,6 +1908,10 @@ ol.rules { padding-left: 20px; }
     var v = $("#view"), tr = $("#topright");
     $("#warn").innerHTML = joinErr
       ? '<div class="panel" style="border-color:var(--ember)"><h2>' + T("You can watch, but not play") + '</h2><p class="muted">' + T("Couldn't save your seat at the table. Check your connection and reload the page.") + "</p></div>"
+      : staleApp()
+      ? '<div class="panel" style="border-color:var(--gold)"><h2>' + T("Update the game") + '</h2><p class="muted">' + T("This table is running a newer version. Update to keep playing.") + '</p><div class="row" style="margin-top:12px"><a class="btn" href="' + esc(freshURL()) + '">' + T("Update now") + "</a></div></div>"
+      : oldPhones().length
+      ? '<div class="oldver">' + T("{names} should reload the game to get the latest rules.", { names: oldPhones().map(function (i) { return "<bdi>" + esc(nameOf(i)) + "</bdi>"; }).join(", ") }) + "</div>"
       : "";
     var menuBtn = '<button class="icon-btn" data-act="menu" aria-label="' + T("Menu") + '">' + MENU_ICON + "</button>";
     if (!db) { tr.innerHTML = '<div class="topbtns">' + menuBtn + "</div>"; v.innerHTML = '<div class="panel"><h2>' + T("Can't connect") + '</h2><p class="muted">' + T("The game couldn't reach Firebase. Check docs/firebase-config.js and that Anonymous sign-in is turned on.") + "</p></div>"; renderMenu(); return; }
@@ -2022,6 +2066,8 @@ ol.rules { padding-left: 20px; }
   document.addEventListener("click", function (e) {
     var el = e.target.closest("[data-act]"); if (!el) return;
     var a = el.getAttribute("data-act");
+    // A phone running an older version can watch and chat, but not play or change the game.
+    if (staleApp() && /^(again|bank|bots|die|keeproll|pass|roll|skip|start|chal|duelgo|duelyes|rps)$/.test(a)) { render(); return; }
     if (a === "closeav" && el.classList.contains("sheet-back") && e.target !== el) return;   // taps inside the sheet
     if (a === "die") {
       if (animating) return;

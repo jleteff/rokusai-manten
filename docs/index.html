@@ -10,7 +10,7 @@
 <title>六賽万点 · Six Dice</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=DM+Sans:wght@400;500;700&family=Cairo:wght@400;600;700;800;900&display=swap">
 <!-- Only the four title characters are downloaded from this font. -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&text=%E5%85%AD%E8%B3%BD%E4%B8%87%E7%82%B9&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&text=%E5%85%AD%E8%B3%BD%E4%B8%87%E7%82%B9%E6%92%83%E6%B2%88%E6%B1%BA%E6%88%A6&display=swap">
 <style>
 /* Layout: a felt card-room table seen from above. Players sit on the rail around it (you are always at the bottom seat),
    dice and the turn's pot sit in the middle, and your actions live in a bar under the table. */
@@ -125,6 +125,9 @@ input[type=text], select {
 .chips.empty { opacity: .25; }
 .tray { display: grid; grid-template-columns: repeat(3, var(--d)); gap: calc(var(--d) * .22); justify-content: center; padding: 6px 0; }
 .table.wide .tray { grid-template-columns: repeat(6, var(--d)); }
+.stamp.jp { font-family: var(--font-jp); font-weight: 400; text-transform: none; letter-spacing: .04em; }
+.stamp small { display: block; font-family: var(--font-display); font-size: .32em; letter-spacing: .2em; text-align: center; margin-top: -2px; }
+.eyebrow.kessen { color: var(--ember); font-size: 13px; }
 .stamp { font-family: var(--font-display); font-weight: 900; font-size: clamp(34px, 11vw, 58px); color: var(--ember); border: 4px solid var(--ember); border-radius: 10px; padding: 0 14px; line-height: 1.05; text-transform: uppercase; transform: rotate(-7deg); background: rgba(10,20,16,.55); animation: stamp .35s cubic-bezier(.2,1.6,.4,1); }
 @keyframes stamp { from { transform: rotate(-7deg) scale(1.8); opacity: 0; } to { transform: rotate(-7deg) scale(1); opacity: 1; } }
 .winner-name { font-family: var(--font-display); font-weight: 900; font-size: clamp(38px, 12vw, 70px); color: var(--gold); line-height: .95; text-transform: uppercase; overflow-wrap: anywhere; }
@@ -449,7 +452,6 @@ ol.rules { padding-left: 20px; }
     "The dice you had to keep put you over {n}. Bust. The dice pass in a moment.": "النرد الذي اضطررت للاحتفاظ به تجاوز بك {n}. خسرت الدور. سينتقل النرد بعد لحظة.",
     "No scoring dice. The dice pass in a moment.": "لا يوجد نرد رابح. سينتقل النرد بعد لحظة.",
     "{name} went over {n}. Bust. Next player is up in a moment.": "{name} تجاوز {n} وخسر الدور. اللاعب التالي بعد لحظة.",
-    "{name} farkled. Next player is up in a moment.": "{name} خسر الدور (فاركل). اللاعب التالي بعد لحظة.",
     "{name} is keeping dice worth {n}.": "{name} يحتفظ بنرد قيمته {n}.",
     "{name} is rolling. Watch the felt.": "{name} يرمي النرد. راقب الطاولة.",
     "Skip {name}": "تخطَّ {name}",
@@ -457,11 +459,9 @@ ol.rules { padding-left: 20px; }
     "Rolled six of a kind in one throw.": "رمى ستة متشابهة في رمية واحدة.",
     "Landed on exactly {n}.": "وصل إلى {n} بالضبط.",
     "Bust": "تجاوز",
-    "Farkle": "فاركل",
     "Your turn": "دورك",
     "{name}'s turn": "دور {name}",
     "This turn": "هذا الدور",
-    "Farkled": "فاركل",
     "Rolling": "يرمي",
     "Game log · race to {n} exactly": "سجل اللعبة · السباق إلى {n} بالضبط",
     "Final stretch": "المرحلة الأخيرة",
@@ -499,7 +499,6 @@ ol.rules { padding-left: 20px; }
     "Choke!": "انهار!",
     "Too easy": "سهلة جداً",
     "Bank it, coward": "سجّل يا جبان",
-    "Farkle incoming": "فاركل قادم",
     "Your avatar": "صورتك الرمزية",
     "Done": "تم",
     "Upload a photo": "ارفع صورة",
@@ -516,7 +515,6 @@ ol.rules { padding-left: 20px; }
     "The basics": "الأساسيات",
     "On your turn, roll six dice.": "في دورك، ارمِ ستة أحجار نرد.",
     "Set aside at least one scoring die. Then roll the rest to push your luck, or bank your points.": "ضع جانباً نرداً رابحاً واحداً على الأقل. ثم ارمِ الباقي لتجرّب حظّك، أو سجّل نقاطك.",
-    "Roll no scoring dice and it's a Farkle: you lose this turn's points.": "إذا لم تحصل على أي نرد رابح فهذا «فاركل»: تخسر نقاط هذا الدور.",
     "First to exactly {n} wins.": "أول من يصل إلى {n} بالضبط يفوز.",
     "What scores": "ما الذي يسجّل نقاطاً",
     "Single 1 = 100. Single 5 = 50.": "الواحد = 100. الخمسة = 50.",
@@ -541,7 +539,6 @@ ol.rules { padding-left: 20px; }
     "Game on. {name} rolls first.": "بدأت اللعبة. {name} يبدأ أولاً.",
     "{names} sat down at the table.": "{names} جلس على الطاولة.",
     "{name} rolls six {v}s in one throw and wins on the spot!": "{name} رمى ستة {v} في رمية واحدة وفاز فوراً!",
-    "FARKLE. {name} loses {n}.": "فاركل! {name} خسر {n}.",
     "{name} has to keep {n} and goes over {t}. Bust.": "{name} اضطر للاحتفاظ بـ {n} وتجاوز {t}. خسر الدور.",
     "{name} has hot dice and rolls all six.": "{name} حصل على نرد ساخن ويرمي الستة.",
     "{name} banks {n}.": "{name} سجّل {n}.",
@@ -632,7 +629,25 @@ ol.rules { padding-left: 20px; }
     "If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can. While you're on auto it moves every 5 seconds. Tap anything to take back control.": "إذا لم تتحرك خلال 20 ثانية، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن. أثناء اللعب التلقائي تتحرك كل 5 ثوانٍ. اضغط أي شيء لتستعيد التحكم.",
     "Rolling…": "جارٍ الرمي…",
     "That would put you over {n}. Keep fewer dice.": "هذا يتجاوز بك {n}. احتفظ بنرد أقل.",
-    "You must land on exactly {n}. You can't keep dice that would take you over it, and if every roll you could keep goes over, your turn ends in a bust.": "يجب أن تصل إلى {n} بالضبط. لا يمكنك الاحتفاظ بنرد يتجاوز بك هذا الرقم، وإذا كان كل ما يمكنك الاحتفاظ به يتجاوزه، ينتهي دورك بخسارته."
+    "You must land on exactly {n}. You can't keep dice that would take you over it, and if every roll you could keep goes over, your turn ends in a bust.": "يجب أن تصل إلى {n} بالضبط. لا يمكنك الاحتفاظ بنرد يتجاوز بك هذا الرقم، وإذا كان كل ما يمكنك الاحتفاظ به يتجاوزه، ينتهي دورك بخسارته.",
+    "{name} sank: 撃沈! Next player is up in a moment.": "{name} غرق: 撃沈! اللاعب التالي بعد لحظة.",
+    "撃沈 incoming": "撃沈 قادم",
+    "Roll no scoring dice and it's 撃沈 (Gekichin, \"sunk\"): you lose this turn's points.": "إذا لم تحصل على أي نرد رابح فهذا 撃沈 (غيكيتشين، «غرق»): تخسر نقاط هذا الدور.",
+    "撃沈! {name} loses {n}.": "撃沈! {name} خسر {n}.",
+    "{name} hit {t}! Everyone else gets one more turn.": "{name} وصل إلى {t}! لكل لاعب آخر دور أخير.",
+    "{name} also hit {t}!": "{name} وصل أيضاً إلى {t}!",
+    "決戦! {names} roll off for the win.": "決戦! {names} يتنافسون على الفوز.",
+    "撃沈! {name} finishes the 決戦 with {n}.": "撃沈! {name} أنهى 決戦 بـ {n}.",
+    "{name} wins the 決戦 with {n}!": "{name} فاز في 決戦 بـ {n}!",
+    "Tie at {n}! {names} go again.": "تعادل عند {n}! {names} يعيدون الرمي.",
+    "決戦: keep rolling until 撃沈. You have {n} so far.": "決戦: استمر في الرمي حتى 撃沈. لديك {n} حتى الآن.",
+    "Your 決戦 turn: roll until 撃沈. The highest total wins.": "دورك في 決戦: ارمِ حتى 撃沈. صاحب أعلى مجموع يفوز.",
+    "{name} is rolling in the 決戦.": "{name} يرمي في 決戦.",
+    "Won the 決戦 roll-off.": "فاز في جولة 決戦 الحاسمة.",
+    "Final round": "الجولة الأخيرة",
+    "Hit {n}!": "وصل {n}!",
+    "The first player to bank exactly {n} starts the final round: everyone else gets one more turn.": "أول لاعب يسجّل {n} بالضبط يبدأ الجولة الأخيرة: لكل لاعب آخر دور أخير.",
+    "If anyone else also hits {n}, it goes to 決戦 (Kessen): each of them rolls without banking until 撃沈, and the highest total wins. Ties roll again.": "إذا وصل لاعب آخر أيضاً إلى {n}، تبدأ 決戦 (كيسن): يرمي كل منهم دون تسجيل حتى 撃沈، وصاحب أعلى مجموع يفوز. عند التعادل يعيدون الرمي."
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -642,7 +657,8 @@ ol.rules { padding-left: 20px; }
   function fmt(x) { return Number(x || 0).toLocaleString("en-US"); }
   // Log entries are stored as codes so each phone shows them in its own language.
   var LOGS = { start: "Game on. {name} rolls first.", startw: "{name} won last game and rolls first.", sat: "{names} sat down at the table.",
-    six: "{name} rolls six {v}s in one throw and wins on the spot!", farkle: "FARKLE. {name} loses {n}.", over: "{name} has to keep {n} and goes over {t}. Bust.",
+    six: "{name} rolls six {v}s in one throw and wins on the spot!", farkle: "撃沈! {name} loses {n}.", final: "{name} hit {t}! Everyone else gets one more turn.", reach: "{name} also hit {t}!",
+    kessen: "決戦! {names} roll off for the win.", ksunk: "撃沈! {name} finishes the 決戦 with {n}.", kwin: "{name} wins the 決戦 with {n}!", kagain: "Tie at {n}! {names} go again.", over: "{name} has to keep {n} and goes over {t}. Bust.",
     hot: "{name} has hot dice and rolls all six.", auto: "{name} is on auto.", bank: "{name} banks {n}.", exact: "{name} lands exactly on {t} and wins.", skip: "{name} was skipped.", pass: "{name} passes the dice." };
   function logLine(e) {
     if (typeof e === "string") return esc(e);
@@ -748,7 +764,7 @@ ol.rules { padding-left: 20px; }
   }
   // Never pick more than what's left to reach the target this turn.
   function roomLeft(r) { var cur = r.order[r.turn]; return r.target - ((r.scores && r.scores[cur]) || 0) - (r.turnScore || 0); }
-  function bestSel(r) { return pickSet(r.dice, r.held, r.bonus, "best", roomLeft(r)).idxs; }
+  function bestSel(r) { return pickSet(r.dice, r.held, r.bonus, "best", r.rolloff ? undefined : roomLeft(r)).idxs; }
   // Within 1,000 of the target (9,000 when playing to 10,000), every scoring die must be kept.
   // From 2,000 below the target (8,000 when playing to 10,000), show what each player needs to go out.
   function needToGoOut(r, id) {
@@ -768,7 +784,7 @@ ol.rules { padding-left: 20px; }
   var sel = new Set(), selKey = "", autoPick = store.get("fk-auto") === "1";
   var toastT = null, loadT = null, joinErr = false, pickT = null;
   // Chat lives on each player's own seat document, so the existing Firestore rules already allow it.
-  var QUICK = ["😂", "🔥", "🎲", "Nice roll", "Choke!", "Too easy", "Bank it, coward", "Farkle incoming"];
+  var QUICK = ["😂", "🔥", "🎲", "Nice roll", "Choke!", "Too easy", "Bank it, coward", "撃沈 incoming"];
   var chatOpen = false, chatSeen = {}, chatPrimed = false, chatReadAt = 0, myChat = null, lastSend = 0, bubbleT = null, chatKeys = "";
   var alertsOn = store.get("fk-alerts") !== "0", swReg = null, audioCtx = null, titleT = null, baseTitle = document.title;
   var rollHold = false, holdRoll = -1, holdScore = 0, holdUntil = 0;
@@ -1309,7 +1325,7 @@ ol.rules { padding-left: 20px; }
       var scores = {}; ids.forEach(function (x) { scores[x] = 0; });
       return db.doc("rooms/" + code).update({
         status: "play", order: ids, scores: scores, turn: 0, dice: [], held: [false, false, false, false, false, false],
-        turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null,
+        turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, finalists: [], rolloff: null, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null,
         log: [{ k: w > -1 ? "startw" : "start", name: botNames[ids[0]] || nameOf(ids[0]) }]
       });
     }));
@@ -1319,9 +1335,31 @@ ol.rules { padding-left: 20px; }
     return Promise.resolve(p).catch(writeFail).then(function () { busy = false; render(); });
   }
   function pushLog(r, line) { return (r.log || []).concat([line]).slice(-8); }
+  var FRESH_TURN = { dice: [], held: [false, false, false, false, false, false], turnScore: 0, phase: "roll", bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null };
   function endTurn(r, scores, log) {
+    if (r.rolloff) return rolloffNext(r, scores, log);
     var next = (r.turn + 1) % r.order.length;
-    return { scores: scores, finalFrom: -1, turn: next, dice: [], held: [false, false, false, false, false, false], turnScore: 0, phase: "roll", bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null, log: log };
+    // Final round: once play comes back around to whoever hit the target first, it's decided.
+    if (r.finalFrom >= 0 && next === r.finalFrom) return finishFinalRound(r, scores, log);
+    return Object.assign({ scores: scores, finalFrom: r.finalFrom >= 0 ? r.finalFrom : -1, finalists: r.finalists || [], turn: next, log: log }, FRESH_TURN);
+  }
+  // One player hit the target: they win. Several: 決戦 (Kessen), a roll-off.
+  function finishFinalRound(r, scores, log) {
+    var f = r.finalists || [];
+    if (f.length <= 1) return { status: "done", phase: "done", winner: f[0], winHow: "exact", scores: scores, turnScore: 0, auto: null, finalFrom: -1,
+      log: pushLog({ log: log }, { k: "exact", name: nameOf(f[0]), t: r.target }) };
+    return Object.assign({ scores: scores, finalFrom: -1, turn: r.order.indexOf(f[0]), rolloff: { players: f.slice(), i: 0, round: 1, results: {} },
+      log: pushLog({ log: log }, { k: "kessen", names: f.map(nameOf).join(", ") }) }, FRESH_TURN);
+  }
+  function rolloffNext(r, scores, log) {
+    var ro = r.rolloff, i = ro.i + 1, res = ro.results || {};
+    if (i < ro.players.length) return Object.assign({ scores: scores, turn: r.order.indexOf(ro.players[i]), "rolloff.i": i, log: log }, FRESH_TURN);
+    var best = Math.max.apply(null, ro.players.map(function (id) { return res[id] || 0; }));
+    var top = ro.players.filter(function (id) { return (res[id] || 0) === best; });
+    if (top.length === 1) return { status: "done", phase: "done", winner: top[0], winHow: "kessen", scores: scores, turnScore: 0, auto: null,
+      log: pushLog({ log: log }, { k: "kwin", name: nameOf(top[0]), n: best }) };
+    return Object.assign({ scores: scores, turn: r.order.indexOf(top[0]), rolloff: { players: top, i: 0, round: (ro.round || 1) + 1, results: {} },
+      log: pushLog({ log: log }, { k: "kagain", names: top.map(nameOf).join(", "), n: best }) }, FRESH_TURN);
   }
   function rollFrom(r, held, turnScore, log, bonus) {
     bonus = bonus || [];
@@ -1338,10 +1376,14 @@ ol.rules { padding-left: 20px; }
         log: pushLog({ log: log }, { k: "six", name: who, v: free[0] }) };
     }
     if (!hasScore(free, bonus)) {
-      return { dice: dice, held: h, turnScore: 0, phase: "farkle", rollId: rid, pick: [], pickRoll: -1, forced: [], bust: null, log: pushLog({ log: log }, { k: "farkle", name: who, n: turnScore }) };
+      var sunk = { dice: dice, held: h, turnScore: 0, phase: "farkle", rollId: rid, pick: [], pickRoll: -1, forced: [], bust: null, log: pushLog({ log: log }, { k: r.rolloff ? "ksunk" : "farkle", name: who, n: turnScore }) };
+      if (r.rolloff) sunk["rolloff.results." + r.order[r.turn]] = turnScore;
+      return sunk;
     }
     var cur = r.order[r.turn], forced = [];
-    if (lockMode(r, cur)) {
+    if (r.rolloff) {
+      // 決戦: no target and no must-keep rule, just roll until 撃沈.
+    } else if (lockMode(r, cur)) {
       // 9,000+ rule: every scoring die is kept. If that goes over the target, it's a bust.
       var f = pickSet(dice, h, bonus, "all");
       if ((r.scores[cur] || 0) + turnScore + f.score > r.target) {
@@ -1373,6 +1415,7 @@ ol.rules { padding-left: 20px; }
     for (var bv = 1; bv <= 6; bv++) if (kc[bv] >= 3 && bonus.indexOf(bv) < 0) bonus.push(bv);
     var held = r.held.slice(); idxs.forEach(function (i) { held[i] = true; });
     var cur = r.order[r.turn], total = r.turnScore + s.score, me = nameOf(cur);
+    if (r.rolloff) return kind === "bank" ? null : rollFrom(r, held, total, r.log || [], bonus);   // 決戦: no banking
     if ((r.scores[cur] || 0) + total > r.target) return null;   // can't keep dice that go over the target
     if (kind !== "bank") return rollFrom(r, held, total, r.log || [], bonus);
     if (!(r.scores[cur] > 0) && total < MIN_ENTRY) return null;
@@ -1380,8 +1423,12 @@ ol.rules { padding-left: 20px; }
     if (newScore > r.target) return null;   // must land exactly on the target
     var scores = Object.assign({}, r.scores); scores[cur] = newScore;
     var log = pushLog(r, { k: "bank", name: me, n: total });
-    if (newScore === r.target) return { status: "done", phase: "done", winner: cur, winHow: "exact", scores: scores, turnScore: 0, dice: r.dice, held: held, pick: [], pickRoll: -1, auto: null,
-      log: pushLog({ log: log }, { k: "exact", name: me, t: r.target }) };
+    if (newScore === r.target) {
+      // Hitting the target starts the final round (or joins it): everyone else gets one more turn.
+      var first = !(r.finalFrom >= 0);
+      var r2 = Object.assign({}, r, { finalFrom: first ? r.turn : r.finalFrom, finalists: (r.finalists || []).concat([cur]) });
+      return endTurn(r2, scores, pushLog({ log: log }, { k: first ? "final" : "reach", name: me, t: r.target }));
+    }
     return endTurn(r, scores, log);
   }
   function commit(kind) {
@@ -1454,7 +1501,7 @@ ol.rules { padding-left: 20px; }
     act(db.doc("rooms/" + code).update(endTurn(r, r.scores, log)));
   }
   function playAgain() {
-    act(db.doc("rooms/" + code).update({ status: "lobby", phase: "roll", dice: [], winner: null, lastWinner: room.winner || null, finalFrom: -1, log: [] }));
+    act(db.doc("rooms/" + code).update({ status: "lobby", phase: "roll", dice: [], winner: null, lastWinner: room.winner || null, finalFrom: -1, finalists: [], rolloff: null, log: [] }));
   }
   function setTarget(v) { act(db.doc("rooms/" + code).update({ target: Number(v) })); }
 
@@ -1605,6 +1652,8 @@ ol.rules { padding-left: 20px; }
       var cls = "seat" + (id === uid ? " me" : "") + (id === o.cur ? " turn" : "") + (id === o.winner ? " win" : "");
       var badge = id === o.winner ? '<span class="badge">' + T("Winner") + "</span>"
         : id === o.cur ? '<span class="badge">' + T(o.curBadge || "Rolling") + (o.countdown ? ' · <span class="cd">' + T("{n}s", { n: secondsLeft() }) + "</span>" : "") + "</span>"
+        : (room.rolloff && room.rolloff.players.indexOf(id) > -1) ? '<span class="badge">決戦</span>'
+        : (room.finalists && room.finalists.indexOf(id) > -1 && room.status === "play") ? '<span class="badge">' + T("Hit {n}!", { n: fmt(room.target) }) + "</span>"
         : isBot(id) ? '<span class="badge off">' + T("Bot") + "</span>"
         : (o.scores && lockMode(room, id)) ? '<span class="badge off">' + T("Final stretch") + "</span>"
         : (o.scores && !(o.scores[id] > 0)) ? '<span class="badge off">' + T("Not on board") + "</span>"
@@ -1615,7 +1664,7 @@ ol.rules { padding-left: 20px; }
       return '<div class="' + cls + '" data-seat="' + esc(id) + '" style="' + st + '"' + mine + ">" + badge + bubble +
         avatarHTML(id, nameOf(id), players[id] && players[id].avatar) +
         '<div class="plate"><span class="nm">' + esc(nm) + "</span>" +
-        (o.scores ? '<span class="sc">' + fmt(o.scores[id] || 0) + "</span>" + (pointsLeft(room, id) ? '<span class="need">' + T("{n} left", { n: fmt(pointsLeft(room, id)) }) + "</span>" : "") : "") + "</div></div>";
+        (o.scores ? '<span class="sc">' + fmt(o.scores[id] || 0) + "</span>" + (room.rolloff && room.rolloff.results && room.rolloff.results[id] !== undefined ? '<span class="need">決戦 ' + fmt(room.rolloff.results[id]) + "</span>" : "") + (!room.rolloff && pointsLeft(room, id) ? '<span class="need">' + T("{n} left", { n: fmt(pointsLeft(room, id)) }) + "</span>" : "") : "") + "</div></div>";
     }).join("");
   }
   function tableHTML(seats, center) {
@@ -1637,7 +1686,7 @@ ol.rules { padding-left: 20px; }
       '<div class="rules-sec"><h4>' + T("The basics") + '</h4><ol class="rules">' +
         li(T("On your turn, roll six dice.")) +
         li(T("Set aside at least one scoring die. Then roll the rest to push your luck, or bank your points.")) +
-        li(T("Roll no scoring dice and it's a Farkle: you lose this turn's points.")) +
+        li(T("Roll no scoring dice and it's 撃沈 (Gekichin, \"sunk\"): you lose this turn's points.")) +
         li(T("First to exactly {n} wins.", { n: n(tgt) })) + "</ol></div>" +
       '<div class="rules-sec"><h4>' + T("What scores") + '</h4><ul class="rules">' +
         li(T("Single 1 = 100. Single 5 = 50.")) +
@@ -1653,6 +1702,8 @@ ol.rules { padding-left: 20px; }
       '<div class="rules-sec"><h4>' + T("Fine print") + '</h4><ul class="rules">' +
         li(T("You need {n} in one turn to get on the board.", { n: n(MIN_ENTRY) })) +
         li(T("Score with all six dice and you roll all six again (hot dice).")) +
+        li(T("The first player to bank exactly {n} starts the final round: everyone else gets one more turn.", { n: n(tgt) })) +
+        li(T("If anyone else also hits {n}, it goes to 決戦 (Kessen): each of them rolls without banking until 撃沈, and the highest total wins. Ties roll again.", { n: n(tgt) })) +
         li(T("The winner of a game rolls first in the next one.")) +
         li(T("If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can. While you're on auto it moves every 5 seconds. Tap anything to take back control.")) +
         li(T("Tap another player's seat to call them out: Ro Sham Bo, or a quick 1-on-1 game.")) +
@@ -1882,13 +1933,14 @@ ol.rules { padding-left: 20px; }
       hint = T("Taking your seat. The host's screen adds you in a moment. If this stays, ask the host to keep the page open.");
     } else if (mine && r.phase === "roll") {
       controls = '<button class="btn" data-act="roll"' + (busy ? " disabled" : "") + ">" + T("Roll the dice") + "</button>";
-      hint = needToGoOut(r, uid) ? T("Your turn. You need exactly {n} to go out.", { n: fmt(needToGoOut(r, uid)) })
+      hint = r.rolloff ? T("Your 決戦 turn: roll until 撃沈. The highest total wins.")
+        : needToGoOut(r, uid) ? T("Your turn. You need exactly {n} to go out.", { n: fmt(needToGoOut(r, uid)) })
         : r.scores[uid] > 0 ? T("Your turn.") : T("Your turn. You need {n} this turn to get on the board.", { n: fmt(MIN_ENTRY) });
     } else if (mine && r.phase === "choose") {
       var rest = freeCount - selIdx.length, entryOk = (r.scores[cur] > 0) || total >= MIN_ENTRY;
-      var over = (r.scores[cur] || 0) + total > r.target;
+      var over = !r.rolloff && (r.scores[cur] || 0) + total > r.target;   // no target limit in a 決戦
       controls = '<button class="btn" data-act="keeproll"' + (s.valid && s.score > 0 && !over && !busy ? "" : " disabled") + ">" + (rest === 0 && s.valid ? T("Hot dice: roll all 6") : T("Keep, roll {n}", { n: Math.max(rest, 0) })) + "</button>" +
-        '<button class="btn bank" data-act="bank"' + (s.valid && s.score > 0 && entryOk && !over && !busy ? "" : " disabled") + ">" + T("Bank {n}", { n: fmt(total) }) + "</button>";
+        (r.rolloff ? "" : '<button class="btn bank" data-act="bank"' + (s.valid && s.score > 0 && entryOk && !over && !busy ? "" : " disabled") + ">" + T("Bank {n}", { n: fmt(total) }) + "</button>");
       if (!forced.length) tools = '<div class="tools"><button class="btn ghost small" data-act="autopick"' + (busy ? " disabled" : "") + ">" + T("Pick best dice") + "</button>" +
         '<button class="btn ghost small pill" data-act="autotoggle" aria-pressed="' + autoPick + '">' + T(autoPick ? "Auto-pick each roll: on" : "Auto-pick each roll: off") + "</button></div>";
       if (!selIdx.length) hint = T("Tap the scoring dice you want to keep.");
@@ -1901,12 +1953,14 @@ ol.rules { padding-left: 20px; }
         else if (needToGoOut(r, cur)) hint += T(" {n} left to go out after this.", { n: fmt(needToGoOut(r, cur) - total) });
       }
       if (forced.length) hint = T("{n}+ rule: every scoring die is kept for you. ", { n: fmt(r.target - 1000) }) + hint;
+      if (r.rolloff) { hint = T("決戦: keep rolling until 撃沈. You have {n} so far.", { n: fmt(total) }); hintCls = selIdx.length && !s.valid ? "bad" : ""; }
     } else if (mine && r.phase === "farkle") {
       controls = '<button class="btn hot" data-act="pass"' + (busy ? " disabled" : "") + ">" + T("Pass the dice") + "</button>";
       hint = r.bust === "over" ? T("The dice you had to keep put you over {n}. Bust. The dice pass in a moment.", { n: fmt(r.target) }) : T("No scoring dice. The dice pass in a moment."); hintCls = "bad";
     } else {
-      hint = r.phase === "farkle" ? (r.bust === "over" ? T("{name} went over {n}. Bust. Next player is up in a moment.", { name: who, n: fmt(r.target) }) : T("{name} farkled. Next player is up in a moment.", { name: who }))
+      hint = r.phase === "farkle" ? (r.bust === "over" ? T("{name} went over {n}. Bust. Next player is up in a moment.", { name: who, n: fmt(r.target) }) : T("{name} sank: 撃沈! Next player is up in a moment.", { name: who }))
         : (r.phase === "choose" && selIdx.length && s.valid) ? T("{name} is keeping dice worth {n}.", { name: who, n: fmt(s.score) })
+        : r.rolloff ? T("{name} is rolling in the 決戦.", { name: who })
         : T("{name} is rolling. Watch the felt.", { name: who });
     }
     if (mine && !done && (r.phase === "roll" || r.phase === "choose")) hint += ' <span class="auto-note">' + T("Auto-play in") + ' <span class="cd">' + T("{n}s", { n: secondsLeft() }) + "</span></span>";
@@ -1916,14 +1970,15 @@ ol.rules { padding-left: 20px; }
     var center;
     if (done) {
       center = '<p class="eyebrow mine">' + T("Winner") + '</p><div class="winner-name">' + esc(nameOf(r.winner)) + "</div>" +
-        '<p class="small">' + (r.winHow === "six" ? T("Rolled six of a kind in one throw.") : T("Landed on exactly {n}.", { n: fmt(r.target) })) + "</p>" + '<div class="tray" dir="ltr">' + dice + "</div>";
+        '<p class="small">' + (r.winHow === "six" ? T("Rolled six of a kind in one throw.") : r.winHow === "kessen" ? T("Won the 決戦 roll-off.") : T("Landed on exactly {n}.", { n: fmt(r.target) })) + "</p>" + '<div class="tray" dir="ltr">' + dice + "</div>";
     } else {
-      var head = r.phase === "farkle" ? '<div class="stamp">' + T(r.bust === "over" ? "Bust" : "Farkle") + "</div>"
-        : '<p class="eyebrow' + (mine ? " mine" : "") + '">' + (mine ? T("Your turn") : T("{name}'s turn", { name: who })) + "</p>";
+      var tag = r.rolloff ? "決戦 · " : r.finalFrom >= 0 ? T("Final round") + " · " : "";
+      var head = r.phase === "farkle" ? (r.bust === "over" ? '<div class="stamp">' + T("Bust") + "</div>" : '<div class="stamp jp" lang="ja">撃沈<small>GEKICHIN</small></div>')
+        : '<p class="eyebrow' + (mine ? " mine" : "") + (tag ? " kessen" : "") + '">' + tag + (mine ? T("Your turn") : T("{name}'s turn", { name: who })) + "</p>";
       center = head + '<div class="pot"><span class="chips' + (potValue ? "" : " empty") + '" aria-hidden="true"></span><span class="pot-n" id="pot">' + fmt(potValue) + "</span></div>" +
         '<p class="pot-l">' + T("This turn") + '</p><div class="tray" dir="ltr">' + dice + "</div>";
     }
-    var seats = seatsHTML(r.order, { cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "Farkled") : isBot(cur) ? "Thinking…" : r.auto === cur ? "On auto" : mine ? "Your turn" : "Rolling",
+    var seats = seatsHTML(r.order, { cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "撃沈") : isBot(cur) ? "Thinking…" : r.auto === cur ? "On auto" : mine ? "Your turn" : "Rolling",
       countdown: !done && !isBot(cur) && (r.phase === "roll" || r.phase === "choose") });
     var log = (r.log || []).slice(-6).map(function (l) { return "<li>" + logLine(l) + "</li>"; }).join("");
 

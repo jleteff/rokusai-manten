@@ -96,8 +96,10 @@ input[type=text], select {
 .home-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
 /* the table */
-.table { position: relative; width: 100%; max-width: 500px; margin: 22px auto 14px; aspect-ratio: 3 / 4; --d: min(12.5vw, 54px); --sw: 86px; --av: 44px; }
-.table.wide { max-width: 980px; aspect-ratio: 16 / 9; --d: 62px; --sw: 112px; --av: 56px; margin-top: 30px; margin-bottom: 26px; }
+/* the table is sized to the screen height too, so the whole game fits on a phone without scrolling */
+.table { position: relative; width: min(100%, 500px, calc((100vh - 270px) * .75)); min-width: 290px; max-width: 100%; margin: 20px auto 10px; aspect-ratio: 3 / 4; --d: min(12.5vw, 54px); --sw: 86px; --av: 44px; }
+@supports (height: 100dvh) { .table { width: min(100%, 500px, calc((100dvh - 270px) * .75)); } }
+.table.wide { width: min(100%, 980px, calc((100vh - 230px) * 1.7778)); max-width: 980px; aspect-ratio: 16 / 9; --d: 62px; --sw: 112px; --av: 56px; margin-top: 30px; margin-bottom: 26px; }
 .rail {
   position: absolute; inset: 8% 12%; border-radius: 50%;
   background: linear-gradient(160deg, var(--rail-hi), var(--rail) 55%, #24150c);
@@ -159,6 +161,24 @@ input[type=text], select {
 .dealer-seat .eye-w { display: none; }
 .dealer-seat .av.wink .eye-o { display: none; }
 .dealer-seat .av.wink .eye-w { display: inline; }
+/* menu: everything that isn't the table lives here */
+.icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--room-2); display: grid; place-items: center; padding: 0; position: relative; }
+.icon-btn svg { width: 20px; height: 20px; stroke: var(--ivory); fill: none; stroke-width: 2; stroke-linecap: round; }
+.menu-back { position: fixed; inset: 0; z-index: 42; background: rgba(0,0,0,.5); }
+.menu { position: fixed; top: 0; bottom: 0; inset-inline-end: 0; z-index: 43; width: min(380px, 92vw); overflow-y: auto; overscroll-behavior: contain;
+  background: var(--room-2); border-inline-start: 1px solid var(--line); box-shadow: -20px 0 50px rgba(0,0,0,.6);
+  padding: max(14px, env(safe-area-inset-top, 0px)) 14px calc(20px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px; }
+.menu .panel { padding: 14px; background: var(--room); }
+.menu-head { display: flex; justify-content: space-between; align-items: center; }
+.menu-head h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 24px; text-transform: uppercase; }
+.menu .code-big { font-family: var(--font-num); font-weight: 900; font-size: 34px; color: var(--gold); letter-spacing: .1em; }
+/* dice cup: shakes at the roller's seat and pours the dice onto the felt */
+.dicecup { position: fixed; z-index: 31; width: 48px; height: 58px; margin: -29px 0 0 -24px; pointer-events: none; transform-origin: 50% 60%; }
+.dicecup .cupbody { position: absolute; inset: 0; clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%);
+  background: linear-gradient(90deg, #2e1a0e 0%, #7b4b27 38%, #a0683a 50%, #6a3f20 64%, #2a170b 100%); }
+.dicecup .cupbody::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 7px; background: linear-gradient(90deg, #8a6a24, #f0cf6e, #8a6a24); }
+.dicecup .cupbody::after { content: ""; position: absolute; left: 10%; right: 10%; bottom: 7px; height: 3px; background: rgba(227,183,78,.7); }
+.dicecup.small { transform: scale(.6); }
 /* challenges: Ro Sham Bo and quick 1-on-1 games */
 .duel-back { position: fixed; inset: 0; z-index: 45; background: rgba(0,0,0,.55); display: grid; place-items: center; padding: 16px; }
 .duel { width: min(400px, 100%); background: var(--room-2); border: 1px solid var(--gold-dim); border-radius: 18px; padding: 20px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.7); }
@@ -176,12 +196,6 @@ input[type=text], select {
 .reveal i { font-style: normal; font-size: 14px; color: var(--ivory-dim); }
 .seat[data-act="seatmenu"] { cursor: pointer; }
 .seat.bot-seat .av { font-size: calc(var(--av) * .5); opacity: .85; }
-/* live video inside a seat */
-.av video.vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: #000; }
-.av video.vid.self { transform: scaleX(-1); }
-.av.live { border-color: #3fd37a; width: calc(var(--av) * 1.3); height: calc(var(--av) * 1.3); }
-.seat .muted-ic { position: absolute; z-index: 2; inset-inline-end: -2px; top: calc(var(--av) - 16px); width: 18px; height: 18px; border-radius: 50%; background: var(--ember); color: #fff; font-size: 10px; display: grid; place-items: center; font-weight: 800; }
-.vid-note { font-size: 13px; color: var(--ivory-dim); margin: 6px 0 10px; }
 .auto-note { display: inline-block; margin-inline-start: 6px; font-size: 12px; color: var(--ivory-dim); white-space: nowrap; }
 .badge .cd { font-variant-numeric: tabular-nums; }
 .plate .need { display: block; font-size: 10.5px; font-weight: 700; color: #f4d78a; line-height: 1.2; margin-top: 1px; white-space: nowrap; }
@@ -295,14 +309,14 @@ ol.rules { padding-left: 20px; }
 .bubble.down::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: var(--ivory); }
 @keyframes pop { from { transform: translateX(-50%) scale(.4); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
 .chat-sheet {
-  position: fixed; left: 50%; bottom: 0; z-index: 35; width: min(560px, 100%); height: min(64vh, 560px);
+  position: fixed; left: 50%; bottom: 0; z-index: 35; width: min(560px, 100%); height: min(44vh, 420px);
   transform: translate(-50%, 104%); visibility: hidden; transition: transform .25s ease, visibility 0s linear .25s;
   display: flex; flex-direction: column; background: var(--room-2); border: 1px solid var(--line); border-radius: 18px 18px 0 0;
   box-shadow: 0 -20px 50px rgba(0,0,0,.6); padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .chat-sheet.open { transform: translate(-50%, 0); visibility: visible; transition: transform .25s ease; }
 /* popped out: a small window the player can drag anywhere (and resize on a computer) */
-.chat-sheet.float { left: 0; top: 0; bottom: auto; width: min(320px, calc(100vw - 16px)); height: min(380px, 62vh); min-width: 220px; min-height: 220px;
+.chat-sheet.float { left: 0; top: 0; bottom: auto; width: min(280px, calc(100vw - 16px)); height: min(300px, 46vh); min-width: 200px; min-height: 180px; opacity: .97;
   max-width: calc(100vw - 8px); max-height: calc(100vh - 8px); border-radius: 14px; resize: both; overflow: hidden; padding-bottom: 0;
   transform: translate(var(--cx, 12px), var(--cy, 90px)); transition: none; box-shadow: 0 18px 50px rgba(0,0,0,.65); }
 .chat-sheet.float.open { transform: translate(var(--cx, 12px), var(--cy, 90px)); }
@@ -342,8 +356,8 @@ ol.rules { padding-left: 20px; }
 </div>
 <div id="toast" class="toast" hidden></div>
 <div id="sheet"></div>
-<div id="rtc-audio" hidden></div>
 <div id="duelroot"></div>
+<div id="menuroot"></div>
 <div class="chat-sheet" id="chatsheet" role="dialog" aria-label="Table chat">
   <div class="chat-head" id="chathead"><h2 id="chattitle">Table talk</h2><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn ghost small" type="button" data-act="chatpop" id="chatpop">Pop out</button><button class="btn ghost small" type="button" data-act="chatclose" id="chatclose">Close</button></div></div>
   <div class="chat-list" id="chatlist" aria-live="polite"></div>
@@ -609,7 +623,13 @@ ol.rules { padding-left: 20px; }
     "Rigged!": "مغشوشة!",
     "Ugh.": "أوف.",
     "I meant to do that.": "كنت أقصد ذلك.",
-    "Recalibrating…": "جارٍ إعادة المعايرة…"
+    "Recalibrating…": "جارٍ إعادة المعايرة…",
+    "Menu": "القائمة",
+    "Settings": "الإعدادات",
+    "Sound: on": "الصوت: مفعّل",
+    "Sound: off": "الصوت: متوقف",
+    "Switch dealer": "بدّل الموزّعة",
+    "Leave table": "غادر الطاولة"
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -779,7 +799,6 @@ ol.rules { padding-left: 20px; }
     unsubAll();
     code = c; room = null; players = {}; roomLoaded = false; subErr = null; seenRoll = null; sel = new Set(); joining = false;
     chatSeen = {}; chatPrimed = false; myChat = null; chatKeys = ""; setChatOpen(false);
-    if (vid.on) stopVideo(true);
     duelSeen = {}; duelPrimed = false; duelMenu = null;
     if (code && db) subscribe();
     render();
@@ -812,7 +831,7 @@ ol.rules { padding-left: 20px; }
     }, function (e) { subErr = e; render(); }));
     unsubs.push(rref.collection("players").onSnapshot(function (q) {
       var m = {}; q.docs.forEach(function (d) { m[d.id] = d.data(); });
-      players = m; noteChat(); noteDuels(); hostSync(); rtcSync(); duelTableTick(); scheduleAuto(); scheduleFarkle(); render(); renderChat(); renderDuel();
+      players = m; noteChat(); noteDuels(); hostSync(); duelTableTick(); scheduleAuto(); scheduleFarkle(); render(); renderChat(); renderDuel();
     }, function () {}));
   }
   function uniqueName(n) {
@@ -854,143 +873,9 @@ ol.rules { padding-left: 20px; }
     }, 180);
   }
 
-  /* ---------- video call ---------- */
-  // Each seated player can join with camera and mic. Video goes phone to phone (WebRTC);
-  // connection details travel through each player's own seat document, so no new database rules.
-  // A relay (TURN) server can be added in firebase-config.js as window.TURN_SERVERS for strict cellular networks.
-  var ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }].concat(window.TURN_SERVERS || []);
-  var vid = { on: false, joining: false, stream: null, mic: true, cam: true, sid: "", peers: {}, els: {} };
+  /* ---------- shared helpers ---------- */
   function newSid() { return Math.random().toString(36).slice(2, 10); }
   function myDoc() { return db.doc("rooms/" + code + "/players/" + uid); }
-  function writeSig(id, obj) { var u = {}; u["rtc." + id] = obj; return myDoc().update(u); }
-  function flushCands(id, P) {
-    if (!P.ready || !P.pending.length) return;
-    var batch = P.pending.splice(0), u = {};
-    u["rtc." + id + ".cands"] = firebase.firestore.FieldValue.arrayUnion.apply(null, batch);
-    myDoc().update(u).catch(function () {});
-  }
-  function applyCands(id, P) {
-    var pd = players[id], sig = pd && pd.rtc && pd.rtc[uid];
-    if (!sig || !P.pc.remoteDescription || sig.from !== P.remoteSid) return;
-    var list = sig.cands || [];
-    for (var i = P.applied; i < list.length; i++) P.pc.addIceCandidate(list[i]).catch(function () {});
-    P.applied = list.length;
-  }
-  function closePeer(id) {
-    var P = vid.peers[id]; if (!P) return;
-    try { P.pc.close(); } catch (e) {}
-    var a = document.getElementById("rtca-" + id); if (a) a.remove();
-    delete vid.peers[id]; delete vid.els[id];
-  }
-  function makePeer(id, remoteSid) {
-    var pc = new RTCPeerConnection({ iceServers: ICE });
-    var P = { pc: pc, remoteSid: remoteSid, applied: 0, pending: [], ready: false, answered: false, stream: null };
-    vid.stream.getTracks().forEach(function (t) { pc.addTrack(t, vid.stream); });
-    pc.onicecandidate = function (e) { if (e.candidate) { P.pending.push(e.candidate.toJSON()); flushCands(id, P); } };
-    pc.ontrack = function (e) {
-      P.stream = e.streams[0];
-      var a = document.getElementById("rtca-" + id);
-      if (!a) { a = document.createElement("audio"); a.id = "rtca-" + id; a.autoplay = true; a.setAttribute("playsinline", ""); $("#rtc-audio").appendChild(a); }
-      if (a.srcObject !== P.stream) { a.srcObject = P.stream; var pr = a.play(); if (pr && pr.catch) pr.catch(function () {}); }
-      render();
-    };
-    pc.onconnectionstatechange = function () {
-      if (pc.connectionState === "failed") { closePeer(id); setTimeout(rtcSync, 1500); }
-      render();
-    };
-    vid.peers[id] = P;
-    return P;
-  }
-  function rtcSync() {
-    if (!db || !code || !uid) return;
-    Object.keys(vid.peers).forEach(function (id) { if (!players[id] || !players[id].rtcOn || !vid.on) closePeer(id); });
-    if (!vid.on || !vid.stream) return;
-    Object.keys(players).forEach(function (id) {
-      if (id === uid) return;
-      var pd = players[id];
-      if (!pd.rtcOn || !pd.rtcSid) return;
-      var P = vid.peers[id], sig = pd.rtc && pd.rtc[uid];
-      if (uid < id) {
-        // I start this connection: send an offer addressed to their current session.
-        if (!P || P.remoteSid !== pd.rtcSid) {
-          closePeer(id); P = makePeer(id, pd.rtcSid);
-          var pc = P.pc;
-          pc.createOffer().then(function (o) { return pc.setLocalDescription(o); })
-            .then(function () { return writeSig(id, { from: vid.sid, to: P.remoteSid, sdp: { type: "offer", sdp: pc.localDescription.sdp }, cands: [] }); })
-            .then(function () { P.ready = true; flushCands(id, P); }).catch(function () {});
-        } else if (sig && sig.to === vid.sid && sig.from === P.remoteSid && sig.sdp && sig.sdp.type === "answer" && !P.answered && P.pc.signalingState === "have-local-offer") {
-          P.answered = true;
-          P.pc.setRemoteDescription(sig.sdp).then(function () { applyCands(id, P); }).catch(function () {});
-        } else applyCands(id, P);
-      } else if (sig && sig.to === vid.sid && sig.from === pd.rtcSid && sig.sdp && sig.sdp.type === "offer") {
-        // They start it: answer their offer once per session.
-        if (!P || P.remoteSid !== sig.from) {
-          closePeer(id); P = makePeer(id, sig.from);
-          var pc2 = P.pc;
-          pc2.setRemoteDescription(sig.sdp).then(function () { return pc2.createAnswer(); })
-            .then(function (a) { return pc2.setLocalDescription(a); })
-            .then(function () { return writeSig(id, { from: vid.sid, to: sig.from, sdp: { type: "answer", sdp: pc2.localDescription.sdp }, cands: [] }); })
-            .then(function () { P.ready = true; flushCands(id, P); applyCands(id, P); }).catch(function () {});
-        } else applyCands(id, P);
-      }
-    });
-  }
-  function startVideo() {
-    if (vid.on || vid.joining || !players[uid]) return;
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.RTCPeerConnection) { toast(T("This browser can't do video calls.")); return; }
-    vid.joining = true; render();
-    navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 240 }, height: { ideal: 240 }, frameRate: { ideal: 15, max: 20 }, facingMode: "user" },
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })
-      .then(function (stream) {
-        vid.stream = stream; vid.on = true; vid.joining = false; vid.mic = true; vid.cam = true; vid.sid = newSid();
-        return myDoc().update({ rtcOn: true, rtcSid: vid.sid, rtcMic: true, rtc: {} });
-      })
-      .then(function () { rtcSync(); render(); })
-      .catch(function (e) {
-        vid.joining = false;
-        if (vid.stream) { vid.stream.getTracks().forEach(function (t) { t.stop(); }); vid.stream = null; vid.on = false; }
-        toast(e && e.name === "NotAllowedError" ? T("Camera or mic blocked. Allow them in your browser settings.") : T("Couldn't start the camera."));
-        render();
-      });
-  }
-  function stopVideo(silent) {
-    Object.keys(vid.peers).forEach(closePeer);
-    if (vid.stream) vid.stream.getTracks().forEach(function (t) { t.stop(); });
-    vid.stream = null; vid.on = false; vid.els = {};
-    if (!silent && db && code && players[uid]) myDoc().update({ rtcOn: false, rtc: {} }).catch(function () {});
-    render();
-  }
-  function setMic(on) {
-    vid.mic = on; if (vid.stream) vid.stream.getAudioTracks().forEach(function (t) { t.enabled = on; });
-    if (players[uid]) myDoc().update({ rtcMic: on }).catch(function () {});
-    render();
-  }
-  function setCam(on) { vid.cam = on; if (vid.stream) vid.stream.getVideoTracks().forEach(function (t) { t.enabled = on; }); render(); }
-  // Seats are redrawn often, so the video elements live outside the page markup and get moved into each seat after a redraw.
-  function attachVideos() {
-    Array.prototype.forEach.call(document.querySelectorAll(".seat[data-seat]"), function (seat) {
-      var id = seat.getAttribute("data-seat"), av = seat.querySelector(".av");
-      var stream = id === uid ? (vid.on && vid.cam ? vid.stream : null) : (vid.peers[id] && vid.peers[id].stream);
-      if (!av || !stream) return;
-      var v = vid.els[id];
-      if (!v) { v = document.createElement("video"); v.className = "vid" + (id === uid ? " self" : ""); v.muted = true; v.autoplay = true; v.setAttribute("playsinline", ""); vid.els[id] = v; }
-      if (v.srcObject !== stream) v.srcObject = stream;
-      av.appendChild(v); av.classList.add("live");
-      var pr = v.play(); if (pr && pr.catch) pr.catch(function () {});
-      if (players[id] && players[id].rtcMic === false) { var m = document.createElement("span"); m.className = "muted-ic"; m.textContent = "✕"; m.title = T("Muted"); seat.appendChild(m); }
-    });
-  }
-  function videoHTML() {
-    if (!players[uid]) return "";
-    var body = !vid.on
-      ? '<p class="vid-note">' + T("See and hear each other at the table. Your camera and mic only turn on when you tap Join video.") + '</p><div class="row"><button class="btn small" data-act="vidon"' + (vid.joining ? " disabled" : "") + ">" + T(vid.joining ? "Starting camera…" : "Join video") + "</button></div>"
-      : '<p class="vid-note">' + T("You're on video. It connects directly between phones; on some cellular networks it may not connect.") + '</p><div class="row">' +
-        '<button class="btn ghost small pill" data-act="vidmic" aria-pressed="' + vid.mic + '">' + T(vid.mic ? "Mic: on" : "Mic: off") + "</button>" +
-        '<button class="btn ghost small pill" data-act="vidcam" aria-pressed="' + vid.cam + '">' + T(vid.cam ? "Camera: on" : "Camera: off") + "</button>" +
-        '<button class="btn ghost small" data-act="vidoff">' + T("Leave video") + "</button></div>";
-    return '<div class="panel"><p class="label">' + T("Video call") + "</p>" + body + "</div>";
-  }
-  window.addEventListener("pagehide", function () { if (vid.on && db && code && players[uid]) myDoc().update({ rtcOn: false, rtc: {} }).catch(function () {}); });
 
   /* ---------- bots ---------- */
   // Tables with fewer than 5 people get bots in the empty seats. The host's phone plays for them.
@@ -1164,6 +1049,80 @@ ol.rules { padding-left: 20px; }
       var w = nameOf(room.winner), l = nameOf(room.duelPair.filter(function (id) { return id !== room.winner; })[0]);
       db.doc("rooms/" + code).update({ duelReported: true }).then(function () { postToChat(room.duelOf, T("{w} won the duel against {l} (to {n})", { w: w, l: l, n: fmt(room.target) })); }).catch(function () {});
     }
+  }
+
+  /* ---------- sound effects ---------- */
+  // Generated on the fly (no audio files): dice rattling in a cup, then clattering onto the felt.
+  var soundOn = store.get("fk-sound") !== "0", noiseBuf = null;
+  function noise() {
+    if (noiseBuf) return noiseBuf;
+    noiseBuf = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
+    var d = noiseBuf.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return noiseBuf;
+  }
+  function clack(t, gain, freq, len) {
+    var src = audioCtx.createBufferSource(), bp = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+    src.buffer = noise(); bp.type = "bandpass"; bp.frequency.value = freq; bp.Q.value = 5;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + (len || 0.05));
+    src.connect(bp); bp.connect(g); g.connect(audioCtx.destination);
+    src.start(t, Math.random() * 0.8, (len || 0.05) + 0.02);
+  }
+  function thud(t, gain) {
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t + 0.14);
+  }
+  function rollSound(shakeMs, landTimes) {
+    if (!soundOn || !audioCtx) return;
+    try {
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      var t0 = audioCtx.currentTime + 0.02, i;
+      // rattle: dice knocking each other and the inside of a leather cup
+      for (i = 0; i < 26; i++) {
+        var t = t0 + Math.random() * shakeMs / 1000;
+        clack(t, 0.12 + Math.random() * 0.18, 1600 + Math.random() * 2200, 0.035);
+        if (i % 3 === 0) clack(t + 0.01, 0.1, 380 + Math.random() * 260, 0.07);
+      }
+      // pour: each die hits the felt and bounces once or twice
+      landTimes.forEach(function (ms) {
+        var t = t0 + ms / 1000;
+        thud(t, 0.32); clack(t, 0.22, 2200 + Math.random() * 1200, 0.04);
+        thud(t + 0.09 + Math.random() * 0.04, 0.14); clack(t + 0.1, 0.1, 2600, 0.03);
+        if (Math.random() < 0.5) clack(t + 0.18, 0.06, 3000, 0.025);
+      });
+    } catch (e) {}
+  }
+  function cupEl(x, y) {
+    var c = document.createElement("div");
+    c.className = "dicecup"; c.innerHTML = '<div class="cupbody"></div>';
+    c.style.left = x + "px"; c.style.top = y + "px";
+    document.body.appendChild(c);
+    return c;
+  }
+
+  /* ---------- menu ---------- */
+  var menuOpen = false;
+  var MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+  function renderMenu() {
+    var root = $("#menuroot"); if (!root) return;
+    if (!menuOpen) { root.innerHTML = ""; return; }
+    var old = root.querySelector(".menu"), keep = old ? old.scrollTop : 0;
+    var parts = ['<div class="menu-head"><h2>' + T("Menu") + '</h2><button class="btn ghost small" data-act="menuclose">' + T("Close") + "</button></div>"];
+    if (room && room.status !== "lobby" && room.order) {
+      var log = (room.log || []).slice(-8).map(function (l) { return "<li>" + logLine(l) + "</li>"; }).join("");
+      parts.push('<div class="panel"><p class="label">' + T("Game log · race to {n} exactly", { n: fmt(room.target) }) + '</p><ul class="log">' + log + "</ul></div>");
+    }
+    if (code) parts.push('<div class="panel"><p class="label">' + T("Invite link") + '</p><div class="code-big">' + esc(code) + "</div>" + inviteHTML() + "</div>");
+    if (code) parts.push(alertsHTML());
+    parts.push('<div class="panel"><p class="label">' + T("Settings") + '</p><div class="row" style="margin-top:8px">' +
+      '<button class="btn ghost small pill" data-act="sound" aria-pressed="' + soundOn + '">' + T(soundOn ? "Sound: on" : "Sound: off") + "</button>" +
+      '<button class="btn ghost small" data-act="lang"' + (LANG === "ar" ? ' lang="en">English' : ' lang="ar">عربي') + "</button>" +
+      (code && room ? '<button class="btn ghost small" data-act="dealer">' + T("Switch dealer") + "</button>" : "") + "</div></div>");
+    parts.push('<div class="panel">' + rulesHTML() + "</div>");
+    if (code) parts.push('<button class="btn ghost" data-act="home">' + T("Leave table") + "</button>");
+    root.innerHTML = '<div class="menu-back" data-act="menuclose"></div><div class="menu" role="dialog" aria-modal="true" aria-label="' + T("Menu") + '">' + parts.join("") + "</div>";
+    var m = root.querySelector(".menu"); if (m) m.scrollTop = keep;
   }
 
   /* ---------- turn alerts ---------- */
@@ -1350,7 +1309,8 @@ ol.rules { padding-left: 20px; }
   function rollFrom(r, held, turnScore, log, bonus) {
     bonus = bonus || [];
     var h = held.slice(), hot = false, i;
-    if (h.every(Boolean)) { h = [false, false, false, false, false, false]; hot = true; }
+    // Hot dice is a fresh throw of all six, so earlier triples stop counting as "extra dice worth 100".
+    if (h.every(Boolean)) { h = [false, false, false, false, false, false]; hot = true; bonus = []; }
     var dice = r.dice.length ? r.dice.slice() : [1, 1, 1, 1, 1, 1];
     var free = [];
     for (i = 0; i < 6; i++) if (!h[i]) { dice[i] = rollDie(); free.push(dice[i]); }
@@ -1632,8 +1592,11 @@ ol.rules { padding-left: 20px; }
     return '<div class="table' + (isWide() ? " wide" : "") + '"><div class="rail"><div class="felt"></div></div>' + seats +
       '<div class="center">' + center + "</div></div>";
   }
+  var PUBLIC_URL = "https://jleteff.github.io/rokusai-manten/";
+  function inApp() { return !/^https?:$/.test(location.protocol) || (location.hostname === "localhost" && !/[?&]emulator=1/.test(location.search)); }
+  function inviteURL() { return inApp() ? PUBLIC_URL + (code ? "#t-" + code : "") : location.href; }
   function inviteHTML() {
-    return '<div class="invite"><input type="text" id="link" readonly value="' + esc(location.href) + '" aria-label="' + T("Table link") + '">' +
+    return '<div class="invite"><input type="text" id="link" readonly value="' + esc(inviteURL()) + '" aria-label="' + T("Table link") + '">' +
       '<button class="btn small" data-act="copy">' + T("Copy link") + "</button></div>";
   }
   function rulesHTML(open) {
@@ -1712,25 +1675,47 @@ ol.rules { padding-left: 20px; }
   function runRoll(rollerId) {
     var dice = document.querySelectorAll(".tray .die.tumble");
     var seat = document.querySelector('.seat[data-seat="' + rollerId + '"]');
-    if (!dice.length || !seat || reduceMotion || !dice[0].animate) return;
-    var from = centerOf(seat.querySelector(".av") || seat), longest = 0;
+    if (!dice.length) return;
+    var SHAKE = 560, landTimes = [];
+    if (!seat || reduceMotion || !dice[0].animate) { rollSound(SHAKE, Array.prototype.map.call(dice, function (_, k) { return SHAKE + 150 + k * 60; })); return; }
+    var from = centerOf(seat.querySelector(".av") || seat), tray = centerOf(document.querySelector(".tray"));
+    var toward = Math.atan2(tray.x - from.x, -(tray.y - from.y)) * 180 / Math.PI;
+    var mouth = { x: from.x + (tray.x - from.x) * 0.22, y: from.y + (tray.y - from.y) * 0.22 };
     animating = true;
+    // The cup appears at the roller's seat, shakes, slides in a little and tips toward the table.
+    var cup = cupEl(from.x, from.y);
+    var cupMove = "translate(" + (mouth.x - from.x) + "px," + (mouth.y - from.y) + "px)";
+    cup.animate([
+      { transform: "scale(.5) rotate(0deg)", opacity: 0 },
+      { transform: "scale(1) rotate(-14deg)", opacity: 1, offset: 0.1 },
+      { transform: "scale(1) rotate(14deg)", offset: 0.22 }, { transform: "scale(1) rotate(-12deg)", offset: 0.34 },
+      { transform: "scale(1) rotate(12deg)", offset: 0.46 }, { transform: "scale(1) rotate(-6deg)", offset: 0.56 },
+      { transform: cupMove + " rotate(" + (toward + 115) + "deg) scale(1)", offset: 0.74, opacity: 1 },
+      { transform: cupMove + " rotate(" + (toward + 125) + "deg) scale(.9)", offset: 0.9, opacity: 1 },
+      { transform: cupMove + " rotate(" + (toward + 125) + "deg) scale(.6)", opacity: 0 }
+    ], { duration: 1000, easing: "ease-in-out", fill: "forwards" }).onfinish = function () { cup.remove(); };
+    var longest = 0;
     Array.prototype.forEach.call(dice, function (d, k) {
-      var to = centerOf(d), dx = from.x - to.x, dy = from.y - to.y;
-      var mx = dx * 0.32 + (Math.random() * 60 - 30), my = dy * 0.32 + (Math.random() * 40 - 20);
-      var spin = (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 360), rest = Math.random() * 24 - 12;
-      var dur = 820 + k * 70, final = Number(d.getAttribute("data-v"));
-      longest = Math.max(longest, dur);
+      // Dice pour out of the cup's mouth small, then grow to full size as they land.
+      var to = centerOf(d), dx = mouth.x - to.x, dy = mouth.y - to.y;
+      var mx = dx * 0.3 + (Math.random() * 50 - 25), my = dy * 0.3 + (Math.random() * 36 - 18);
+      var spin = (Math.random() < 0.5 ? -1 : 1) * (300 + Math.random() * 360), rest = Math.random() * 24 - 12;
+      var delay = SHAKE + 140 + k * 55, dur = 760 + k * 40, final = Number(d.getAttribute("data-v"));
+      longest = Math.max(longest, delay + dur);
+      landTimes.push(delay + dur * 0.62);
       d.animate([
-        { transform: "translate(" + dx + "px," + dy + "px) rotate(0deg) scale(.45)", opacity: 0 },
-        { transform: "translate(" + dx * 0.8 + "px," + dy * 0.8 + "px) rotate(" + spin * 0.2 + "deg) scale(.7)", opacity: 1, offset: 0.12 },
-        { transform: "translate(" + mx + "px," + my + "px) rotate(" + spin + "deg) scale(1.08)", offset: 0.62 },
+        { transform: "translate(" + dx + "px," + dy + "px) rotate(0deg) scale(.18)", opacity: 0 },
+        { transform: "translate(" + dx * 0.85 + "px," + dy * 0.85 + "px) rotate(" + spin * 0.15 + "deg) scale(.32)", opacity: 1, offset: 0.1 },
+        { transform: "translate(" + mx + "px," + my + "px) rotate(" + spin + "deg) scale(1.12)", offset: 0.62 },
         { transform: "translate(" + mx * 0.15 + "px," + my * 0.15 + "px) rotate(" + rest + "deg) scale(.97)", offset: 0.84 },
         { transform: "none", opacity: 1 }
-      ], { duration: dur, easing: "cubic-bezier(.2,.65,.3,1)", fill: "backwards" });
-      var flick = setInterval(function () { setFace(d, 1 + Math.floor(Math.random() * 6)); }, 75);
-      setTimeout(function () { clearInterval(flick); setFace(d, final); }, dur - 200);
+      ], { duration: dur, delay: delay, easing: "cubic-bezier(.2,.65,.3,1)", fill: "backwards" });
+      setTimeout(function () {
+        var flick = setInterval(function () { setFace(d, 1 + Math.floor(Math.random() * 6)); }, 75);
+        setTimeout(function () { clearInterval(flick); setFace(d, final); }, dur - 200);
+      }, delay);
     });
+    rollSound(SHAKE, landTimes);
     setTimeout(function () { animating = false; if (pendingRender) { pendingRender = false; render(); } }, longest + 40);
   }
   // The dealer scoops the last turn's dice, then slides them to the next player's seat.
@@ -1753,14 +1738,11 @@ ol.rules { padding-left: 20px; }
       a.onfinish = function () { f.remove(); };
     });
     setTimeout(function () {
-      var cup = document.createElement("div");
-      cup.className = "fly cup"; cup.innerHTML = dieHTML(6, "", 0, true) + dieHTML(1, "", 1, true);
-      cup.style.left = (dc.x - 24) + "px"; cup.style.top = (dc.y - 11) + "px";
-      document.body.appendChild(cup);
+      var cup = cupEl(dc.x, dc.y);
       var t = "translate(" + (sc.x - dc.x) + "px," + (sc.y - dc.y) + "px)";
       var a = cup.animate([
-        { transform: "scale(.6)", opacity: 0 }, { transform: "scale(1)", opacity: 1, offset: 0.15 },
-        { transform: t + " scale(1)", opacity: 1, offset: 0.85 }, { transform: t + " scale(.5)", opacity: 0 }
+        { transform: "scale(.4)", opacity: 0 }, { transform: "scale(.7)", opacity: 1, offset: 0.15 },
+        { transform: t + " scale(.75)", opacity: 1, offset: 0.85 }, { transform: t + " scale(.4)", opacity: 0 }
       ], { duration: 900, easing: "cubic-bezier(.4,.1,.3,1)", fill: "both" });
       a.onfinish = function () { cup.remove(); };
       var dav = document.querySelector("#dealer .av");
@@ -1776,12 +1758,13 @@ ol.rules { padding-left: 20px; }
     $("#warn").innerHTML = joinErr
       ? '<div class="panel" style="border-color:var(--ember)"><h2>' + T("You can watch, but not play") + '</h2><p class="muted">' + T("Couldn't save your seat at the table. Check your connection and reload the page.") + "</p></div>"
       : "";
-    var langBtn = '<button class="chip-btn lang" data-act="lang" aria-label="' + T("Switch language") + '"' + (LANG === "ar" ? ' lang="en">English' : ' lang="ar">عربي') + "</button>";
-    if (!db) { tr.innerHTML = '<div class="topbtns">' + langBtn + "</div>"; v.innerHTML = '<div class="panel"><h2>' + T("Can't connect") + '</h2><p class="muted">' + T("The game couldn't reach Firebase. Check docs/firebase-config.js and that Anonymous sign-in is turned on.") + "</p></div>"; return; }
+    var menuBtn = '<button class="icon-btn" data-act="menu" aria-label="' + T("Menu") + '">' + MENU_ICON + "</button>";
+    if (!db) { tr.innerHTML = '<div class="topbtns">' + menuBtn + "</div>"; v.innerHTML = '<div class="panel"><h2>' + T("Can't connect") + '</h2><p class="muted">' + T("The game couldn't reach Firebase. Check docs/firebase-config.js and that Anonymous sign-in is turned on.") + "</p></div>"; renderMenu(); return; }
     var unread = room ? unreadCount() : 0;
     tr.innerHTML = '<div class="topbtns">' + (code && room ? '<button class="chip-btn" data-act="chatopen" aria-label="' + T("Open table chat") + (unread ? ", " + T("{n} unread", { n: unread }) : "") + '"><span class="chat-lbl">' + T("Chat") + "</span>" + (unread ? '<span class="dot">' + unread + "</span>" : "") + "</button>" : "") +
       (code ? '<button class="chip-btn" data-act="copy" aria-label="' + T("Copy the invite link for table {code}", { code: esc(code) }) + '"><span class="lbl tbl">' + T("Table") + '</span><span class="code">' + esc(code) + '</span><span class="lbl inv">' + T("Invite") + "</span></button>" : "") +
-      langBtn + "</div>";
+      menuBtn + "</div>";
+    renderMenu();
     if (!code) { v.innerHTML = homeHTML(); return; }
     if (subErr) { v.innerHTML = '<div class="panel"><h2>' + T("Can't reach the table") + '</h2><p class="muted">' + (subErr.code === "slow" ? T("Still waiting for the table to answer. It may load in a moment.") : T("Something went wrong loading this table.")) + '</p><div class="row" style="margin-top:14px"><button class="btn ghost" data-act="home">' + T("Back") + "</button></div></div>"; return; }
     if (!roomLoaded) { v.innerHTML = '<div class="panel muted">' + T("Finding table {code}…", { code: esc(code) }) + "</div>"; return; }
@@ -1791,7 +1774,6 @@ ol.rules { padding-left: 20px; }
     var rollAnim = animate && room.status !== "lobby", roller = room.order ? room.order[room.turn] : null;
     animate = false;
     if (passAnim) { var pa = passAnim; passAnim = null; runPass(pa); }
-    attachVideos();
     if (rollAnim) runRoll(roller);
   }
   function avatarPickHTML() {
@@ -1829,8 +1811,7 @@ ol.rules { padding-left: 20px; }
           '</select><button class="btn" data-act="start"' + (ids.length ? "" : " disabled") + ">" + T("Start game") + "</button></div>" +
           (room.duelPair ? "" : '<div class="tools"><button class="btn ghost small pill" data-act="bots" aria-pressed="' + (room.bots !== false) + '">' + T(room.bots !== false ? "Bots fill empty seats: on" : "Bots fill empty seats: off") + "</button></div>")
       : '<p class="status-line">' + T("Playing to {n}. Waiting for {name} to start.", { n: fmt(room.target), name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" }) + "</p>";
-    return tableHTML(seats, center) + '<div class="actionbar">' + bar + "</div>" +
-      '<div class="below">' + videoHTML() + alertsHTML() + '<div class="panel"><p class="label">' + T("Invite link") + "</p>" + inviteHTML() + '</div><div class="panel">' + rulesHTML() + "</div></div>";
+    return tableHTML(seats, center) + '<div class="actionbar">' + bar + "</div>";
   }
   function gameHTML() {
     var r = room, cur = r.order[r.turn], mine = mineTurn(r), done = r.status === "done";
@@ -1912,10 +1893,7 @@ ol.rules { padding-left: 20px; }
 
     return tableHTML(seats, center) +
       '<div class="actionbar">' + (controls ? '<div class="actions">' + controls + "</div>" : "") +
-      '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + tools + "</div>" +
-      '<div class="below"><div class="panel"><p class="label">' + T("Game log · race to {n} exactly", { n: fmt(r.target) }) + '</p><ul class="log">' + log + "</ul></div>" +
-      videoHTML() + alertsHTML() + '<div class="panel"><p class="label">' + T("Invite link") + "</p>" + inviteHTML() + "</div>" +
-      '<div class="panel">' + rulesHTML() + "</div></div>";
+      '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + tools + "</div>";
   }
 
   /* ---------- events ---------- */
@@ -1961,11 +1939,10 @@ ol.rules { padding-left: 20px; }
     else if (a === "rps") { var A3 = activeDuel(); if (A3) pickHand(A3, el.getAttribute("data-h")); }
     else if (a === "duelclose") closeDuel(activeDuel());
     else if (a === "duelgo") { var A4 = activeDuel(); setTimeout(function () { closeDuel(A4); }, 300); }
-    else if (a === "vidon") startVideo();
-    else if (a === "vidoff") stopVideo();
-    else if (a === "vidmic") setMic(!vid.mic);
-    else if (a === "vidcam") setCam(!vid.cam);
-    else if (a === "chatopen") setChatOpen(true);
+    else if (a === "menu") { menuOpen = true; renderMenu(); }
+    else if (a === "menuclose") { menuOpen = false; renderMenu(); }
+    else if (a === "sound") { soundOn = !soundOn; store.set("fk-sound", soundOn ? "1" : "0"); if (soundOn) rollSound(300, [350]); renderMenu(); }
+    else if (a === "chatopen") { menuOpen = false; renderMenu(); setChatOpen(true); }
     else if (a === "chatclose") setChatOpen(false);
     else if (a === "chatpop") { chatFloat = !chatFloat; store.set("fk-chatfloat", chatFloat ? "1" : "0"); applyChatMode(); }
     else if (a === "quick") sendChat(el.getAttribute("data-t"));
@@ -1979,10 +1956,10 @@ ol.rules { padding-left: 20px; }
     else if (a === "pass") pass();
     else if (a === "skip") pass("skip");
     else if (a === "again") playAgain();
-    else if (a === "home") { location.hash = ""; route(); }
+    else if (a === "home") { menuOpen = false; location.hash = ""; route(); }
     else if (a === "copy") {
       var inp = $("#link");
-      try { navigator.clipboard.writeText(location.href).then(function () { toast(T("Invite link copied")); }, function () { if (inp) inp.select(); toast(T("Copy the selected link below")); }); }
+      try { navigator.clipboard.writeText(inviteURL()).then(function () { toast(T("Invite link copied")); }, function () { if (inp) inp.select(); toast(T("Copy the selected link below")); }); }
       catch (err) { if (inp) inp.select(); toast(T("Copy the selected link below")); }
     }
   });
@@ -1992,7 +1969,8 @@ ol.rules { padding-left: 20px; }
   });
   document.addEventListener("keydown", function (e) {
     if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches('[role="button"][data-act]')) { e.preventDefault(); e.target.click(); }
-    if (e.key === "Escape" && avatarOpen) { avatarOpen = false; renderSheet(); }
+    if (e.key === "Escape" && menuOpen) { menuOpen = false; renderMenu(); }
+    else if (e.key === "Escape" && avatarOpen) { avatarOpen = false; renderSheet(); }
     else if (e.key === "Escape" && chatOpen) setChatOpen(false);
   });
   $("#chathead").addEventListener("pointerdown", function (e) {
@@ -2030,7 +2008,7 @@ ol.rules { padding-left: 20px; }
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden) { clearInterval(titleT); document.title = baseTitle; }
   });
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").then(function (r) { swReg = r; }, function () {});
+  if ("serviceWorker" in navigator && !inApp()) navigator.serviceWorker.register("sw.js").then(function (r) { swReg = r; }, function () {});
 
   setInterval(tickCountdown, 500);
 

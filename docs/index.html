@@ -71,6 +71,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--gold-dim); }
 .btn:disabled { opacity: .38; cursor: not-allowed; }
 .btn.ghost { background: transparent; color: var(--ivory); border: 1.5px solid var(--line); box-shadow: none; }
+.btn.ghost.danger { color: var(--ember); border-color: var(--ember); }
 .btn.bank { background: var(--ivory); color: var(--ink); box-shadow: 0 3px 0 #b9b19a; }
 .btn.hot { background: var(--ember); color: #fff; box-shadow: 0 3px 0 #9c3420; }
 .btn.small { padding: 7px 12px; min-height: 36px; font-size: 13px; border-radius: 999px; }
@@ -202,6 +203,8 @@ input[type=text], select {
 .auto-note { display: inline-block; margin-inline-start: 6px; font-size: 12px; color: var(--ivory-dim); white-space: nowrap; }
 .badge .cd { font-variant-numeric: tabular-nums; }
 .oldver { margin: 6px auto; max-width: 560px; font-size: 13px; text-align: center; color: var(--gold); background: rgba(7,12,10,.85); border: 1px solid var(--gold-dim); border-radius: 9px; padding: 6px 10px; }
+.waitrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--gold-dim); border-radius: 10px; background: rgba(7,12,10,.85); font-size: 14px; }
+.waitrow .btn.small { min-height: 36px; padding: 6px 12px; }
 .plate .need.live { color: var(--gold); }
 .plate .need { display: block; font-size: 10.5px; font-weight: 700; color: #f4d78a; line-height: 1.2; margin-top: 1px; white-space: nowrap; }
 .seat.turn .plate .need { color: var(--gold); }
@@ -396,6 +399,55 @@ ol.rules { padding-left: 20px; }
     "Copy the invite link for table {code}": "انسخ رابط الدعوة للطاولة {code}",
     "Switch language": "تغيير اللغة",
     "You can watch, but not play": "يمكنك المشاهدة فقط",
+    "Loading…": "جارٍ التحميل…",
+    "Create your account": "أنشئ حسابك",
+    "Reset your password": "إعادة تعيين كلمة المرور",
+    "Sign in to play": "سجّل الدخول للعب",
+    "Every player needs an account. It keeps tables safe from people who weren't invited.": "كل لاعب يحتاج حسابًا. هذا يحمي الطاولات من غير المدعوين.",
+    "We'll email you a link to set a new password.": "سنرسل لك رابطًا بالبريد لتعيين كلمة مرور جديدة.",
+    "Sign in with your email and password.": "سجّل الدخول ببريدك الإلكتروني وكلمة المرور.",
+    "Email": "البريد الإلكتروني",
+    "Password": "كلمة المرور",
+    "Create account": "إنشاء الحساب",
+    "Send reset link": "أرسل رابط إعادة التعيين",
+    "Sign in": "تسجيل الدخول",
+    "I have an account": "لدي حساب",
+    "Create an account": "إنشاء حساب",
+    "Forgot password?": "نسيت كلمة المرور؟",
+    "Wrong email or password.": "البريد أو كلمة المرور غير صحيحة.",
+    "That email already has an account. Sign in instead.": "هذا البريد لديه حساب بالفعل. سجّل الدخول بدلًا من ذلك.",
+    "Use a password with at least 6 characters.": "استخدم كلمة مرور من 6 أحرف على الأقل.",
+    "Enter a valid email address.": "أدخل بريدًا إلكترونيًا صحيحًا.",
+    "Too many tries. Wait a few minutes and try again.": "محاولات كثيرة. انتظر بضع دقائق ثم حاول مجددًا.",
+    "Accounts aren't switched on yet. The game owner needs to turn on Email/Password sign-in in Firebase.": "الحسابات غير مفعّلة بعد. على صاحب اللعبة تفعيل تسجيل الدخول بالبريد وكلمة المرور في Firebase.",
+    "Couldn't connect. Check your internet and try again.": "تعذّر الاتصال. تحقق من الإنترنت وحاول مجددًا.",
+    "Something went wrong. Try again.": "حدث خطأ. حاول مجددًا.",
+    "Enter your name.": "أدخل اسمك.",
+    "Check your email for the reset link.": "تحقق من بريدك للحصول على رابط إعادة التعيين.",
+    "Host controls": "أدوات المضيف",
+    "Table locked: only seated players": "الطاولة مقفلة: للجالسين فقط",
+    "Table open: anyone with the link can sit": "الطاولة مفتوحة: أي شخص لديه الرابط يمكنه الجلوس",
+    "Tap a player's seat to remove them. Removed players can't come back to this table.": "اضغط على مقعد لاعب لإزالته. لا يمكن للاعب المُزال العودة لهذه الطاولة.",
+    "Account": "الحساب",
+    "Signed in as {name}": "مسجّل باسم {name}",
+    "Sign out": "تسجيل الخروج",
+    "Table locked": "الطاولة مقفلة",
+    "Table open": "الطاولة مفتوحة",
+    "Tap someone's seat to remove them.": "اضغط على مقعد أي شخص لإزالته.",
+    "{name} was removed from the table.": "تمت إزالة {name} من الطاولة.",
+    "You were removed from this table": "تمت إزالتك من هذه الطاولة",
+    "The host removed you. You can still start your own table.": "أزالك المضيف. يمكنك بدء طاولتك الخاصة.",
+    "This table is locked": "هذه الطاولة مقفلة",
+    "The host locked the table, so you can watch but not sit down. Ask them to open it.": "أقفل المضيف الطاولة، يمكنك المشاهدة فقط. اطلب منه فتحها.",
+    "You're waiting for {name} to let you in. You'll play from the next turn.": "أنت بانتظار أن يسمح لك {name} بالدخول. ستلعب من الدور التالي.",
+    "You're watching this game.": "أنت تشاهد هذه اللعبة.",
+    "{name} wants to play.": "{name} يريد اللعب.",
+    "Let in": "اسمح بالدخول",
+    "Remove": "إزالة",
+    "Remove {name}": "إزالة {name}",
+    "Remove {name} from the table": "إزالة {name} من الطاولة",
+    "Bots only play when the host adds them.": "الروبوتات تلعب فقط عندما يضيفها المضيف.",
+    "The host removed {name} from the table.": "أزال المضيف {name} من الطاولة.",
     "Update the game": "حدّث اللعبة",
     "This table is running a newer version. Update to keep playing.": "هذه الطاولة تعمل بإصدار أحدث. حدّث اللعبة لتكمل اللعب.",
     "Update now": "حدّث الآن",
@@ -662,7 +714,7 @@ ol.rules { padding-left: 20px; }
   }
   function fmt(x) { return Number(x || 0).toLocaleString("en-US"); }
   // Log entries are stored as codes so each phone shows them in its own language.
-  var LOGS = { start: "Game on. {name} rolls first.", startw: "{name} won last game and rolls first.", sat: "{names} sat down at the table.",
+  var LOGS = { start: "Game on. {name} rolls first.", startw: "{name} won last game and rolls first.", sat: "{names} sat down at the table.", removed: "The host removed {name} from the table.",
     six: "{name} rolls six {v}s in one throw and wins on the spot!", farkle: "撃沈! {name} loses {n}.", final: "{name} hit {t}! Everyone else gets one more turn.", reach: "{name} also hit {t}!",
     kessen: "決戦! {names} roll off for the win.", ksunk: "撃沈! {name} finishes the 決戦 with {n}.", kwin: "{name} wins the 決戦 with {n}!", kagain: "Tie at {n}! {names} go again.", over: "{name} has to keep {n} and goes over {t}. Bust.",
     hot: "{name} has hot dice and rolls all six.", auto: "{name} is on auto.", bank: "{name} banks {n}.", exact: "{name} lands exactly on {t} and wins.", skip: "{name} was skipped.", pass: "{name} passes the dice." };
@@ -785,6 +837,8 @@ ol.rules { padding-left: 20px; }
   /* ---------- state ---------- */
   var db = null;
   var uid = null, myName = store.get("fk-name") || "";
+  // Accounts: everyone signs in with an email and password, so seats belong to real people.
+  var authUser = null, authReady = false, authMode = "in", authErr = "", authInfo = "", authBusy = false;
   var code = null, room = null, players = {}, roomLoaded = false, subErr = null;
   // Bump APP_VER whenever the game rules change. Each phone writes its version on its seat;
   // a phone that's behind stops playing and asks to update, so mixed versions can't break a game.
@@ -891,27 +945,57 @@ ol.rules { padding-left: 20px; }
     while (taken.indexOf(out.toLowerCase()) > -1) out = n + " " + k++;
     return out;
   }
+  function iAmBanned() { return !!(room && (room.banned || []).indexOf(uid) > -1); }
   function maybeJoin() {
     if (!room || room.status === "done" || !myName || players[uid] || joining || joinErr) return;
+    if (iAmBanned() || (room.locked === true && room.host !== uid)) return;
     joining = true;
     db.doc("rooms/" + code + "/players/" + uid).set({ name: uniqueName(myName), joined: Date.now(), avatar: myAvatar, ver: APP_VER })
       .catch(function (e) { joining = false; joinErr = true; writeFail(e); render(); });
   }
 
-  // The host adds anyone who sits down after the game has started to the end of the turn order.
-  function hostSync() {
-    if (staleApp()) return;
-    if (!room || room.status !== "play" || room.host !== uid || busy) return;
-    var missing = Object.keys(players).filter(function (i) { return room.order.indexOf(i) < 0 && !players[i].bot; }).sort(byJoin);
-    if (!missing.length) return;
-    var patch = {
-      order: room.order.concat(missing),
-      log: pushLog(room, { k: "sat", names: missing.map(nameOf).join(", ") })
-    };
-    // Dotted paths merge into the scores map instead of replacing it.
-    missing.forEach(function (i) { patch["scores." + i] = 0; });
+  // Anyone who sits down after the game has started waits until the host lets them in.
+  function waitingIds() {
+    if (!room || room.status !== "play" || !room.order) return [];
+    return Object.keys(players).filter(function (i) { return room.order.indexOf(i) < 0 && !players[i].bot && (room.banned || []).indexOf(i) < 0; }).sort(byJoin);
+  }
+  function letIn(id) {
+    if (!room || room.host !== uid || room.status !== "play" || !players[id] || room.order.indexOf(id) > -1) return;
+    var patch = { order: room.order.concat([id]), log: pushLog(room, { k: "sat", names: nameOf(id) }) };
+    patch["scores." + id] = 0;
     act(db.doc("rooms/" + code).update(patch));
   }
+  // The host removes a player (or a bot): they leave the turn order, lose their seat, and can't sit back down.
+  function removePlayer(id) {
+    var r = room;
+    if (!r || r.host !== uid || id === uid || !players[id]) return;
+    var FV = firebase.firestore.FieldValue, patch = { banned: FV.arrayUnion(id) }, name = nameOf(id);
+    if (r.status === "play" && r.order && r.order.indexOf(id) > -1) {
+      var idx = r.order.indexOf(id), order = r.order.filter(function (x) { return x !== id; });
+      var scores = Object.assign({}, r.scores); delete scores[id];
+      var log = pushLog(r, { k: "removed", name: name });
+      var ro = r.rolloff ? Object.assign({}, r.rolloff, { players: r.rolloff.players.filter(function (x) { return x !== id; }) }) : null;
+      if (!order.length) patch = Object.assign(patch, { status: "lobby", order: [], log: [] });
+      else if (idx === r.turn) {
+        // It was their turn: hand it on as if they had just passed.
+        var ri = ro ? r.rolloff.players.indexOf(id) : -1;
+        if (ro) ro.i = ri - 1;
+        var r2 = Object.assign({}, r, { finalDone: (r.finalDone || []).concat([id]), rolloff: ro });
+        var p2 = endTurn(r2, scores, log);
+        if (p2.turn !== undefined) p2.turn = order.indexOf(r.order[p2.turn]);
+        if (ro && !p2.rolloff && p2.status !== "done") p2["rolloff.players"] = ro.players;
+        patch = Object.assign(patch, p2, { order: order, scores: scores });
+      } else {
+        patch = Object.assign(patch, { order: order, scores: scores, log: log, turn: idx < r.turn ? r.turn - 1 : r.turn,
+          finalists: (r.finalists || []).filter(function (x) { return x !== id; }), finalDone: (r.finalDone || []).filter(function (x) { return x !== id; }) });
+        if (ro) { var pos = r.rolloff.players.indexOf(id); if (pos > -1 && pos < ro.i) ro.i--; patch.rolloff = ro; }
+      }
+    }
+    act(db.doc("rooms/" + code).update(patch).then(function () { return db.doc("rooms/" + code + "/players/" + id).delete(); })
+      .then(function () { toast(T("{name} was removed from the table.", { name: name })); }));
+  }
+  function hostSync() {}
+
 
   // The active player's taps are shared so everyone at the table sees the pick as it happens.
   function sharePick() {
@@ -939,7 +1023,7 @@ ol.rules { padding-left: 20px; }
   var BOT_TABLE_SIZE = 5;
   function isBot(id) { return !!(players[id] && players[id].bot); }
   function humanIds() { return Object.keys(players).filter(function (id) { return !players[id].bot; }).sort(byJoin); }
-  function botsWanted(r) { return r && r.bots !== false && !r.duelPair; }
+  function botsWanted(r) { return r && r.bots === true && !r.duelPair; }   // off unless the host turns them on
   // Bank when the turn is worth enough for how many dice are left; braver bots wait for more.
   function botWantsBank(id, r, total, rest) {
     var need = r.target - ((r.scores && r.scores[id]) || 0);
@@ -1045,7 +1129,7 @@ ol.rules { padding-left: 20px; }
     if (duelMade[A.d.id]) return; duelMade[A.d.id] = true;
     var c = genCode();
     db.doc("rooms/" + c).set({ host: uid, status: "lobby", target: A.d.target || 5000, created: Date.now(), duelOf: code, duelPair: [uid, A.other] })
-      .then(function () { return db.doc("rooms/" + c + "/players/" + uid).set({ name: myName, joined: Date.now(), avatar: myAvatar }); })
+      .then(function () { return db.doc("rooms/" + c + "/players/" + uid).set({ name: myName, joined: Date.now(), avatar: myAvatar, ver: APP_VER }); })
       .then(function () { return myDoc().update({ "duel.room": c }); })
       .catch(function (e) { duelMade[A.d.id] = false; writeFail(e); });
   }
@@ -1055,12 +1139,15 @@ ol.rules { padding-left: 20px; }
     if (!db || !code || !room || !players[uid]) { root.innerHTML = ""; return; }
     var html = "";
     var A = activeDuel();
-    if (duelMenu && players[duelMenu] && !A) {
+    var kickBtn = duelMenu && room.host === uid && duelMenu !== uid && room.status !== "done" ? '<button class="btn ghost danger" data-act="kick" data-id="' + esc(duelMenu) + '">' + T("Remove {name} from the table", { name: "<bdi>" + esc(nameOf(duelMenu)) + "</bdi>" }) + "</button>" : "";
+    if (duelMenu && players[duelMenu] && !A && isBot(duelMenu)) {
+      html = "<h3><bdi>" + esc(nameOf(duelMenu)) + "</bdi></h3><p>" + T("Bots only play when the host adds them.") + '</p><div class="stack">' + kickBtn + '<button class="btn ghost small" data-act="duelclose">' + T("Cancel") + "</button></div>";
+    } else if (duelMenu && players[duelMenu] && !A) {
       var nm = "<bdi>" + esc(nameOf(duelMenu)) + "</bdi>";
       html = "<h3>" + T("Challenge {name}", { name: nm }) + '</h3><p>' + T("Pick a quick 1-on-1. They have to accept.") + '</p><div class="stack">' +
         '<button class="btn" data-act="chal" data-k="rps">✊ ' + T("Ro Sham Bo") + "</button>" +
         [2500, 5000, 10000].map(function (t) { return '<button class="btn ghost" data-act="chal" data-k="game" data-t="' + t + '">🎲 ' + T("Quick game to {n}", { n: fmt(t) }) + "</button>"; }).join("") +
-        '<button class="btn ghost small" data-act="duelclose">' + T("Cancel") + "</button></div>";
+        kickBtn + '<button class="btn ghost small" data-act="duelclose">' + T("Cancel") + "</button></div>";
     } else if (A) {
       var other = "<bdi>" + esc(nameOf(A.other)) + "</bdi>", isGame = A.d.kind === "game";
       if (!A.ans) {
@@ -1174,6 +1261,10 @@ ol.rules { padding-left: 20px; }
       '<button class="btn ghost small" data-act="lang"' + (LANG === "ar" ? ' lang="en">English' : ' lang="ar">عربي') + "</button>" +
       (code && room ? '<button class="btn ghost small" data-act="dealer">' + T("Switch dealer") + "</button>" : "") + "</div></div>");
     parts.push('<div class="panel">' + rulesHTML() + "</div>");
+    if (code && room && room.host === uid && room.status !== "done" && !room.duelPair) parts.push('<div class="panel"><p class="label">' + T("Host controls") + '</p><div class="row" style="margin-top:8px">' +
+      '<button class="btn ghost small pill" data-act="lock" aria-pressed="' + (room.locked === true) + '">' + T(room.locked ? "Table locked: only seated players" : "Table open: anyone with the link can sit") + "</button></div>" +
+      '<p class="muted small" style="margin-top:8px">' + T("Tap a player's seat to remove them. Removed players can't come back to this table.") + "</p></div>");
+    if (authUser) parts.push('<div class="panel"><p class="label">' + T("Account") + '</p><p class="small">' + T("Signed in as {name}", { name: "<strong><bdi>" + esc(myName) + "</bdi></strong>" }) + ' <span class="muted" dir="ltr">' + esc(authUser.email || "") + '</span></p><div class="row" style="margin-top:8px"><button class="btn ghost small" data-act="signout">' + T("Sign out") + "</button></div></div>");
     if (code) parts.push('<button class="btn ghost" data-act="home">' + T("Leave table") + "</button>");
     root.innerHTML = '<div class="menu-back" data-act="menuclose"></div><div class="menu" role="dialog" aria-modal="true" aria-label="' + T("Menu") + '">' + parts.join("") + "</div>";
     var m = root.querySelector(".menu"); if (m) m.scrollTop = keep;
@@ -1318,7 +1409,7 @@ ol.rules { padding-left: 20px; }
     var c = genCode();
     try {
       await db.doc("rooms/" + c).set({ host: uid, status: "lobby", target: 10000, created: Date.now() });
-      await db.doc("rooms/" + c + "/players/" + uid).set({ name: myName, joined: Date.now(), avatar: myAvatar });
+      await db.doc("rooms/" + c + "/players/" + uid).set({ name: myName, joined: Date.now(), avatar: myAvatar, ver: APP_VER });
       location.hash = "t-" + c; route();
     } catch (e) { writeFail(e); }
   }
@@ -1701,7 +1792,7 @@ ol.rules { padding-left: 20px; }
         : (!o.scores && id === room.host) ? '<span class="badge off">' + T("Host") + "</span>" : "";
       var nm = nameOf(id) + (id === uid ? " " + T("(you)") : "");
       var mine = id === uid ? ' data-act="avatar" role="button" tabindex="0" aria-label="' + T("Change your avatar") + '"'
-        : players[uid] && !isBot(id) ? ' data-act="seatmenu" data-id="' + esc(id) + '" role="button" tabindex="0" aria-label="' + T("Challenge {name}", { name: esc(nameOf(id)) }) + '"' : "";
+        : players[uid] && (!isBot(id) || room.host === uid) ? ' data-act="seatmenu" data-id="' + esc(id) + '" role="button" tabindex="0" aria-label="' + T(isBot(id) ? "Remove {name}" : "Challenge {name}", { name: esc(nameOf(id)) }) + '"' : "";
       return '<div class="' + cls + '" data-seat="' + esc(id) + '" style="' + st + '"' + mine + ">" + badge + bubble +
         avatarHTML(id, nameOf(id), players[id] && players[id].avatar) +
         '<div class="plate"><span class="nm">' + esc(nm) + "</span>" +
@@ -1906,7 +1997,11 @@ ol.rules { padding-left: 20px; }
   function render() {
     if (animating) { pendingRender = true; return; }
     var v = $("#view"), tr = $("#topright");
-    $("#warn").innerHTML = joinErr
+    $("#warn").innerHTML = room && code && iAmBanned()
+      ? '<div class="panel" style="border-color:var(--ember)"><h2>' + T("You were removed from this table") + '</h2><p class="muted">' + T("The host removed you. You can still start your own table.") + "</p></div>"
+      : room && code && room.locked === true && !players[uid] && room.host !== uid
+      ? '<div class="panel"><h2>' + T("This table is locked") + '</h2><p class="muted">' + T("The host locked the table, so you can watch but not sit down. Ask them to open it.") + "</p></div>"
+      : joinErr
       ? '<div class="panel" style="border-color:var(--ember)"><h2>' + T("You can watch, but not play") + '</h2><p class="muted">' + T("Couldn't save your seat at the table. Check your connection and reload the page.") + "</p></div>"
       : staleApp()
       ? '<div class="panel" style="border-color:var(--gold)"><h2>' + T("Update the game") + '</h2><p class="muted">' + T("This table is running a newer version. Update to keep playing.") + '</p><div class="row" style="margin-top:12px"><a class="btn" href="' + esc(freshURL()) + '">' + T("Update now") + "</a></div></div>"
@@ -1920,6 +2015,8 @@ ol.rules { padding-left: 20px; }
       (code ? '<button class="chip-btn" data-act="copy" aria-label="' + T("Copy the invite link for table {code}", { code: esc(code) }) + '"><span class="lbl tbl">' + T("Table") + '</span><span class="code">' + esc(code) + '</span><span class="lbl inv">' + T("Invite") + "</span></button>" : "") +
       menuBtn + "</div>";
     renderMenu();
+    if (!authReady) { v.innerHTML = '<div class="panel muted">' + T("Loading…") + "</div>"; return; }
+    if (!authUser) { v.innerHTML = authHTML(); return; }
     if (!code) { v.innerHTML = homeHTML(); return; }
     if (subErr) { v.innerHTML = '<div class="panel"><h2>' + T("Can't reach the table") + '</h2><p class="muted">' + (subErr.code === "slow" ? T("Still waiting for the table to answer. It may load in a moment.") : T("Something went wrong loading this table.")) + '</p><div class="row" style="margin-top:14px"><button class="btn ghost" data-act="home">' + T("Back") + "</button></div></div>"; return; }
     if (!roomLoaded) { v.innerHTML = '<div class="panel muted">' + T("Finding table {code}…", { code: esc(code) }) + "</div>"; return; }
@@ -1947,6 +2044,62 @@ ol.rules { padding-left: 20px; }
       '<button class="btn ghost" data-act="join">' + T("Join") + "</button></div></div>" +
       '<div class="panel" style="margin:14px 0 28px">' + rulesHTML(true) + "</div>";
   }
+  function authHTML() {
+    var up = authMode === "up", reset = authMode === "reset";
+    var title = up ? T("Create your account") : reset ? T("Reset your password") : T("Sign in to play");
+    var sub = up ? T("Every player needs an account. It keeps tables safe from people who weren't invited.")
+      : reset ? T("We'll email you a link to set a new password.")
+      : T("Sign in with your email and password.");
+    return '<div class="hero"><h1 lang="ja">六賽万点</h1><p class="romaji" lang="ja-Latn">Roku-sai Manten</p></div>' +
+      '<form class="panel auth" id="authform" style="max-width:460px;margin:0 auto 28px" novalidate><h2>' + title + '</h2><p class="muted" style="margin-bottom:14px">' + sub + "</p>" +
+      (up ? '<div class="field"><label class="label" for="au-name">' + T("Your name") + '</label><input type="text" id="au-name" maxlength="20" dir="auto" autocomplete="nickname" value="' + esc(myName) + '"></div>' : "") +
+      '<div class="field"><label class="label" for="au-email">' + T("Email") + '</label><input type="email" id="au-email" dir="ltr" autocomplete="email" inputmode="email"></div>' +
+      (reset ? "" : '<div class="field"><label class="label" for="au-pw">' + T("Password") + '</label><input type="password" id="au-pw" dir="ltr" autocomplete="' + (up ? "new-password" : "current-password") + '" minlength="6"></div>') +
+      (authErr ? '<p class="hint bad" role="alert">' + esc(authErr) + "</p>" : "") +
+      (authInfo ? '<p class="hint" role="status">' + esc(authInfo) + "</p>" : "") +
+      '<button class="btn" type="submit"' + (authBusy ? " disabled" : "") + ">" + (up ? T("Create account") : reset ? T("Send reset link") : T("Sign in")) + "</button>" +
+      '<div class="row auth-links" style="margin-top:12px">' +
+      (up || reset ? '<button type="button" class="btn ghost small" data-act="authmode" data-mode="in">' + T("I have an account") + "</button>"
+        : '<button type="button" class="btn ghost small" data-act="authmode" data-mode="up">' + T("Create an account") + '</button><button type="button" class="btn ghost small" data-act="authmode" data-mode="reset">' + T("Forgot password?") + "</button>") +
+      "</div></form>";
+  }
+  function authMsg(e) {
+    var c = (e && e.code) || "";
+    if (/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)) return T("Wrong email or password.");
+    if (/email-already-in-use/.test(c)) return T("That email already has an account. Sign in instead.");
+    if (/weak-password/.test(c)) return T("Use a password with at least 6 characters.");
+    if (/invalid-email|missing-email/.test(c)) return T("Enter a valid email address.");
+    if (/too-many-requests/.test(c)) return T("Too many tries. Wait a few minutes and try again.");
+    if (/operation-not-allowed|admin-restricted/.test(c)) return T("Accounts aren't switched on yet. The game owner needs to turn on Email/Password sign-in in Firebase.");
+    if (/network/.test(c)) return T("Couldn't connect. Check your internet and try again.");
+    return T("Something went wrong. Try again.");
+  }
+  function doAuth() {
+    if (authBusy) return;
+    var email = ($("#au-email") || {}).value || "", pw = ($("#au-pw") || {}).value || "", nm = (($("#au-name") || {}).value || "").trim();
+    email = email.trim(); authErr = ""; authInfo = "";
+    if (authMode === "up" && !nm) { authErr = T("Enter your name."); render(); return; }
+    if (!email) { authErr = T("Enter a valid email address."); render(); return; }
+    authBusy = true; render();
+    var a = firebase.auth(), job;
+    if (authMode === "reset") job = a.sendPasswordResetEmail(email).then(function () { authInfo = T("Check your email for the reset link."); authMode = "in"; });
+    else if (authMode === "up") job = a.createUserWithEmailAndPassword(email, pw).then(function (c) {
+      myName = nm; store.set("fk-name", nm);
+      return c.user.updateProfile({ displayName: nm });
+    });
+    else job = a.signInWithEmailAndPassword(email, pw);
+    job.catch(function (e) { authErr = authMsg(e); }).then(function () {
+      authBusy = false; render();
+      var f = $("#au-email"); if (f && authErr) f.value = email;
+    });
+  }
+  function saveName(n) {
+    if (authUser && n && authUser.displayName !== n) authUser.updateProfile({ displayName: n }).catch(function () {});
+  }
+  function signOut() {
+    unsubAll(); code = null; menuOpen = false; location.hash = "";
+    firebase.auth().signOut();
+  }
   function nameGate() {
     return '<div class="panel" style="max-width:460px;margin:20px auto"><h2>' + T("Pull up a chair") + '</h2><p class="muted" style="margin-bottom:14px">' + T("What should the table call you?") + "</p>" +
       avatarPickHTML() +
@@ -1959,13 +2112,15 @@ ol.rules { padding-left: 20px; }
     var seats = seatsHTML(ids, { botGhosts: botN, ghosts: Math.max(0, 6 - ids.length - botN) });
     var center = '<p class="eyebrow">' + T("Table") + '</p><div class="lobby-code">' + esc(code) + "</div>" +
       '<p class="small">' + T("Players seated: {n}.", { n: ids.length }) + " " + T("Send the link so friends can pull up a chair. Tap your seat to pick an avatar.") + "</p>" +
+      (isHost && !room.duelPair ? '<p class="small muted">' + T("Tap someone's seat to remove them.") + "</p>" : "") +
       (room.lastWinner && players[room.lastWinner] ? '<p class="small">' + T("{name} won last game and rolls first.", { name: "<strong><bdi>" + esc(nameOf(room.lastWinner)) + "</bdi></strong>" }) + "</p>" : "") +
       '<button class="btn small" data-act="copy">' + T("Copy invite link") + "</button>";
     var bar = isHost
       ? '<div class="actions"><select id="tg" aria-label="' + T("Play to") + '" style="flex:0 0 auto;width:auto">' +
           [5000, 10000].map(function (t) { return '<option value="' + t + '"' + (room.target === t ? " selected" : "") + ">" + T("Play to {n}", { n: fmt(t) }) + "</option>"; }).join("") +
           '</select><button class="btn" data-act="start"' + (ids.length ? "" : " disabled") + ">" + T("Start game") + "</button></div>" +
-          (room.duelPair ? "" : '<div class="tools"><button class="btn ghost small pill" data-act="bots" aria-pressed="' + (room.bots !== false) + '">' + T(room.bots !== false ? "Bots fill empty seats: on" : "Bots fill empty seats: off") + "</button></div>")
+          (room.duelPair ? "" : '<div class="tools"><button class="btn ghost small pill" data-act="bots" aria-pressed="' + (room.bots === true) + '">' + T(room.bots === true ? "Bots fill empty seats: on" : "Bots fill empty seats: off") + "</button>" +
+            '<button class="btn ghost small pill" data-act="lock" aria-pressed="' + (room.locked === true) + '">' + T(room.locked ? "Table locked" : "Table open") + "</button></div>")
       : '<p class="status-line">' + T("Playing to {n}. Waiting for {name} to start.", { n: fmt(room.target), name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" }) + "</p>";
     return tableHTML(seats, center) + '<div class="actionbar">' + bar + "</div>";
   }
@@ -2004,7 +2159,7 @@ ol.rules { padding-left: 20px; }
     } else if (hold) {
       hint = mine ? T("Rolling…") : T("{name} is rolling. Watch the felt.", { name: who });
     } else if (!inGame) {
-      hint = T("Taking your seat. The host's screen adds you in a moment. If this stays, ask the host to keep the page open.");
+      hint = players[uid] ? T("You're waiting for {name} to let you in. You'll play from the next turn.", { name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" }) : T("You're watching this game.");
     } else if (mine && r.phase === "roll") {
       controls = '<button class="btn" data-act="roll"' + (busy ? " disabled" : "") + ">" + T("Roll the dice") + "</button>";
       hint = r.rolloff ? T("Your 決戦 turn: roll until 撃沈. The highest total wins.")
@@ -2057,12 +2212,18 @@ ol.rules { padding-left: 20px; }
       countdown: !done && !isBot(cur) && (r.phase === "roll" || r.phase === "choose") });
     var log = (r.log || []).slice(-6).map(function (l) { return "<li>" + logLine(l) + "</li>"; }).join("");
 
+    var waiting = room.host === uid && !done ? waitingIds().map(function (id) {
+      return '<div class="waitrow"><span>' + T("{name} wants to play.", { name: "<strong><bdi>" + esc(nameOf(id)) + "</bdi></strong>" }) + '</span><button class="btn small" data-act="letin" data-id="' + esc(id) + '">' + T("Let in") + '</button><button class="btn ghost small" data-act="kick" data-id="' + esc(id) + '">' + T("Remove") + "</button></div>";
+    }).join("") : "";
     return tableHTML(seats, center) +
-      '<div class="actionbar">' + (controls ? '<div class="actions">' + controls + "</div>" : "") +
+      '<div class="actionbar">' + waiting + (controls ? '<div class="actions">' + controls + "</div>" : "") +
       '<p class="hint ' + hintCls + '" role="status">' + hint + "</p>" + tools + "</div>";
   }
 
   /* ---------- events ---------- */
+  document.addEventListener("submit", function (e) {
+    if (e.target && e.target.id === "authform") { e.preventDefault(); doAuth(); }
+  });
   document.addEventListener("click", function (e) {
     var el = e.target.closest("[data-act]"); if (!el) return;
     var a = el.getAttribute("data-act");
@@ -2074,9 +2235,14 @@ ol.rules { padding-left: 20px; }
       var i = Number(el.getAttribute("data-i"));
       if (sel.has(i)) sel.delete(i); else sel.add(i);
       backFromAuto(); scheduleAuto(true); sharePick(); render();
-    } else if (a === "create") { var n = $("#nm"); myName = n.value.trim(); if (!myName) { n.focus(); return; } store.set("fk-name", myName); createTable(); }
+    } else if (a === "create") { var n = $("#nm"); myName = n.value.trim(); if (!myName) { n.focus(); return; } store.set("fk-name", myName); saveName(myName); createTable(); }
     else if (a === "join") { var c = $("#jc").value.trim().toUpperCase(); var nm = $("#nm") ? $("#nm").value.trim() : ""; if (nm) { myName = nm; store.set("fk-name", nm); } if (c) location.hash = "t-" + c; }
-    else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); maybeJoin(); render(); }
+    else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); saveName(v); maybeJoin(); render(); }
+    else if (a === "authmode") { authMode = el.getAttribute("data-mode"); authErr = ""; authInfo = ""; render(); var f = $("#au-name") || $("#au-email"); if (f) f.focus(); }
+    else if (a === "signout") signOut();
+    else if (a === "lock") { if (room && room.host === uid) act(db.doc("rooms/" + code).update({ locked: room.locked !== true })); }
+    else if (a === "kick") { var kid = el.getAttribute("data-id"); duelMenu = null; renderDuel(); removePlayer(kid); }
+    else if (a === "letin") letIn(el.getAttribute("data-id"));
     else if (a === "autopick") { if (room && mineTurn(room) && room.phase === "choose") { sel = new Set(bestSel(room)); backFromAuto(); scheduleAuto(true); sharePick(); render(); } }
     else if (a === "autotoggle") {
       autoPick = !autoPick; store.set("fk-auto", autoPick ? "1" : "0");
@@ -2099,7 +2265,7 @@ ol.rules { padding-left: 20px; }
     }
     else if (a === "lang") { LANG = LANG === "ar" ? "en" : "ar"; store.set("fk-lang", LANG); applyLang(); avatarOpen && renderSheet(); renderChat(true); render(); }
     else if (a === "dealer") { dealerPick = dealerPick === "sofia" ? "layla" : "sofia"; store.set("fk-dealer", dealerPick); render(); }
-    else if (a === "bots") { if (room && room.host === uid) act(db.doc("rooms/" + code).update({ bots: room.bots === false })); }
+    else if (a === "bots") { if (room && room.host === uid) act(db.doc("rooms/" + code).update({ bots: room.bots !== true })); }
     else if (a === "seatmenu") { duelMenu = el.getAttribute("data-id"); renderDuel(); }
     else if (a === "chal") challenge(duelMenu, el.getAttribute("data-k"), Number(el.getAttribute("data-t")) || 0);
     else if (a === "duelyes") { var A1 = activeDuel(); if (A1) answerDuel(A1, true); }
@@ -2188,12 +2354,18 @@ ol.rules { padding-left: 20px; }
       firebase.initializeApp(window.FIREBASE_CONFIG);
       var emu = /[?&]emulator=1/.test(location.search);
       if (emu) firebase.auth().useEmulator("http://127.0.0.1:9099");
-      var cred = await firebase.auth().signInAnonymously();
-      uid = cred.user.uid;
       db = firebase.firestore();
       if (emu) db.useEmulator("127.0.0.1", 8080);
-    } catch (e) { db = null; console.error(e); }
-    route();
+      firebase.auth().onAuthStateChanged(function (u) {
+        // Old guest (anonymous) sessions are signed out: every player needs an account now.
+        if (u && u.isAnonymous) { firebase.auth().signOut(); return; }
+        var was = uid;
+        authUser = u; authReady = true; uid = u ? u.uid : null;
+        if (u && u.displayName) { myName = u.displayName; store.set("fk-name", myName); }
+        if (was !== uid) { unsubAll(); code = null; }
+        route();
+      });
+    } catch (e) { db = null; console.error(e); render(); }
   }
   init();
 })();

@@ -528,7 +528,7 @@ ol.rules { padding-left: 20px; }
     "Six of anything wins the game on the spot.": "ستة متشابهة من أي رقم تفوز باللعبة فوراً.",
     "Straight 1–6 = {a}. Two triplets = {b}.": "متتالية 1–6 = {a}. مجموعتا ثلاثة = {b}.",
     "Five-dice straight (1–5 or 2–6) = {n}.": "متتالية من خمسة (1–5 أو 2–6) = {n}.",
-    "Three pairs = {a}. Full house (three of a kind plus a pair) = {b}.": "ثلاثة أزواج = {a}. فُل هاوس (ثلاثة متشابهة مع زوج) = {b}.",
+    "Three pairs = {a}. Full house (three of a kind plus a pair, five of a kind counts) = {b}.": "ثلاثة أزواج = {a}. فُل هاوس (ثلاثة متشابهة مع زوج، وخمسة متشابهة تُحسب) = {b}.",
     "Fine print": "التفاصيل",
     "You need {n} in one turn to get on the board.": "تحتاج إلى {n} في دور واحد لتدخل اللوحة.",
     "Score with all six dice and you roll all six again (hot dice).": "إذا سجّلت بالستة كلها ترمي الستة من جديد (نرد ساخن).",
@@ -721,7 +721,7 @@ ol.rules { padding-left: 20px; }
       for (v = 1; v <= 6; v++) {
         if (c[v] < 3) continue;
         for (w = 1; w <= 6; w++) {
-          if (w === v || c[w] < 2) continue;
+          if (c[w] < 2 || (w === v && c[v] < 5)) continue;   // five of a kind is a triple plus a pair
           var left = c.slice(); left[v] -= 3; left[w] -= 2;
           var extra = 0, ok = true, k;
           for (k = 1; k <= 6; k++) {
@@ -1702,7 +1702,7 @@ ol.rules { padding-left: 20px; }
         li("<strong>" + T("Six of anything wins the game on the spot.") + "</strong>") +
         li(T("Straight 1–6 = {a}. Two triplets = {b}.", { a: n(STRAIGHT), b: n(TWO_TRIPLETS) })) +
         li(T("Five-dice straight (1–5 or 2–6) = {n}.", { n: n(SMALL_STRAIGHT) })) +
-        li(T("Three pairs = {a}. Full house (three of a kind plus a pair) = {b}.", { a: n(THREE_PAIRS), b: n(FULL_HOUSE) })) + "</ul></div>" +
+        li(T("Three pairs = {a}. Full house (three of a kind plus a pair, five of a kind counts) = {b}.", { a: n(THREE_PAIRS), b: n(FULL_HOUSE) })) + "</ul></div>" +
       '<div class="rules-sec"><h4>' + T("Fine print") + '</h4><ul class="rules">' +
         li(T("You need {n} in one turn to get on the board.", { n: n(MIN_ENTRY) })) +
         li(T("Score with all six dice and you roll all six again (hot dice).")) +

@@ -201,6 +201,7 @@ input[type=text], select {
 .seat.bot-seat .av { font-size: calc(var(--av) * .5); opacity: .85; }
 .auto-note { display: inline-block; margin-inline-start: 6px; font-size: 12px; color: var(--ivory-dim); white-space: nowrap; }
 .badge .cd { font-variant-numeric: tabular-nums; }
+.plate .need.live { color: var(--gold); }
 .plate .need { display: block; font-size: 10.5px; font-weight: 700; color: #f4d78a; line-height: 1.2; margin-top: 1px; white-space: nowrap; }
 .seat.turn .plate .need { color: var(--gold); }
 .dealer-seat:hover .av { outline: 2px dashed rgba(227,183,78,.6); outline-offset: 3px; }
@@ -1664,7 +1665,10 @@ ol.rules { padding-left: 20px; }
       return '<div class="' + cls + '" data-seat="' + esc(id) + '" style="' + st + '"' + mine + ">" + badge + bubble +
         avatarHTML(id, nameOf(id), players[id] && players[id].avatar) +
         '<div class="plate"><span class="nm">' + esc(nm) + "</span>" +
-        (o.scores ? '<span class="sc">' + fmt(o.scores[id] || 0) + "</span>" + (room.rolloff && room.rolloff.results && room.rolloff.results[id] !== undefined ? '<span class="need">決戦 ' + fmt(room.rolloff.results[id]) + "</span>" : "") + (!room.rolloff && pointsLeft(room, id) ? '<span class="need">' + T("{n} left", { n: fmt(pointsLeft(room, id)) }) + "</span>" : "") : "") + "</div></div>";
+        (o.scores ? '<span class="sc">' + fmt(o.scores[id] || 0) + "</span>" + (room.rolloff && room.rolloff.results && room.rolloff.results[id] !== undefined ? '<span class="need">決戦 ' + fmt(room.rolloff.results[id]) + "</span>" : "") + (!room.rolloff && pointsLeft(room, id) ? (function () {
+          var liveNow = o.live && o.live.id === id, left = Math.max(0, pointsLeft(room, id) - (liveNow ? o.live.total : 0));
+          return '<span class="need' + (liveNow ? " live" : "") + '" data-num="left-' + esc(id) + '" data-to="' + left + '" data-tpl="left">' + T("{n} left", { n: fmt(left) }) + "</span>";
+        })() : "") : "") + "</div></div>";
     }).join("");
   }
   function tableHTML(seats, center) {
@@ -1751,6 +1755,31 @@ ol.rules { padding-left: 20px; }
 
   /* ---------- table animations ---------- */
   function centerOf(el) { var b = el.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }
+  // Numbers that change roll smoothly to their new value instead of jumping.
+  var shownNum = {}, NUM_MS = 700;
+  function animateNumbers() {
+    var now = performance.now();
+    Array.prototype.forEach.call(document.querySelectorAll("[data-num]"), function (el) {
+      var key = el.getAttribute("data-num"), to = Number(el.getAttribute("data-to")) || 0, tpl = el.getAttribute("data-tpl"), prev = shownNum[key];
+      var show = function (v) { el.textContent = tpl === "left" ? T("{n} left", { n: fmt(v) }) : fmt(v); };
+      var tw;
+      if (!prev) { shownNum[key] = { from: to, to: to, start: 0 }; return; }
+      if (prev.to === to) {
+        if (now - prev.start >= NUM_MS) return;   // already settled
+        tw = prev;                                 // the screen was redrawn mid-tick: keep going
+      } else {
+        // start from wherever the number currently is on screen
+        var cur = prev.start && now - prev.start < NUM_MS ? prev.from + (prev.to - prev.from) * (1 - Math.pow(1 - (now - prev.start) / NUM_MS, 3)) : prev.to;
+        tw = shownNum[key] = { from: Math.round(cur), to: to, start: now };
+      }
+      if (reduceMotion) { show(to); return; }
+      (function step(t0) {
+        var t = Math.min(1, (t0 - tw.start) / NUM_MS), e = 1 - Math.pow(1 - t, 3);
+        show(t >= 1 ? tw.to : Math.round((tw.from + (tw.to - tw.from) * e) / 10) * 10);
+        if (t < 1 && el.isConnected && shownNum[key] === tw) requestAnimationFrame(step);
+      })(now);
+    });
+  }
   function setFace(el, v) { el.innerHTML = pipsSVG(v); }
   // Dice leave the roller's seat, tumble across the felt with their faces flickering, and settle in place.
   function runRoll(rollerId) {
@@ -1856,6 +1885,7 @@ ol.rules { padding-left: 20px; }
     var rollAnim = animate && room.status !== "lobby", roller = room.order ? room.order[room.turn] : null;
     animate = false;
     if (passAnim) { var pa = passAnim; passAnim = null; runPass(pa); }
+    animateNumbers();
     if (rollAnim) runRoll(roller);
   }
   function avatarPickHTML() {
@@ -1975,10 +2005,11 @@ ol.rules { padding-left: 20px; }
       var tag = r.rolloff ? "決戦 · " : r.finalFrom >= 0 ? T("Final round") + " · " : "";
       var head = r.phase === "farkle" ? (r.bust === "over" ? '<div class="stamp">' + T("Bust") + "</div>" : '<div class="stamp jp" lang="ja">撃沈<small>GEKICHIN</small></div>')
         : '<p class="eyebrow' + (mine ? " mine" : "") + (tag ? " kessen" : "") + '">' + tag + (mine ? T("Your turn") : T("{name}'s turn", { name: who })) + "</p>";
-      center = head + '<div class="pot"><span class="chips' + (potValue ? "" : " empty") + '" aria-hidden="true"></span><span class="pot-n" id="pot">' + fmt(potValue) + "</span></div>" +
+      center = head + '<div class="pot"><span class="chips' + (potValue ? "" : " empty") + '" aria-hidden="true"></span><span class="pot-n" id="pot" data-num="pot" data-to="' + potValue + '" data-tpl="pot">' + fmt(potValue) + "</span></div>" +
         '<p class="pot-l">' + T("This turn") + '</p><div class="tray" dir="ltr">' + dice + "</div>";
     }
-    var seats = seatsHTML(r.order, { cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "撃沈") : isBot(cur) ? "Thinking…" : r.auto === cur ? "On auto" : mine ? "Your turn" : "Rolling",
+    var liveTotal = r.phase === "choose" ? total : (r.turnScore || 0);
+    var seats = seatsHTML(r.order, { live: !done && !r.rolloff ? { id: cur, total: liveTotal } : null, cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "撃沈") : isBot(cur) ? "Thinking…" : r.auto === cur ? "On auto" : mine ? "Your turn" : "Rolling",
       countdown: !done && !isBot(cur) && (r.phase === "roll" || r.phase === "choose") });
     var log = (r.log || []).slice(-6).map(function (l) { return "<li>" + logLine(l) + "</li>"; }).join("");
 

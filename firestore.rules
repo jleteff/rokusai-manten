@@ -2,9 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Every player signs in with an email-and-password account. Guest (anonymous) sessions can't play.
+    // Every player signs in with an email-and-password account and has confirmed their email.
+    // Guest (anonymous) sessions and unconfirmed accounts can't see or touch any table.
     function signedIn() {
-      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'password';
+      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'password' &&
+        request.auth.token.email_verified == true;
     }
 
     match /rooms/{code} {

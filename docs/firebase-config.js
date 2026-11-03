@@ -9,3 +9,7 @@ window.FIREBASE_CONFIG = {
   appId: "1:305144882762:web:b11f61ff6def165a5f68b3"
 };
 
+
+// Bot protection (Firebase App Check with Google reCAPTCHA v3, invisible to players).
+// Paste the reCAPTCHA v3 *site key* here. Leave it empty to turn App Check off.
+window.APP_CHECK_KEY = "";

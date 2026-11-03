@@ -34,6 +34,8 @@ Open the address, create a table, send the link (it ends in `#t-XXXX`) to your f
 - Each table is a Firestore document at `rooms/{code}`, with seats in `rooms/{code}/players`.
 - `firestore.rules` lets only the player whose turn it is change the game. The host can change anything.
 - Players are Firebase email/password accounts. The database rules (`firestore.rules`) only let signed-in accounts in, let the host remove and ban players and lock a table, refuse bots, and only let the player whose turn it is make game moves on their own score.
+- New accounts must confirm their email before they can see or join a table.
+- Bot protection: Firebase App Check with reCAPTCHA v3. Put the site key in `docs/firebase-config.js` (`APP_CHECK_KEY`), then turn on enforcement for Firestore and Authentication in the Firebase console.
 - Dice are still rolled on each phone, so a determined player could fake their own rolls. Moving rolls to a server (Cloud Functions, Blaze plan) closes that.
 
 ## Known limits

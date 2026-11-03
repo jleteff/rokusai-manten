@@ -203,6 +203,8 @@ input[type=text], input[type=email], input[type=password], select {
 .auto-note { display: inline-block; margin-inline-start: 6px; font-size: 12px; color: var(--ivory-dim); white-space: nowrap; }
 .badge .cd { font-variant-numeric: tabular-nums; }
 .oldver { margin: 6px auto; max-width: 560px; font-size: 13px; text-align: center; color: var(--gold); background: rgba(7,12,10,.85); border: 1px solid var(--gold-dim); border-radius: 9px; padding: 6px 10px; }
+.grecaptcha-badge { visibility: hidden !important; }
+.recap { margin-top: 14px; font-size: 12px; } .recap a { color: inherit; text-decoration: underline; }
 .waitrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--gold-dim); border-radius: 10px; background: rgba(7,12,10,.85); font-size: 14px; }
 .waitrow .btn.small { min-height: 36px; padding: 6px 12px; }
 .plate .need.live { color: var(--gold); }
@@ -375,6 +377,7 @@ ol.rules { padding-left: 20px; }
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
 (function () {
@@ -399,6 +402,17 @@ ol.rules { padding-left: 20px; }
     "Copy the invite link for table {code}": "انسخ رابط الدعوة للطاولة {code}",
     "Switch language": "تغيير اللغة",
     "You can watch, but not play": "يمكنك المشاهدة فقط",
+    "Check your email": "تحقق من بريدك",
+    "We sent a link to {email}. Tap it to confirm your account, then come back here.": "أرسلنا رابطًا إلى {email}. اضغط عليه لتأكيد حسابك، ثم عد إلى هنا.",
+    "Don't see it? Check your spam or junk folder.": "لا تجده؟ تحقق من مجلد الرسائل غير المرغوب فيها.",
+    "I confirmed it": "لقد أكّدته",
+    "Send it again": "أرسله مرة أخرى",
+    "Not confirmed yet. Tap the link in the email first.": "لم يتم التأكيد بعد. اضغط على الرابط في البريد أولًا.",
+    "Sent. Check your inbox.": "تم الإرسال. تحقق من بريدك.",
+    "Protected by reCAPTCHA. Google's {p} and {t} apply.": "محمي بواسطة reCAPTCHA. تنطبق {p} و{t} من Google.",
+    "Privacy Policy": "سياسة الخصوصية",
+    "Terms": "الشروط",
+    "Your browser didn't pass the bot check. Reload the page and try again.": "لم يجتز متصفحك فحص الروبوتات. أعد تحميل الصفحة وحاول مجددًا.",
     "Everyone plays with their own account. No bots. The host can lock the table and remove anyone.": "كل لاعب يلعب بحسابه الخاص. لا روبوتات. يمكن للمضيف قفل الطاولة وإزالة أي شخص.",
     "Loading…": "جارٍ التحميل…",
     "Create your account": "أنشئ حسابك",
@@ -838,11 +852,11 @@ ol.rules { padding-left: 20px; }
   var db = null;
   var uid = null, myName = store.get("fk-name") || "";
   // Accounts: everyone signs in with an email and password, so seats belong to real people.
-  var authUser = null, authReady = false, authMode = "in", authErr = "", authInfo = "", authBusy = false;
+  var authUser = null, authReady = false, authMode = "in", authErr = "", authInfo = "", authBusy = false, verifySent = false, verifyT = null;
   var code = null, room = null, players = {}, roomLoaded = false, subErr = null;
   // Bump APP_VER whenever the game rules change. Each phone writes its version on its seat;
   // a phone that's behind stops playing and asks to update, so mixed versions can't break a game.
-  var APP_VER = 3;
+  var APP_VER = 4;
   function tableVer() { var v = 0; Object.keys(players).forEach(function (i) { if (!players[i].bot) v = Math.max(v, players[i].ver || 0); }); return v; }
   function staleApp() { return !!code && tableVer() > APP_VER; }
   function oldPhones() {
@@ -1958,6 +1972,7 @@ ol.rules { padding-left: 20px; }
     renderMenu();
     if (!authReady) { v.innerHTML = '<div class="panel muted">' + T("Loading…") + "</div>"; return; }
     if (!authUser) { v.innerHTML = authHTML(); return; }
+    if (!authUser.emailVerified) { v.innerHTML = verifyHTML(); startVerifyWatch(); return; }
     if (!code) { v.innerHTML = homeHTML(); return; }
     if (subErr) { v.innerHTML = '<div class="panel"><h2>' + T("Can't reach the table") + '</h2><p class="muted">' + (subErr.code === "slow" ? T("Still waiting for the table to answer. It may load in a moment.") : T("Something went wrong loading this table.")) + '</p><div class="row" style="margin-top:14px"><button class="btn ghost" data-act="home">' + T("Back") + "</button></div></div>"; return; }
     if (!roomLoaded) { v.innerHTML = '<div class="panel muted">' + T("Finding table {code}…", { code: esc(code) }) + "</div>"; return; }
@@ -2002,7 +2017,7 @@ ol.rules { padding-left: 20px; }
       '<div class="row auth-links" style="margin-top:12px">' +
       (up || reset ? '<button type="button" class="btn ghost small" data-act="authmode" data-mode="in">' + T("I have an account") + "</button>"
         : '<button type="button" class="btn ghost small" data-act="authmode" data-mode="up">' + T("Create an account") + '</button><button type="button" class="btn ghost small" data-act="authmode" data-mode="reset">' + T("Forgot password?") + "</button>") +
-      "</div></form>";
+      "</div>" + (window.APP_CHECK_KEY ? '<p class="muted small recap">' + T("Protected by reCAPTCHA. Google's {p} and {t} apply.", { p: '<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">' + T("Privacy Policy") + "</a>", t: '<a href="https://policies.google.com/terms" target="_blank" rel="noopener">' + T("Terms") + "</a>" }) + "</p>" : "") + "</form>";
   }
   function authMsg(e) {
     var c = (e && e.code) || "";
@@ -2013,6 +2028,7 @@ ol.rules { padding-left: 20px; }
     if (/too-many-requests/.test(c)) return T("Too many tries. Wait a few minutes and try again.");
     if (/operation-not-allowed|admin-restricted/.test(c)) return T("Accounts aren't switched on yet. The game owner needs to turn on Email/Password sign-in in Firebase.");
     if (/network/.test(c)) return T("Couldn't connect. Check your internet and try again.");
+    if (/app-check|appCheck/i.test(c)) return T("Your browser didn't pass the bot check. Reload the page and try again.");
     return T("Something went wrong. Try again.");
   }
   function doAuth() {
@@ -2024,10 +2040,10 @@ ol.rules { padding-left: 20px; }
     authBusy = true; render();
     var a = firebase.auth(), job;
     if (authMode === "reset") job = a.sendPasswordResetEmail(email).then(function () { authInfo = T("Check your email for the reset link."); authMode = "in"; });
-    else if (authMode === "up") job = a.createUserWithEmailAndPassword(email, pw).then(function (c) {
+    else if (authMode === "up") { verifySent = true; job = a.createUserWithEmailAndPassword(email, pw).then(function (c) {
       myName = nm; store.set("fk-name", nm);
-      return c.user.updateProfile({ displayName: nm });
-    });
+      return c.user.updateProfile({ displayName: nm }).then(function () { return c.user.sendEmailVerification(); });
+    }); }
     else job = a.signInWithEmailAndPassword(email, pw);
     job.then(function () { if (authMode !== "in") return; }).catch(function (e) { authErr = authMsg(e); }).then(function () {
       if (!authErr && firebase.auth().currentUser) authMode = "in";
@@ -2035,11 +2051,35 @@ ol.rules { padding-left: 20px; }
       var f = $("#au-email"); if (f && authErr) f.value = email;
     });
   }
+  // Every account has to confirm its email before it can sit at a table, so nobody can mass-produce fake players.
+  function verifyHTML() {
+    if (!verifySent) { verifySent = true; authUser.sendEmailVerification().catch(function () {}); }
+    return '<div class="hero"><h1 lang="ja">六賽万点</h1><p class="romaji" lang="ja-Latn">Roku-sai Manten</p></div>' +
+      '<div class="panel" style="max-width:460px;margin:0 auto 28px"><h2>' + T("Check your email") + '</h2><p class="muted" style="margin-bottom:12px">' +
+      T("We sent a link to {email}. Tap it to confirm your account, then come back here.", { email: '<strong dir="ltr">' + esc(authUser.email || "") + "</strong>" }) + "</p>" +
+      '<p class="muted small" style="margin-bottom:14px">' + T("Don't see it? Check your spam or junk folder.") + "</p>" +
+      (authErr ? '<p class="hint bad" role="alert">' + esc(authErr) + "</p>" : "") +
+      (authInfo ? '<p class="hint" role="status">' + esc(authInfo) + "</p>" : "") +
+      '<div class="row"><button class="btn" data-act="verified">' + T("I confirmed it") + '</button><button class="btn ghost small" data-act="resend">' + T("Send it again") + '</button><button class="btn ghost small" data-act="signout">' + T("Sign out") + "</button></div></div>";
+  }
+  function checkVerified(manual) {
+    var u = firebase.auth().currentUser; if (!u) return;
+    u.reload().then(function () {
+      if (!u.emailVerified) { if (manual) { authErr = T("Not confirmed yet. Tap the link in the email first."); authInfo = ""; render(); } return; }
+      clearInterval(verifyT); verifyT = null; authErr = ""; authInfo = "";
+      return u.getIdToken(true).then(function () { authUser = u; unsubAll(); code = null; route(); });
+    }).catch(function () {});
+  }
+  function startVerifyWatch() { if (!verifyT) verifyT = setInterval(function () { checkVerified(false); }, 4000); }
+  function resendVerify() {
+    authErr = ""; authInfo = "";
+    authUser.sendEmailVerification().then(function () { authInfo = T("Sent. Check your inbox."); }, function (e) { authErr = authMsg(e); }).then(render);
+  }
   function saveName(n) {
     if (authUser && n && authUser.displayName !== n) authUser.updateProfile({ displayName: n }).catch(function () {});
   }
   function signOut() {
-    unsubAll(); code = null; menuOpen = false; location.hash = ""; authMode = "in"; authErr = ""; authInfo = "";
+    unsubAll(); code = null; menuOpen = false; location.hash = ""; authMode = "in"; authErr = ""; authInfo = ""; verifySent = false; clearInterval(verifyT); verifyT = null;
     firebase.auth().signOut();
   }
   function nameGate() {
@@ -2180,6 +2220,8 @@ ol.rules { padding-left: 20px; }
     else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); saveName(v); maybeJoin(); render(); }
     else if (a === "authmode") { authMode = el.getAttribute("data-mode"); authErr = ""; authInfo = ""; render(); var f = $("#au-name") || $("#au-email"); if (f) f.focus(); }
     else if (a === "signout") signOut();
+    else if (a === "verified") checkVerified(true);
+    else if (a === "resend") resendVerify();
     else if (a === "lock") { if (room && room.host === uid) act(db.doc("rooms/" + code).update({ locked: room.locked !== true })); }
     else if (a === "kick") { var kid = el.getAttribute("data-id"); duelMenu = null; renderDuel(); removePlayer(kid); }
     else if (a === "letin") letIn(el.getAttribute("data-id"));
@@ -2292,6 +2334,11 @@ ol.rules { padding-left: 20px; }
     try {
       firebase.initializeApp(window.FIREBASE_CONFIG);
       var emu = /[?&]emulator=1/.test(location.search);
+      // Bot protection: App Check proves each request comes from this real page in a real browser
+      // (Google reCAPTCHA v3, invisible). Scripts and bots outside the page get turned away.
+      if (!emu && !inApp() && window.APP_CHECK_KEY && firebase.appCheck) {
+        try { firebase.appCheck().activate(new firebase.appCheck.ReCaptchaV3Provider(window.APP_CHECK_KEY), true); } catch (e) { console.error(e); }
+      }
       if (emu) firebase.auth().useEmulator("http://127.0.0.1:9099");
       db = firebase.firestore();
       if (emu) db.useEmulator("127.0.0.1", 8080);

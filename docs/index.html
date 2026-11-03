@@ -629,7 +629,10 @@ ol.rules { padding-left: 20px; }
     "Sound: off": "الصوت: متوقف",
     "Switch dealer": "بدّل الموزّعة",
     "Leave table": "غادر الطاولة",
-    "If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can. While you're on auto it moves every 5 seconds. Tap anything to take back control.": "إذا لم تتحرك خلال 20 ثانية، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن. أثناء اللعب التلقائي تتحرك كل 5 ثوانٍ. اضغط أي شيء لتستعيد التحكم."
+    "If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can. While you're on auto it moves every 5 seconds. Tap anything to take back control.": "إذا لم تتحرك خلال 20 ثانية، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن. أثناء اللعب التلقائي تتحرك كل 5 ثوانٍ. اضغط أي شيء لتستعيد التحكم.",
+    "Rolling…": "جارٍ الرمي…",
+    "That would put you over {n}. Keep fewer dice.": "هذا يتجاوز بك {n}. احتفظ بنرد أقل.",
+    "You must land on exactly {n}. You can't keep dice that would take you over it, and if every roll you could keep goes over, your turn ends in a bust.": "يجب أن تصل إلى {n} بالضبط. لا يمكنك الاحتفاظ بنرد يتجاوز بك هذا الرقم، وإذا كان كل ما يمكنك الاحتفاظ به يتجاوزه، ينتهي دورك بخسارته."
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -728,21 +731,24 @@ ol.rules { padding-left: 20px; }
   }
   // mode "best": highest score, and on a tie keep fewer dice so more stay in play.
   // mode "all": every die that can score (the most dice), used by the 9,000+ must-keep rule.
-  function pickSet(dice, held, bonus, mode) {
+  function pickSet(dice, held, bonus, mode, cap) {
     var free = [], i, m, best = null;
     for (i = 0; i < 6; i++) if (!held[i]) free.push(i);
     for (m = 1; m < (1 << free.length); m++) {
       var idxs = free.filter(function (_, k) { return m & (1 << k); });
       var sc = scoreSel(idxs.map(function (j) { return dice[j]; }), bonus);
-      if (!sc.valid || sc.score <= 0) continue;
+      if (!sc.valid || sc.score <= 0 || (cap !== undefined && sc.score > cap)) continue;
       var better = !best || (mode === "all"
         ? (idxs.length > best.idxs.length || (idxs.length === best.idxs.length && sc.score > best.score))
+        : mode === "min" ? (sc.score < best.score || (sc.score === best.score && idxs.length < best.idxs.length))
         : (sc.score > best.score || (sc.score === best.score && idxs.length < best.idxs.length)));
       if (better) best = { score: sc.score, idxs: idxs };
     }
     return best || { score: 0, idxs: [] };
   }
-  function bestSel(r) { return pickSet(r.dice, r.held, r.bonus, "best").idxs; }
+  // Never pick more than what's left to reach the target this turn.
+  function roomLeft(r) { var cur = r.order[r.turn]; return r.target - ((r.scores && r.scores[cur]) || 0) - (r.turnScore || 0); }
+  function bestSel(r) { return pickSet(r.dice, r.held, r.bonus, "best", roomLeft(r)).idxs; }
   // Within 1,000 of the target (9,000 when playing to 10,000), every scoring die must be kept.
   // From 2,000 below the target (8,000 when playing to 10,000), show what each player needs to go out.
   function needToGoOut(r, id) {
@@ -765,6 +771,7 @@ ol.rules { padding-left: 20px; }
   var QUICK = ["😂", "🔥", "🎲", "Nice roll", "Choke!", "Too easy", "Bank it, coward", "Farkle incoming"];
   var chatOpen = false, chatSeen = {}, chatPrimed = false, chatReadAt = 0, myChat = null, lastSend = 0, bubbleT = null, chatKeys = "";
   var alertsOn = store.get("fk-alerts") !== "0", swReg = null, audioCtx = null, titleT = null, baseTitle = document.title;
+  var rollHold = false, holdRoll = -1, holdScore = 0, holdUntil = 0;
   var passAnim = null, animating = false, pendingRender = false, avatarOpen = false, myAvatar = store.get("fk-avatar") || "";
   var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
@@ -813,7 +820,17 @@ ol.rules { padding-left: 20px; }
       room = s.exists ? s.data() : null;
       if (room) {
         if (seenRoll === null) seenRoll = room.rollId || 0;
-        else if ((room.rollId || 0) !== seenRoll) { seenRoll = room.rollId || 0; animate = true; }
+        else if ((room.rollId || 0) !== seenRoll) {
+          seenRoll = room.rollId || 0; animate = true;
+          if (!reduceMotion) {
+            // Until the dice land, show the turn as it was before this roll (no points, no Farkle, no winner yet).
+            var lastLog = (room.log || [])[(room.log || []).length - 1];
+            rollHold = true; holdRoll = room.rollId || 0; holdUntil = Date.now() + 3200;
+            holdScore = room.phase === "farkle" && lastLog && lastLog.k === "farkle" ? lastLog.n || 0
+              : room.phase === "farkle" || room.status === "done" ? (before && before.turnScore) || 0 : room.turnScore || 0;
+            setTimeout(function () { if (rollHold && Date.now() >= holdUntil) { rollHold = false; render(); } }, 3300);
+          }
+        }
         if (before && room.status === "play" && room.order && room.order[room.turn] === uid &&
             !(before.status === "play" && before.order && before.order[before.turn] === uid)) notifyTurn();
         // The turn moved on: the dealer scoops the last dice and passes them along.
@@ -918,7 +935,7 @@ ol.rules { padding-left: 20px; }
     if (!patch) return;
     act(db.doc("rooms/" + code).update(patch));
     if (banked >= 1500) botTalk(cur, BOT_BRAG);
-    else if (patch.phase === "farkle") botTalk(cur, BOT_SULK);
+    else if (patch.phase === "farkle") setTimeout(function () { botTalk(cur, BOT_SULK); }, 2200);
   }
 
   /* ---------- challenges ---------- */
@@ -1332,6 +1349,13 @@ ol.rules { padding-left: 20px; }
           log: pushLog({ log: log }, { k: "over", name: who, n: f.score, t: r.target }) };
       }
       forced = f.idxs;
+    } else {
+      // Going over the target ends the turn: if even the smallest legal keep is too much, it's a bust.
+      var least = pickSet(dice, h, bonus, "min");
+      if ((r.scores[cur] || 0) + turnScore + least.score > r.target) {
+        return { dice: dice, held: h, turnScore: 0, phase: "farkle", bust: "over", rollId: rid, forced: least.idxs, pick: [], pickRoll: -1,
+          log: pushLog({ log: log }, { k: "over", name: who, n: least.score, t: r.target }) };
+      }
     }
     return { dice: dice, held: h, turnScore: turnScore, phase: "choose", rollId: rid, bonus: bonus, pick: [], pickRoll: -1, forced: forced, bust: null, log: hot ? pushLog({ log: log }, { k: "hot", name: who }) : log };
   }
@@ -1349,6 +1373,7 @@ ol.rules { padding-left: 20px; }
     for (var bv = 1; bv <= 6; bv++) if (kc[bv] >= 3 && bonus.indexOf(bv) < 0) bonus.push(bv);
     var held = r.held.slice(); idxs.forEach(function (i) { held[i] = true; });
     var cur = r.order[r.turn], total = r.turnScore + s.score, me = nameOf(cur);
+    if ((r.scores[cur] || 0) + total > r.target) return null;   // can't keep dice that go over the target
     if (kind !== "bank") return rollFrom(r, held, total, r.log || [], bonus);
     if (!(r.scores[cur] > 0) && total < MIN_ENTRY) return null;
     var newScore = (r.scores[cur] || 0) + total;
@@ -1421,7 +1446,7 @@ ol.rules { padding-left: 20px; }
     if (!mine && room.host !== uid) return;
     farkleTimer = setTimeout(function () {
       if (room && room.status === "play" && room.phase === "farkle" && code + ":" + room.rollId + ":" + room.turn === k) pass("auto");
-    }, mine ? 2500 : 7000);
+    }, mine ? 4300 : 8500);
   }
   function pass(reason) {
     var r = room;
@@ -1636,7 +1661,7 @@ ol.rules { padding-left: 20px; }
         li(T("Tap the dealer to switch between Sofia and Layla.")) +
         li(T("After you keep a triple, more dice of that number on later throws are worth 100 each. Three 4s = 400, then another 4 = 100 more.")) +
         li(T("A new triple on a later throw scores whichever is higher: the triple, or 100 per die.")) +
-        li(T("You must land on exactly {n}. You can't bank a turn that would go over.", { n: n(tgt) })) +
+        li(T("You must land on exactly {n}. You can't keep dice that would take you over it, and if every roll you could keep goes over, your turn ends in a bust.", { n: n(tgt) })) +
         li(T("Once you have {a} banked, every scoring die you roll is kept for you. If those dice put you over {b}, you bust and lose the turn.", { a: n(tgt - 1000), b: n(tgt) })) +
         "</ul></div></details>";
   }
@@ -1680,9 +1705,10 @@ ol.rules { padding-left: 20px; }
   function runRoll(rollerId) {
     var dice = document.querySelectorAll(".tray .die.tumble");
     var seat = document.querySelector('.seat[data-seat="' + rollerId + '"]');
-    if (!dice.length) return;
+    var release = function () { if (rollHold) { rollHold = false; setTimeout(render, 0); } };
+    if (!dice.length) { release(); return; }
     var SHAKE = 560, landTimes = [];
-    if (!seat || reduceMotion || !dice[0].animate) { rollSound(SHAKE, Array.prototype.map.call(dice, function (_, k) { return SHAKE + 150 + k * 60; })); return; }
+    if (!seat || reduceMotion || !dice[0].animate) { release(); rollSound(SHAKE, Array.prototype.map.call(dice, function (_, k) { return SHAKE + 150 + k * 60; })); return; }
     var from = centerOf(seat.querySelector(".av") || seat), tray = centerOf(document.querySelector(".tray"));
     var toward = Math.atan2(tray.x - from.x, -(tray.y - from.y)) * 180 / Math.PI;
     var mouth = { x: from.x + (tray.x - from.x) * 0.22, y: from.y + (tray.y - from.y) * 0.22 };
@@ -1721,7 +1747,7 @@ ol.rules { padding-left: 20px; }
       }, delay);
     });
     rollSound(SHAKE, landTimes);
-    setTimeout(function () { animating = false; if (pendingRender) { pendingRender = false; render(); } }, longest + 40);
+    setTimeout(function () { animating = false; rollHold = false; pendingRender = false; render(); }, longest + 40);
   }
   // The dealer scoops the last turn's dice, then slides them to the next player's seat.
   function runPass(pa) {
@@ -1819,7 +1845,9 @@ ol.rules { padding-left: 20px; }
     return tableHTML(seats, center) + '<div class="actionbar">' + bar + "</div>";
   }
   function gameHTML() {
-    var r = room, cur = r.order[r.turn], mine = mineTurn(r), done = r.status === "done";
+    var hold = rollHold && (room.rollId || 0) === holdRoll && Date.now() < holdUntil;
+    var r = hold ? Object.assign({}, room, { phase: "rolling", turnScore: holdScore, bust: null, status: "play", pick: [] }) : room;
+    var cur = r.order[r.turn], mine = mineTurn(r), done = r.status === "done";
     var inGame = r.order.indexOf(uid) > -1;
     // Your own taps on your turn; everyone else sees the active player's shared pick.
     var forced = r.forced || [];
@@ -1828,6 +1856,7 @@ ol.rules { padding-left: 20px; }
     var selIdx = Array.from(viewSel), s = scoreSel(selIdx.map(function (i) { return r.dice[i]; }), r.bonus);
     var total = r.turnScore + (s.valid ? s.score : 0);
     var freeCount = r.held.filter(function (h) { return !h; }).length;
+    if (hold) { viewSel = new Set(); selIdx = []; s = { score: 0, valid: false }; total = r.turnScore; }
     var canPick = mine && r.phase === "choose" && !busy && !forced.length;
 
     var dice = "";
@@ -1847,6 +1876,8 @@ ol.rules { padding-left: 20px; }
       controls = room.host === uid ? '<button class="btn" data-act="again">' + T("Play again") + "</button>" : "";
       if (room.duelOf) controls = '<a class="btn" href="' + esc(duelLink(room.duelOf)) + '">' + T("Back to the main table") + "</a>";
       hint = room.duelOf ? "" : room.host === uid ? "" : T("Waiting for {name} to start another game.", { name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" });
+    } else if (hold) {
+      hint = mine ? T("Rolling…") : T("{name} is rolling. Watch the felt.", { name: who });
     } else if (!inGame) {
       hint = T("Taking your seat. The host's screen adds you in a moment. If this stays, ask the host to keep the page open.");
     } else if (mine && r.phase === "roll") {
@@ -1856,7 +1887,7 @@ ol.rules { padding-left: 20px; }
     } else if (mine && r.phase === "choose") {
       var rest = freeCount - selIdx.length, entryOk = (r.scores[cur] > 0) || total >= MIN_ENTRY;
       var over = (r.scores[cur] || 0) + total > r.target;
-      controls = '<button class="btn" data-act="keeproll"' + (s.valid && s.score > 0 && !busy ? "" : " disabled") + ">" + (rest === 0 && s.valid ? T("Hot dice: roll all 6") : T("Keep, roll {n}", { n: Math.max(rest, 0) })) + "</button>" +
+      controls = '<button class="btn" data-act="keeproll"' + (s.valid && s.score > 0 && !over && !busy ? "" : " disabled") + ">" + (rest === 0 && s.valid ? T("Hot dice: roll all 6") : T("Keep, roll {n}", { n: Math.max(rest, 0) })) + "</button>" +
         '<button class="btn bank" data-act="bank"' + (s.valid && s.score > 0 && entryOk && !over && !busy ? "" : " disabled") + ">" + T("Bank {n}", { n: fmt(total) }) + "</button>";
       if (!forced.length) tools = '<div class="tools"><button class="btn ghost small" data-act="autopick"' + (busy ? " disabled" : "") + ">" + T("Pick best dice") + "</button>" +
         '<button class="btn ghost small pill" data-act="autotoggle" aria-pressed="' + autoPick + '">' + T(autoPick ? "Auto-pick each roll: on" : "Auto-pick each roll: off") + "</button></div>";
@@ -1865,7 +1896,7 @@ ol.rules { padding-left: 20px; }
       else {
         hint = T("Keeping these is worth {n}.", { n: fmt(s.score) }); hintCls = "ok";
         if (!entryOk) hint += T(" You need {n} in a turn to get on the board.", { n: fmt(MIN_ENTRY) });
-        if (over) { hint = T("Banking this would go over {n}. You have to land exactly on it.", { n: fmt(r.target) }); hintCls = "bad"; }
+        if (over) { hint = T("That would put you over {n}. Keep fewer dice.", { n: fmt(r.target) }); hintCls = "bad"; }
         else if ((r.scores[cur] || 0) + total === r.target) hint += T(" That's exactly {n}. Bank it to win.", { n: fmt(r.target) });
         else if (needToGoOut(r, cur)) hint += T(" {n} left to go out after this.", { n: fmt(needToGoOut(r, cur) - total) });
       }

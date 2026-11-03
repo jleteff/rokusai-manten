@@ -578,7 +578,6 @@ ol.rules { padding-left: 20px; }
     "Couldn't start the camera.": "تعذّر تشغيل الكاميرا.",
     "Pop out": "افصل النافذة",
     "Dock": "أعِدها للأسفل",
-    "If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.": "إذا لم تتحرك خلال 20 ثانية، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن.",
     "Tap another player's seat to call them out: Ro Sham Bo, or a quick 1-on-1 game.": "اضغط على مقعد لاعب آخر لتتحداه: حجر ورقة مقص، أو لعبة سريعة واحد ضد واحد.",
     "Challenge {name}": "تحدَّ {name}",
     "Pick a quick 1-on-1. They have to accept.": "اختر تحدياً سريعاً واحداً ضد واحد. يجب أن يقبل.",
@@ -629,7 +628,8 @@ ol.rules { padding-left: 20px; }
     "Sound: on": "الصوت: مفعّل",
     "Sound: off": "الصوت: متوقف",
     "Switch dealer": "بدّل الموزّعة",
-    "Leave table": "غادر الطاولة"
+    "Leave table": "غادر الطاولة",
+    "If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can. While you're on auto it moves every 5 seconds. Tap anything to take back control.": "إذا لم تتحرك خلال 10 ثوانٍ، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن. أثناء اللعب التلقائي تتحرك كل 5 ثوانٍ. اضغط أي شيء لتستعيد التحكم."
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -1337,7 +1337,8 @@ ol.rules { padding-left: 20px; }
   }
   function doRoll() {
     var r = room; if (!mineTurn(r) || r.phase !== "roll") return;
-    act(db.doc("rooms/" + code).update(rollFrom(r, r.held, 0, r.log || [], [])));
+    var p = rollFrom(r, r.held, 0, r.log || [], []); if (r.auto) p.auto = null;
+    act(db.doc("rooms/" + code).update(p));
   }
   // Builds the update for keeping these dice and then rolling on or banking. null if not allowed.
   function keepPatch(r, idxs, kind) {
@@ -1362,16 +1363,18 @@ ol.rules { padding-left: 20px; }
     var r = room; if (!mineTurn(r) || r.phase !== "choose") return;
     clearTimeout(pickT);
     var patch = keepPatch(r, Array.from(sel), kind);
+    if (patch && r.auto && patch.auto === undefined) patch.auto = null;
     if (patch) act(db.doc("rooms/" + code).update(patch));
   }
 
   // ---------- auto-play ----------
-  // If the player whose turn it is doesn't move within 20 seconds, the game plays for them:
+  // If the player whose turn it is doesn't move within 10 seconds, the game plays for them:
   // it rolls, keeps the best dice (or the must-keep dice), and banks whenever banking is allowed.
   // Their own phone does it; the host's phone steps in a few seconds later if theirs is asleep.
-  var AUTO_MS = 20000, autoT = null, autoKey = "", autoStart = 0, cdT = null;
+  // 10 seconds before auto-play steps in, then 5 seconds per move while a player stays on auto.
+  var AUTO_FIRST = 10000, AUTO_NEXT = 5000, AUTO_MS = AUTO_FIRST, autoT = null, autoKey = "", autoStart = 0, cdT = null;
   function autoStateKey(r) {
-    return r ? [code, r.status, r.turn, r.rollId || 0, r.phase, (r.pick || []).join(""), r.order && isBot(r.order[r.turn]) ? "bot" : ""].join("|") : "";
+    return r ? [code, r.status, r.turn, r.rollId || 0, r.phase, (r.pick || []).join(""), r.order && isBot(r.order[r.turn]) ? "bot" : "", r.auto || ""].join("|") : "";
   }
   function scheduleAuto(force) {
     var r = room, k = autoStateKey(r);
@@ -1381,6 +1384,7 @@ ol.rules { padding-left: 20px; }
     var mine = mineTurn(r), bot = isBot(r.order[r.turn]);
     if (!mine && r.host !== uid) return;
     if (bot) { autoT = setTimeout(function () { if (autoStateKey(room) === k) botMove(); }, 1300 + Math.random() * 900); return; }
+    AUTO_MS = r.auto === r.order[r.turn] ? AUTO_NEXT : AUTO_FIRST;
     autoT = setTimeout(function () { if (autoStateKey(room) === k) autoMove(); }, mine ? AUTO_MS : AUTO_MS + 3000);
   }
   function autoMove() {
@@ -1398,6 +1402,7 @@ ol.rules { padding-left: 20px; }
     if (mineTurn(r)) sel = new Set();
     act(db.doc("rooms/" + code).update(patch));
   }
+  function backFromAuto() { if (room && room.auto === uid && mineTurn(room)) db.doc("rooms/" + code).update({ auto: null }).catch(function () {}); }
   function secondsLeft() { return Math.max(0, Math.ceil((autoStart + AUTO_MS - Date.now()) / 1000)); }
   function tickCountdown() {
     var left = secondsLeft();
@@ -1624,7 +1629,7 @@ ol.rules { padding-left: 20px; }
         li(T("You need {n} in one turn to get on the board.", { n: n(MIN_ENTRY) })) +
         li(T("Score with all six dice and you roll all six again (hot dice).")) +
         li(T("The winner of a game rolls first in the next one.")) +
-        li(T("If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can.")) +
+        li(T("If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can. While you're on auto it moves every 5 seconds. Tap anything to take back control.")) +
         li(T("Tap another player's seat to call them out: Ro Sham Bo, or a quick 1-on-1 game.")) +
         li(T("With fewer than 5 people, bots fill the empty seats. The host can turn this off in the lobby.")) +
         li(T("Each seat shows how many points that player has left to reach {n}.", { n: n(tgt) })) +
@@ -1905,11 +1910,11 @@ ol.rules { padding-left: 20px; }
       if (animating) return;
       var i = Number(el.getAttribute("data-i"));
       if (sel.has(i)) sel.delete(i); else sel.add(i);
-      scheduleAuto(true); sharePick(); render();
+      backFromAuto(); scheduleAuto(true); sharePick(); render();
     } else if (a === "create") { var n = $("#nm"); myName = n.value.trim(); if (!myName) { n.focus(); return; } store.set("fk-name", myName); createTable(); }
     else if (a === "join") { var c = $("#jc").value.trim().toUpperCase(); var nm = $("#nm") ? $("#nm").value.trim() : ""; if (nm) { myName = nm; store.set("fk-name", nm); } if (c) location.hash = "t-" + c; }
     else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); maybeJoin(); render(); }
-    else if (a === "autopick") { if (room && mineTurn(room) && room.phase === "choose") { sel = new Set(bestSel(room)); scheduleAuto(true); sharePick(); render(); } }
+    else if (a === "autopick") { if (room && mineTurn(room) && room.phase === "choose") { sel = new Set(bestSel(room)); backFromAuto(); scheduleAuto(true); sharePick(); render(); } }
     else if (a === "autotoggle") {
       autoPick = !autoPick; store.set("fk-auto", autoPick ? "1" : "0");
       if (autoPick && room && mineTurn(room) && room.phase === "choose" && !sel.size) { sel = new Set(bestSel(room)); sharePick(); }

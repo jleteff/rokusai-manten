@@ -629,7 +629,7 @@ ol.rules { padding-left: 20px; }
     "Sound: off": "الصوت: متوقف",
     "Switch dealer": "بدّل الموزّعة",
     "Leave table": "غادر الطاولة",
-    "If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can. While you're on auto it moves every 5 seconds. Tap anything to take back control.": "إذا لم تتحرك خلال 10 ثوانٍ، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن. أثناء اللعب التلقائي تتحرك كل 5 ثوانٍ. اضغط أي شيء لتستعيد التحكم."
+    "If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can. While you're on auto it moves every 5 seconds. Tap anything to take back control.": "إذا لم تتحرك خلال 20 ثانية، تلعب اللعبة عنك: ترمي النرد، وتحتفظ بأفضل نرد، وتسجّل النقاط متى أمكن. أثناء اللعب التلقائي تتحرك كل 5 ثوانٍ. اضغط أي شيء لتستعيد التحكم."
     };
   function T(s, v) {
     var out = (LANG === "ar" && AR[s]) || s;
@@ -1368,11 +1368,11 @@ ol.rules { padding-left: 20px; }
   }
 
   // ---------- auto-play ----------
-  // If the player whose turn it is doesn't move within 10 seconds, the game plays for them:
+  // If the player whose turn it is doesn't move within 20 seconds, the game plays for them:
   // it rolls, keeps the best dice (or the must-keep dice), and banks whenever banking is allowed.
   // Their own phone does it; the host's phone steps in a few seconds later if theirs is asleep.
-  // 10 seconds before auto-play steps in, then 5 seconds per move while a player stays on auto.
-  var AUTO_FIRST = 10000, AUTO_NEXT = 5000, AUTO_MS = AUTO_FIRST, autoT = null, autoKey = "", autoStart = 0, cdT = null;
+  // 20 seconds before auto-play steps in, then 5 seconds per move while a player stays on auto.
+  var AUTO_FIRST = 20000, AUTO_NEXT = 5000, AUTO_MS = AUTO_FIRST, autoT = null, autoKey = "", autoStart = 0, cdT = null;
   function autoStateKey(r) {
     return r ? [code, r.status, r.turn, r.rollId || 0, r.phase, (r.pick || []).join(""), r.order && isBot(r.order[r.turn]) ? "bot" : "", r.auto || ""].join("|") : "";
   }
@@ -1629,7 +1629,7 @@ ol.rules { padding-left: 20px; }
         li(T("You need {n} in one turn to get on the board.", { n: n(MIN_ENTRY) })) +
         li(T("Score with all six dice and you roll all six again (hot dice).")) +
         li(T("The winner of a game rolls first in the next one.")) +
-        li(T("If you don't move within 10 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can. While you're on auto it moves every 5 seconds. Tap anything to take back control.")) +
+        li(T("If you don't move within 20 seconds, the game plays for you: it rolls, keeps the best dice, and banks when it can. While you're on auto it moves every 5 seconds. Tap anything to take back control.")) +
         li(T("Tap another player's seat to call them out: Ro Sham Bo, or a quick 1-on-1 game.")) +
         li(T("With fewer than 5 people, bots fill the empty seats. The host can turn this off in the lobby.")) +
         li(T("Each seat shows how many points that player has left to reach {n}.", { n: n(tgt) })) +

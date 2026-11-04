@@ -25,6 +25,18 @@ exports.callables = (db, player) => ({
     });
     return { ok: true };
   }),
+  // The phone app registers for "your turn" notifications.
+  savePushToken: onCall(async (req) => {
+    const uid = player(req), d = req.data || {};
+    if (typeof d.token !== "string" || d.token.length < 20 || d.token.length > 4096) throw new HttpsError("invalid-argument", "Bad token.");
+    const ref = db.doc("users/" + uid);
+    await db.runTransaction(async (tx) => {
+      const s = await tx.get(ref); if (!s.exists) return;
+      const list = (s.data().push || []).filter((t) => t !== d.token).concat([d.token]).slice(-5);
+      tx.update(ref, { push: list, lang: d.lang === "ar" ? "ar" : "en" });
+    });
+    return { ok: true };
+  }),
   // Deletes the profile, coins and items, then the sign-in account itself. Purchases stay with Apple/Google.
   deleteAccount: onCall(async (req) => {
     const uid = req.auth && req.auth.uid;   // works even before the email is confirmed

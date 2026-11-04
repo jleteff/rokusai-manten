@@ -42,3 +42,14 @@ Open the address, create a table, send the link (it ends in `#t-XXXX`) to your f
 - Anyone with a table link can sit down. Latecomers are added by the host's screen, so the host keeps the page open.
 - Rolls happen in each player's browser, so a determined player could cheat by editing their own client. Fine for friends, not for money.
 - Local testing: `firebase emulators:start --only auth,firestore,hosting`, then open `http://localhost:5000/?emulator=1`.
+
+## Server, coins and the store build
+
+- `functions/`: Cloud Functions. Every move goes through `move` (server-rolled dice), plus coins, levels,
+  daily rewards, shop, Season Pass, purchases (RevenueCat webhook), reports, blocks, account deletion
+  and "your turn" push notifications.
+- `docs/game-core.js` (game rules) and `docs/catalog.js` (shop items, products, seasons) are shared by the
+  page and the server; deploy copies them into `functions/`.
+- `firestore.rules`: phones can't write game state, coins or items; only the server can.
+- `STORE.md`: the step-by-step launch guide (deploy, Apple, Google Play, RevenueCat, listing).
+- `assets/`: app icon and splash; `npm run assets` makes every size.

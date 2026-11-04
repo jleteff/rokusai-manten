@@ -2,18 +2,26 @@
   "name": "rokusai-manten",
   "version": "0.1.0",
   "private": true,
-  "description": "六賽万点 (Roku-sai Manten) - six dice, ten thousand points. Multiplayer dice game.",
+  "description": "\u516d\u8cfd\u4e07\u70b9 (Roku-sai Manten) - six dice, ten thousand points. Multiplayer dice game.",
   "scripts": {
     "sync": "cap sync",
     "ios": "cap sync ios && cap open ios",
-    "android": "cap sync android && cap open android"
+    "android": "cap sync android && cap open android",
+    "assets": "capacitor-assets generate --iconBackgroundColor '#0f6142' --splashBackgroundColor '#0d1512'",
+    "deploy:server": "npx firebase-tools deploy --only functions,firestore:rules"
   },
   "dependencies": {
     "@capacitor/android": "8.5.3",
     "@capacitor/core": "8.5.3",
-    "@capacitor/ios": "8.5.3"
+    "@capacitor/ios": "8.5.3",
+    "@capacitor-firebase/messaging": "^8.6.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@revenuecat/purchases-capacitor": "^14.0.0",
+    "firebase": "^12.6.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "8.5.3"
+    "@capacitor/cli": "8.5.3",
+    "@capacitor/assets": "^4.0.0"
   }
 }

@@ -4,6 +4,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 const crypto = require("crypto");
 const Core = require("./game-core.js");
 const Economy = require("./economy.js");
@@ -34,6 +35,7 @@ exports.move = onCall({ enforceAppCheck: false }, async (req) => {
   const d = req.data || {}, action = d.action;
   if (!validCode(d.code)) throw new HttpsError("invalid-argument", "Bad table code.");
   const roomRef = db.doc("rooms/" + d.code);
+  let notify = null;
   await db.runTransaction(async (tx) => {
     const [snap, ps] = await Promise.all([tx.get(roomRef), tx.get(roomRef.collection("players"))]);
     if (!snap.exists) throw new HttpsError("not-found", "No such table.");
@@ -109,10 +111,32 @@ exports.move = onCall({ enforceAppCheck: false }, async (req) => {
     patch.movedAt = now;
     if (preset) patch.testDice = preset;
     if (patch.status === "done" && r.status === "play") await Economy.awardGame(tx, db, r, patch, players);
+    // Whose turn is it now? If it moved to someone else, tell their phone after the move is saved.
+    const order = patch.order || r.order || [], turn = patch.turn !== undefined ? patch.turn : r.turn, status = patch.status || r.status;
+    const next = status === "play" ? order[turn] : null;
+    if (next && next !== uid && (patch.turn !== undefined || action === "start")) notify = { to: next, from: players[uid] && players[uid].name };
     tx.update(roomRef, patch);
     if (removed) tx.delete(roomRef.collection("players").doc(removed));
   });
+  if (notify) await pushTurn(notify.to, d.code).catch(() => {});
   return { ok: true };
 });
+
+// "Your turn" push to the player's phone app. Dead tokens are cleaned up.
+async function pushTurn(to, code) {
+  const ref = db.doc("users/" + to), snap = await ref.get();
+  const tokens = (snap.exists && snap.data().push) || [];
+  if (!tokens.length) return;
+  const ar = snap.data().lang === "ar";
+  const res = await getMessaging().sendEachForMulticast({
+    tokens: tokens,
+    notification: { title: ar ? "دورك! 🎲" : "Your turn! 🎲", body: ar ? "الطاولة " + code + " بانتظارك." : "Table " + code + " is waiting for you." },
+    data: { code: code },
+    apns: { payload: { aps: { sound: "default" } } },
+    android: { priority: "high", notification: { sound: "default" } }
+  });
+  const dead = tokens.filter((t, i) => !res.responses[i].success && /registration-token-not-registered|invalid-argument/.test((res.responses[i].error || {}).code || ""));
+  if (dead.length) await ref.update({ push: FieldValue.arrayRemove(...dead) });
+}
 
 Object.assign(exports, Economy.callables(db, player), Safety.callables(db, player), Purchases.callables(db, player));

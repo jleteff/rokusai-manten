@@ -970,7 +970,7 @@ ol.rules { padding-left: 20px; }
   var code = null, room = null, players = {}, roomLoaded = false, subErr = null;
   // Bump APP_VER whenever the game rules change. Each phone writes its version on its seat;
   // a phone that's behind stops playing and asks to update, so mixed versions can't break a game.
-  var APP_VER = 5;
+  var APP_VER = 6;
   function tableVer() { var v = 0; Object.keys(players).forEach(function (i) { if (!players[i].bot) v = Math.max(v, players[i].ver || 0); }); return v; }
   function staleApp() { return !!code && tableVer() > APP_VER; }
   function oldPhones() {
@@ -1131,7 +1131,7 @@ ol.rules { padding-left: 20px; }
       profUnsub[id] = db.doc("users/" + id).onSnapshot(function (s) { profiles[id] = s.exists ? s.data() : null; render(); if (shopOpen && id === uid) renderShop(); }, function () {});
     });
     Object.keys(profUnsub).forEach(function (id) { if (!want[id]) { profUnsub[id](); delete profUnsub[id]; delete profiles[id]; } });
-    rcInit();
+    rcInit(); pushInit();
     if (!profileEnsured) { profileEnsured = true; callFn("profile", { terms: TERMS_V }).catch(function () { profileEnsured = false; }); }
   }
   function dropProfiles() { Object.keys(profUnsub).forEach(function (id) { profUnsub[id](); }); profUnsub = {}; profiles = {}; profileEnsured = false; }
@@ -1209,6 +1209,34 @@ ol.rules { padding-left: 20px; }
     root.innerHTML = html; shopHTML = html;
     var m = root.querySelector(".menu"); if (m) { m.scrollTop = keep; if (!fresh) m.style.animation = "none"; }
   }
+  // ---------- phone app extras: vibration and "your turn" notifications ----------
+  function nativePlugin(name) { var C = window.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins ? C.Plugins[name] : null; }
+  function haptic(kind) {
+    var H = nativePlugin("Haptics");
+    try {
+      if (H) {
+        if (kind === "win") H.notification({ type: "SUCCESS" });
+        else if (kind === "sunk") H.notification({ type: "ERROR" });
+        else H.impact({ style: kind === "bank" ? "MEDIUM" : "LIGHT" });
+      } else if (navigator.vibrate) navigator.vibrate(kind === "sunk" ? [60, 40, 120] : kind === "win" ? [80, 50, 80, 50, 160] : 25);
+    } catch (e) {}
+  }
+  var pushReady = false;
+  function pushInit() {
+    var M = nativePlugin("FirebaseMessaging"); if (!M || pushReady || !uid) return;
+    pushReady = true;
+    var save = function (t) { if (t && t.token) callFn("savePushToken", { token: t.token, lang: LANG }).catch(function () {}); };
+    M.requestPermissions().then(function (r) {
+      if (!r || r.receive !== "granted") return;
+      M.addListener("tokenReceived", save);
+      M.addListener("notificationActionPerformed", function (ev) {
+        var c = ev && ev.notification && ev.notification.data && ev.notification.data.code;
+        if (c && /^[A-Z0-9]{3,8}$/.test(c)) location.hash = "t-" + c;
+      });
+      return M.getToken().then(save);
+    }).catch(function () { pushReady = false; });
+  }
+
   // ---------- purchases (in the iPhone / Android app, through RevenueCat) ----------
   var RC = { ready: false, pkgs: {}, busy: false };
   function storeAPI() { var C = window.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Purchases ? C.Plugins.Purchases : null; }
@@ -2032,7 +2060,10 @@ ol.rules { padding-left: 20px; }
   function runRoll(rollerId) {
     var dice = document.querySelectorAll(".tray .die.tumble");
     var seat = document.querySelector('.seat[data-seat="' + rollerId + '"]');
-    var release = function () { if (rollHold) { rollHold = false; setTimeout(render, 0); } };
+    var release = function () {
+      haptic(room && room.status === "done" && room.winner === uid ? "win" : room && room.phase === "farkle" && room.order && room.order[room.turn] === uid ? "sunk" : "land");
+      if (rollHold) { rollHold = false; setTimeout(render, 0); }
+    };
     if (!dice.length) { release(); return; }
     var SHAKE = 560, landTimes = [];
     if (!seat || reduceMotion || !dice[0].animate) { release(); rollSound(SHAKE, Array.prototype.map.call(dice, function (_, k) { return SHAKE + 150 + k * 60; })); return; }

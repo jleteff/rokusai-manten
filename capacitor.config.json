@@ -1,6 +1,19 @@
 {
   "appId": "com.jleteff.rokusaimanten",
-  "appName": "六賽万点",
+  "appName": "\u516d\u8cfd\u4e07\u70b9",
   "webDir": "docs",
-  "backgroundColor": "#0b1311"
+  "backgroundColor": "#0b1311",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#0d1512",
+      "showSpinner": false
+    },
+    "FirebaseMessaging": {
+      "presentationOptions": [
+        "badge",
+        "sound"
+      ]
+    }
+  }
 }

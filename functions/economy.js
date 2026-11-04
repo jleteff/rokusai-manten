@@ -13,6 +13,8 @@ function freshProfile(name) {
     stats: { games: 0, wins: 0 }, daily: { last: "", streak: 0 }, games: { day: "", n: 0 }, created: Date.now() };
 }
 const isVip = (p) => !!(p.vip && p.vip.until > Date.now());
+exports.freshProfile = freshProfile;
+exports.isVip = isVip;
 
 // Called inside the move transaction when a game ends. All reads happen before any write.
 exports.awardGame = async (tx, db, r, patch, players) => {
@@ -37,7 +39,11 @@ exports.awardGame = async (tx, db, r, patch, players) => {
     const stats = Object.assign({ games: 0, wins: 0 }, p.stats);
     stats.games++; if (won) stats.wins++;
     const next = Object.assign({}, p, { name: players[id].name || p.name, coins: (p.coins || 0) + coins, xp: newXp, level: level, stats: stats, games: { day: day, n: counted + 1 } });
-    if (p.season) next.season = Object.assign({}, p.season, { xp: (p.season.xp || 0) + xp });
+    const se = Cat.activeSeason();
+    if (se) {
+      const cur = p.season && p.season.id === se.id ? p.season : { id: se.id, xp: 0, premium: false, claimed: [] };
+      next.season = Object.assign({}, cur, { xp: (cur.xp || 0) + xp });
+    }
     tx.set(refs[k], next);
     patch.rewards[id] = { coins: coins, xp: xp, level: level, up: up, capped: counted >= R.dailyGames };
   });
@@ -94,7 +100,8 @@ exports.callables = (db, player) => {
       const uid = player(req), it = Cat.byId[(req.data || {}).id];
       if (!it) throw new HttpsError("invalid-argument", "Unknown item.");
       return withProfile(uid, nameOf(req), (p) => {
-        if ((p.owned || []).indexOf(it.id) < 0) throw new HttpsError("failed-precondition", "You don't own that.");
+        const vipOk = it.only === "vip" && isVip(p);
+        if ((p.owned || []).indexOf(it.id) < 0 && !vipOk) throw new HttpsError("failed-precondition", it.only === "vip" ? "That's a VIP item." : "You don't own that.");
         p.equipped = Object.assign({}, Cat.DEFAULTS, p.equipped); p.equipped[it.slot] = it.id;
         return { ok: true };
       });

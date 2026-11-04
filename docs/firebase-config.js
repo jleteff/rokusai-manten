@@ -13,3 +13,6 @@ window.FIREBASE_CONFIG = {
 // Bot protection (Firebase App Check with Google reCAPTCHA v3, invisible to players).
 // Paste the reCAPTCHA v3 *site key* here. Leave it empty to turn App Check off.
 window.APP_CHECK_KEY = "";
+
+// In-app purchases (RevenueCat public SDK keys, one per platform). Empty = purchases off.
+window.RC_KEYS = { ios: "", android: "" };

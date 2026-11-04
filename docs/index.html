@@ -261,6 +261,38 @@ input[type=text], input[type=email], input[type=password], select {
 .delask { margin-top: 12px; padding: 12px; border-radius: 10px; border: 1px solid var(--ember); background: rgba(192,57,43,.1); }
 .btn.danger-fill { background: var(--ember); color: #fff; box-shadow: none; }
 .row.safety { justify-content: center; }
+.shop-list { display: flex; flex-direction: column; gap: 12px; padding-bottom: 12px; }
+.prem-card { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: var(--room-2); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.prem-card h3 { margin: 0; font-family: var(--font-display); font-size: 20px; letter-spacing: .03em; }
+.prem-card ul { margin: 0; padding-inline-start: 18px; color: var(--ivory-dim); }
+.prem-card.founder { border-color: var(--gold); background: linear-gradient(135deg, rgba(227,183,78,.22), rgba(139,0,0,.12)); }
+.prem-card.vip { border-color: #b48cff; background: linear-gradient(135deg, rgba(180,140,255,.16), rgba(227,183,78,.06)); }
+.prem-card.season { border-color: #e2471b; background: linear-gradient(135deg, rgba(226,71,27,.16), rgba(255,210,176,.05)); }
+.prem-card .pc-head { display: flex; gap: 12px; align-items: center; }
+.prem-card .btn.small { min-height: 40px; padding: 8px 16px; }
+.prem-card .row { align-items: center; gap: 10px; }
+.prem-card .xpbar { align-self: stretch; margin: 4px 0; }
+.tiny { font-size: 11px; line-height: 1.4; margin: 0; } .tiny a { color: var(--gold); }
+.sec-h { margin: 4px 2px -4px; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--ivory-dim); }
+.packs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.pack { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--room-2); position: relative; }
+.pack strong { font-family: var(--font-display); font-size: 22px; color: var(--gold); }
+.pack .ptag { position: absolute; top: -8px; inset-inline-end: 8px; font-size: 10px; font-weight: 800; letter-spacing: .06em; background: var(--ember); color: #fff; border-radius: 999px; padding: 2px 7px; }
+.pack .btn.small, .pack .tag { min-height: 34px; padding: 6px 12px; font-size: 14px; }
+.restore { align-self: center; }
+.tiers { display: flex; flex-direction: column; gap: 6px; }
+.tier { display: grid; grid-template-columns: 30px 1fr 1fr; gap: 6px; align-items: stretch; }
+.tier .tn { display: grid; place-items: center; font-weight: 800; color: var(--ivory-dim); border-radius: 8px; background: rgba(255,255,255,.04); }
+.tier.done .tn { color: var(--ink); background: var(--gold); }
+.tier .rw { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); font-size: 13px; font-weight: 700; min-height: 42px; }
+.tier .rw.prem { border-color: rgba(226,71,27,.45); }
+.tier .rw.item { background: rgba(227,183,78,.1); }
+.tier .rw.empty { border-style: dashed; opacity: .4; }
+.tier.head .rw { min-height: 0; border: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ivory-dim); }
+.tier .rw .btn.small { min-height: 30px; padding: 4px 10px; font-size: 13px; }
+.tier .rw .tag { font-size: 11px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--gold-dim); color: var(--gold); }
+.tier .rw .tag.on { background: var(--gold); color: var(--ink); } .tier .rw .tag.lock { border-color: var(--line); color: var(--ivory-dim); }
+.badge.vipb { background: linear-gradient(90deg, #b48cff, #e3b74e); color: #120a1f; }
 .reward { margin: 4px 0 8px; font-weight: 800; color: var(--gold); }
 .reward.muted { font-weight: 600; color: var(--ivory-dim); }
 /* roll effects: the roller's dice glow while they tumble */
@@ -471,6 +503,43 @@ ol.rules { padding-left: 20px; }
     "Copy the invite link for table {code}": "انسخ رابط الدعوة للطاولة {code}",
     "Switch language": "تغيير اللغة",
     "You can watch, but not play": "يمكنك المشاهدة فقط",
+    "Premium": "بريميوم",
+    "Season": "الموسم",
+    "In the app": "في التطبيق",
+    "Thanks! Adding it to your account…": "شكرًا! نضيفها لحسابك…",
+    "The purchase didn't go through. You weren't charged.": "لم تكتمل عملية الشراء. لم يتم خصم أي مبلغ.",
+    "Purchases restored.": "تمت استعادة المشتريات.",
+    "Everything is already up to date.": "كل شيء محدّث بالفعل.",
+    "Couldn't reach the store. Try again.": "تعذّر الوصول للمتجر. حاول مجددًا.",
+    "For our first players. Available during the launch season.": "لأوائل لاعبينا. متاحة خلال موسم الإطلاق.",
+    "Founder's Gold dice": "نرد ذهب المؤسسين",
+    "Founder avatar frame": "إطار المؤسس",
+    "Founder's Emerald table": "طاولة زمرد المؤسسين",
+    "{n} coins": "{n} عملة",
+    "Owned": "مملوكة",
+    "+20%": "+20%",
+    "+40%": "+40%",
+    "Best value": "أفضل قيمة",
+    "Double coins from games and daily rewards": "ضعف العملات من الألعاب والمكافآت اليومية",
+    "VIP Onyx dice and VIP frame": "نرد أونيكس VIP وإطار VIP",
+    "VIP badge at every table": "شارة VIP على كل طاولة",
+    "Active until {d}": "فعّال حتى {d}",
+    "{p} / month": "{p} / شهريًا",
+    "Renews monthly until you cancel in your Apple ID or Google Play settings. Cancel anytime.": "يتجدد شهريًا حتى تلغيه من إعدادات Apple ID أو Google Play. يمكنك الإلغاء في أي وقت.",
+    "Coins": "العملات",
+    "Restore purchases": "استعادة المشتريات",
+    "Purchases are available in the ManTen app for iPhone and Android.": "المشتريات متاحة في تطبيق ManTen على آيفون وأندرويد.",
+    "The next season starts soon.": "الموسم القادم يبدأ قريبًا.",
+    "Ends {d}": "ينتهي {d}",
+    "Tier {n} of 20": "المرحلة {n} من 20",
+    "{x} season XP to the next tier. Every game earns XP.": "{x} خبرة موسم للمرحلة التالية. كل لعبة تمنح خبرة.",
+    "Season Pass active": "تذكرة الموسم مفعّلة",
+    "Get the Season Pass": "احصل على تذكرة الموسم",
+    "Unlocks the ★ rewards, including Koi dice and the Samurai frame.": "تفتح مكافآت ★ ومنها نرد كوي وإطار الساموراي.",
+    "Free": "مجاني",
+    "Pass": "التذكرة",
+    "Unlocked {name}!": "تم فتح {name}!",
+    "+{n} coins!": "+{n} عملة!",
     "Report": "إبلاغ",
     "Block": "حظر",
     "Unblock": "إلغاء الحظر",
@@ -1062,13 +1131,16 @@ ol.rules { padding-left: 20px; }
       profUnsub[id] = db.doc("users/" + id).onSnapshot(function (s) { profiles[id] = s.exists ? s.data() : null; render(); if (shopOpen && id === uid) renderShop(); }, function () {});
     });
     Object.keys(profUnsub).forEach(function (id) { if (!want[id]) { profUnsub[id](); delete profUnsub[id]; delete profiles[id]; } });
+    rcInit();
     if (!profileEnsured) { profileEnsured = true; callFn("profile", { terms: TERMS_V }).catch(function () { profileEnsured = false; }); }
   }
   function dropProfiles() { Object.keys(profUnsub).forEach(function (id) { profUnsub[id](); }); profUnsub = {}; profiles = {}; profileEnsured = false; }
   function callFn(name, data) { return firebase.app().functions("us-central1").httpsCallable(name)(data || {}); }
+  function vipActive(p) { return !!(p && p.vip && p.vip.until > Date.now()); }
   function gear(id, slot) {
-    var e = (profiles[id] && profiles[id].equipped) || {};
-    return CAT.byId[e[slot]] || CAT.byId[CAT.DEFAULTS[slot]];
+    var p = profiles[id], e = (p && p.equipped) || {}, it = CAT.byId[e[slot]];
+    if (!it || (it.only === "vip" && !vipActive(p))) it = CAT.byId[CAT.DEFAULTS[slot]];
+    return it;
   }
   function itemName(it) { return LANG === "ar" && it.ar ? it.ar : it.name; }
   function diceVars(look) {
@@ -1103,7 +1175,7 @@ ol.rules { padding-left: 20px; }
     return '<div class="pv-fx" data-fx="' + it.id + '" style="' + diceVars(CAT.byId.classic.look) + '"><div class="pv-die">' + pipsSVG(6) + "</div></div>";
   }
   function shopItemHTML(it, p) {
-    var owned = (p.owned || []).indexOf(it.id) > -1, on = gear(uid, it.slot).id === it.id, lv = it.level || 1, btn;
+    var owned = (p.owned || []).indexOf(it.id) > -1 || (it.only === "vip" && vipActive(p)), on = gear(uid, it.slot).id === it.id, lv = it.level || 1, btn;
     if (on) btn = '<span class="tag on">' + T("Equipped") + "</span>";
     else if (owned) btn = '<button class="btn small" data-act="equip" data-id="' + it.id + '">' + T("Use") + "</button>";
     else if (it.only) btn = '<span class="tag">' + T(it.only === "founder" ? "Founder's Pack" : it.only === "vip" ? "VIP" : "Season Pass") + "</span>";
@@ -1120,21 +1192,90 @@ ol.rules { padding-left: 20px; }
     var daily = dailyReady(p)
       ? '<div class="daily ready"><div><strong>' + T("Daily reward") + "</strong><br><span class=\"muted small\">" + T("Come back every day for bigger rewards.") + '</span></div><button class="btn" data-act="daily"' + (shopBusy ? " disabled" : "") + ">" + T("Claim") + "</button></div>"
       : '<div class="daily"><div><strong>' + T("Daily reward claimed") + '</strong><br><span class="muted small">' + T("Streak: {n} days. Come back tomorrow.", { n: streak }) + "</span></div></div>";
-    var tabs = [["dice", T("Dice")], ["felt", T("Tables")], ["frame", T("Frames")], ["fx", T("Effects")]].map(function (t) {
+    var tabs = [["premium", "★ " + T("Premium")], ["season", T("Season")], ["dice", T("Dice")], ["felt", T("Tables")], ["frame", T("Frames")], ["fx", T("Effects")]].map(function (t) {
       return '<button class="tab" data-act="shoptab" data-tab="' + t[0] + '" aria-pressed="' + (shopTab === t[0]) + '">' + t[1] + "</button>";
     }).join("");
-    var list = CAT.items.filter(function (it) { return it.slot === shopTab; }).map(function (it) { return shopItemHTML(it, p); }).join("");
+    var list = shopTab === "premium" ? premiumHTML(p) : shopTab === "season" ? seasonHTML(p)
+      : CAT.items.filter(function (it) { return it.slot === shopTab; }).map(function (it) { return shopItemHTML(it, p); }).join("");
     var html = '<div class="menu-back" data-act="shopclose"></div><div class="menu shop" role="dialog" aria-modal="true" aria-label="' + T("Shop") + '">' +
       '<div class="menu-head"><h2>' + T("Shop") + '</h2><button class="btn ghost small" data-act="shopclose">' + T("Close") + "</button></div>" +
       '<div class="panel prof"><div class="prof-top">' + '<div' + frameAttrs(uid) + ' class="prof-av">' + avatarHTML(uid, myName, myAvatar, true) + '</div><div class="prof-txt"><strong><bdi>' + esc(myName) + "</bdi></strong><span>" + T("Level {l}", { l: lv }) + " · " + T("{w} wins in {g} games", { w: fmt((p.stats || {}).wins || 0), g: fmt((p.stats || {}).games || 0) }) + '</span></div><div class="prof-coins"><span class="coin big" aria-hidden="true"></span>' + fmt(p.coins || 0) + "</div></div>" +
       '<div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="' + T("XP to next level") + '"><span style="width:' + pct + '%"></span></div><p class="muted small">' + T("{x} / {y} XP to level {l}", { x: fmt((p.xp || 0) - lo), y: fmt(hi - lo), l: lv + 1 }) + "</p></div>" +
       daily +
       '<p class="muted small" style="margin:10px 2px">' + T("Win games to earn coins and XP. Everything here is just for looks: it never changes how the dice roll.") + "</p>" +
-      '<div class="tabs" role="group">' + tabs + '</div><div class="shop-grid">' + list + "</div></div>";
+      '<div class="tabs" role="group">' + tabs + '</div><div class="' + (shopTab === "premium" || shopTab === "season" ? "shop-list" : "shop-grid") + '">' + list + "</div></div>";
     if (html === shopHTML) return;   // only redraw when something changed (keeps scroll and taps steady)
     var old = root.querySelector(".menu"), keep = old ? old.scrollTop : 0, fresh = !old;
     root.innerHTML = html; shopHTML = html;
     var m = root.querySelector(".menu"); if (m) { m.scrollTop = keep; if (!fresh) m.style.animation = "none"; }
+  }
+  // ---------- purchases (in the iPhone / Android app, through RevenueCat) ----------
+  var RC = { ready: false, pkgs: {}, busy: false };
+  function storeAPI() { var C = window.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Purchases ? C.Plugins.Purchases : null; }
+  function rcInit() {
+    var P = storeAPI(); if (!P || RC.ready || RC.starting || !uid) return;
+    var key = (window.RC_KEYS || {})[window.Capacitor.getPlatform()]; if (!key) return;
+    RC.starting = true;
+    P.configure({ apiKey: key, appUserID: uid }).then(function () { return P.getOfferings(); }).then(function (o) {
+      var all = (o && o.all) || {};
+      Object.keys(all).forEach(function (k) { (all[k].availablePackages || []).forEach(function (pk) { RC.pkgs[pk.product.identifier] = pk; }); });
+      RC.ready = true; shopHTML = ""; renderShop();
+    }).catch(function () {}).then(function () { RC.starting = false; });
+  }
+  function priceOf(pid) { var pk = RC.pkgs[pid]; return pk ? pk.product.priceString : CAT.PRODUCTS[pid].usd; }
+  function buyBtn(pid, label) {
+    if (!storeAPI()) return '<span class="tag">' + T("In the app") + "</span>";
+    return '<button class="btn small" data-act="iap" data-id="' + pid + '"' + (RC.busy || !RC.pkgs[pid] ? " disabled" : "") + ">" + esc(label || priceOf(pid)) + "</button>";
+  }
+  function buyProduct(pid) {
+    var P = storeAPI(), pk = RC.pkgs[pid]; if (!P || !pk || RC.busy) return;
+    RC.busy = true; shopHTML = ""; renderShop();
+    P.purchasePackage({ aPackage: pk }).then(function () {
+      toast(T("Thanks! Adding it to your account…"));
+      return callFn("syncPurchases");
+    }).catch(function (e) { if (!(e && (e.userCancelled || e.code === "1" || /cancel/i.test(e.message || "")))) toast(T("The purchase didn't go through. You weren't charged.")); })
+      .then(function () { RC.busy = false; shopHTML = ""; renderShop(); });
+  }
+  function restorePurchases() {
+    var P = storeAPI(); if (!P) return;
+    RC.busy = true; shopHTML = ""; renderShop();
+    P.restorePurchases().then(function () { return callFn("syncPurchases"); }).then(function (r) {
+      toast(r && r.data && r.data.granted ? T("Purchases restored.") : T("Everything is already up to date."));
+    }, function () { toast(T("Couldn't reach the store. Try again.")); }).then(function () { RC.busy = false; shopHTML = ""; renderShop(); });
+  }
+  function premiumHTML(p) {
+    var F = CAT.PRODUCTS, vip = vipActive(p);
+    var founder = '<div class="prem-card founder"><div class="pc-head"><div class="pv-die" style="' + diceVars(CAT.byId.founder.look) + '">' + pipsSVG(6) + '</div><div><h3>' + T("Founder's Pack") + '</h3><p class="small">' + T("For our first players. Available during the launch season.") + "</p></div></div>" +
+      '<ul class="small"><li>' + T("Founder's Gold dice") + "</li><li>" + T("Founder avatar frame") + "</li><li>" + T("Founder's Emerald table") + "</li><li>" + T("{n} coins", { n: fmt(F.mt_founder.coins) }) + "</li></ul>" +
+      (p.founder ? '<span class="tag on">' + T("Owned") + " ✓</span>" : buyBtn("mt_founder")) + "</div>";
+    var packs = ["mt_coins_500", "mt_coins_3000", "mt_coins_7000", "mt_coins_16000"].map(function (pid) {
+      return '<div class="pack"><span class="coin big" aria-hidden="true"></span><strong>' + fmt(F[pid].coins) + "</strong>" + (F[pid].tag ? '<span class="ptag">' + T(F[pid].tag) + "</span>" : "") + buyBtn(pid) + "</div>";
+    }).join("");
+    var vipCard = '<div class="prem-card vip"><h3>VIP</h3><ul class="small"><li>' + T("Double coins from games and daily rewards") + "</li><li>" + T("VIP Onyx dice and VIP frame") + "</li><li>" + T("VIP badge at every table") + "</li></ul>" +
+      (vip ? '<span class="tag on">' + T("Active until {d}", { d: new Date(p.vip.until).toLocaleDateString() }) + "</span>" : buyBtn("mt_vip_monthly", T("{p} / month", { p: priceOf("mt_vip_monthly").replace("/month", "") }))) +
+      '<p class="tiny muted">' + T("Renews monthly until you cancel in your Apple ID or Google Play settings. Cancel anytime.") + ' <a href="terms.html" target="_blank" rel="noopener">' + T("Terms") + '</a> · <a href="privacy.html" target="_blank" rel="noopener">' + T("Privacy") + "</a></p></div>";
+    return founder + '<h3 class="sec-h">' + T("Coins") + '</h3><div class="packs">' + packs + "</div>" + vipCard +
+      (storeAPI() ? '<button class="btn ghost small restore" data-act="restore"' + (RC.busy ? " disabled" : "") + ">" + T("Restore purchases") + "</button>"
+        : '<p class="muted small">' + T("Purchases are available in the ManTen app for iPhone and Android.") + "</p>");
+  }
+  function seasonHTML(p) {
+    var se = CAT.activeSeason();
+    if (!se) return '<p class="muted">' + T("The next season starts soon.") + "</p>";
+    var s = p.season && p.season.id === se.id ? p.season : { xp: 0, premium: false, claimed: [] }, tiers = CAT.seasonTiers(se);
+    var reached = tiers.filter(function (t) { return s.xp >= t.xp; }).length, next = tiers[reached];
+    var cell = function (t, track) {
+      var r = t[track], key = track + t.n, got = (s.claimed || []).indexOf(key) > -1, can = s.xp >= t.xp && (track === "free" || s.premium);
+      if (!r.item && !r.coins) return '<div class="rw empty"></div>';
+      var label = r.item ? esc(itemName(CAT.byId[r.item])) : '<span class="coin" aria-hidden="true"></span>' + fmt(r.coins);
+      var act = got ? '<span class="tag on">✓</span>' : can ? '<button class="btn small" data-act="tier" data-n="' + t.n + '" data-t="' + track + '">' + T("Claim") + "</button>" : '<span class="tag lock">' + (track === "prem" && !s.premium ? "★" : "🔒") + "</span>";
+      return '<div class="rw' + (track === "prem" ? " prem" : "") + (r.item ? " item" : "") + '"><span>' + label + "</span>" + act + "</div>";
+    };
+    var rows = tiers.map(function (t) { return '<div class="tier' + (s.xp >= t.xp ? " done" : "") + '"><div class="tn">' + t.n + "</div>" + cell(t, "free") + cell(t, "prem") + "</div>"; }).join("");
+    return '<div class="prem-card season"><h3>' + esc(LANG === "ar" ? se.ar : se.name) + '</h3><p class="small">' + T("Ends {d}", { d: new Date(se.end + "T00:00:00").toLocaleDateString() }) + " · " + T("Tier {n} of 20", { n: reached }) + "</p>" +
+      '<div class="xpbar"><span style="width:' + Math.round(100 * reached / 20) + '%"></span></div>' +
+      (next ? '<p class="small muted">' + T("{x} season XP to the next tier. Every game earns XP.", { x: fmt(next.xp - s.xp) }) + "</p>" : "") +
+      (s.premium ? '<span class="tag on">★ ' + T("Season Pass active") + "</span>" : '<div class="row">' + buyBtn("mt_season_s1", T("Get the Season Pass") + " · " + priceOf("mt_season_s1")) + '<span class="small muted">' + T("Unlocks the ★ rewards, including Koi dice and the Samurai frame.") + "</span></div>") + "</div>" +
+      '<div class="tiers"><div class="tier head"><div class="tn">#</div><div class="rw">' + T("Free") + '</div><div class="rw prem">★ ' + T("Pass") + "</div></div>" + rows + "</div>";
   }
   function shopAct(name, data, okMsg) {
     if (shopBusy) return; shopBusy = true; renderShop();
@@ -1762,6 +1903,7 @@ ol.rules { padding-left: 20px; }
         : (room.rolloff && room.rolloff.players.indexOf(id) > -1) ? '<span class="badge">決戦</span>'
         : (room.finalists && room.finalists.indexOf(id) > -1 && room.status === "play") ? '<span class="badge">' + T("Hit {n}!", { n: fmt(room.target) }) + "</span>"
                 : (o.scores && lockMode(room, id)) ? '<span class="badge off">' + T("Final stretch") + "</span>"
+        : vipActive(profiles[id]) && !o.scores ? '<span class="badge vipb">VIP</span>'
         : (o.scores && !(o.scores[id] > 0)) ? '<span class="badge off">' + T("Not on board") + "</span>"
         : (!o.scores && id === room.host) ? '<span class="badge off">' + T("Host") + "</span>" : "";
       var nm = nameOf(id) + (id === uid ? " " + T("(you)") : "");
@@ -2148,6 +2290,7 @@ ol.rules { padding-left: 20px; }
   }
   function signOut() {
     dropProfiles(); shopOpen = false;
+    if (storeAPI() && RC.ready) { storeAPI().logOut().catch(function () {}); RC.ready = false; RC.pkgs = {}; }
     unsubAll(); code = null; menuOpen = false; location.hash = ""; authMode = "in"; authErr = ""; authInfo = ""; verifySent = false; clearInterval(verifyT); verifyT = null;
     firebase.auth().signOut();
   }
@@ -2315,6 +2458,9 @@ ol.rules { padding-left: 20px; }
     else if (a === "shoptab") { shopTab = el.getAttribute("data-tab"); renderShop(); }
     else if (a === "buy") shopAct("buyItem", { id: el.getAttribute("data-id") }, function () { return T("Bought and equipped!"); });
     else if (a === "equip") shopAct("equip", { id: el.getAttribute("data-id") });
+    else if (a === "iap") buyProduct(el.getAttribute("data-id"));
+    else if (a === "restore") restorePurchases();
+    else if (a === "tier") shopAct("claimTier", { n: Number(el.getAttribute("data-n")), track: el.getAttribute("data-t") }, function (d) { return d && d.item ? T("Unlocked {name}!", { name: itemName(CAT.byId[d.item]) }) : T("+{n} coins!", { n: fmt((d && d.coins) || 0) }); });
     else if (a === "daily") shopAct("claimDaily", {}, function (d) { return T("+{n} coins! Streak: {s} days.", { n: fmt((d && d.coins) || 0), s: (d && d.streak) || 1 }); });
     else if (a === "actclose") closeWindow(false);
     else if (a === "actdone") actionDone();

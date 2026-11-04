@@ -53,5 +53,37 @@
     starter: 250,            // coins for a new account
     daily: [50, 75, 100, 125, 150, 200, 300]   // login streak day 1..7+
   };
-  return { items: items, byId: byId, DEFAULTS: DEFAULTS, FREE: FREE, xpFor: xpFor, levelFor: levelFor, REWARDS: REWARDS };
+  // Store products (set up the same IDs in App Store Connect, Google Play and RevenueCat).
+  var PRODUCTS = {
+    mt_founder: { kind: "founder", coins: 2500, usd: "$9.99", items: ["founder", "founderfelt", "founderframe"] },
+    mt_coins_500: { kind: "coins", coins: 500, usd: "$0.99" },
+    mt_coins_3000: { kind: "coins", coins: 3000, usd: "$4.99", tag: "+20%" },
+    mt_coins_7000: { kind: "coins", coins: 7000, usd: "$9.99", tag: "+40%" },
+    mt_coins_16000: { kind: "coins", coins: 16000, usd: "$19.99", tag: "Best value" },
+    mt_vip_monthly: { kind: "vip", usd: "$2.99/month" },
+    mt_season_s1: { kind: "season", season: "s1", usd: "$4.99" }
+  };
+  var VIP_ITEMS = ["vip", "vipframe"];
+
+  // Seasons: play to earn season XP and climb 20 tiers. Everyone gets the free track; the Season Pass adds the premium track.
+  var SEASONS = [
+    { id: "s1", name: "Season 1: Koi", ar: "الموسم ١: كوي", start: "2026-11-01", end: "2027-01-31", product: "mt_season_s1", step: 150,
+      items: { 10: "koi", 20: "samurai" } }
+  ];
+  function activeSeason(t) {
+    var day = new Date(t || Date.now()).toISOString().slice(0, 10);
+    for (var i = 0; i < SEASONS.length; i++) if (day >= SEASONS[i].start && day <= SEASONS[i].end) return SEASONS[i];
+    return null;
+  }
+  function seasonTiers(se) {
+    var out = [];
+    for (var n = 1; n <= 20; n++) {
+      out.push({ n: n, xp: se.step * n,
+        free: n % 5 === 0 ? { coins: 150 } : { coins: n % 2 ? 40 : 0 },
+        prem: se.items[n] ? { item: se.items[n] } : { coins: n % 5 === 0 ? 400 : 120 } });
+    }
+    return out;
+  }
+  return { items: items, byId: byId, DEFAULTS: DEFAULTS, FREE: FREE, xpFor: xpFor, levelFor: levelFor, REWARDS: REWARDS,
+    PRODUCTS: PRODUCTS, VIP_ITEMS: VIP_ITEMS, SEASONS: SEASONS, activeSeason: activeSeason, seasonTiers: seasonTiers };
 });

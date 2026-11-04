@@ -8,6 +8,7 @@ const crypto = require("crypto");
 const Core = require("./game-core.js");
 const Economy = require("./economy.js");
 const Safety = require("./safety.js");
+const Purchases = require("./purchases.js");
 
 initializeApp();
 const db = getFirestore();
@@ -114,4 +115,4 @@ exports.move = onCall({ enforceAppCheck: false }, async (req) => {
   return { ok: true };
 });
 
-Object.assign(exports, Economy.callables(db, player), Safety.callables(db, player));
+Object.assign(exports, Economy.callables(db, player), Safety.callables(db, player), Purchases.callables(db, player));

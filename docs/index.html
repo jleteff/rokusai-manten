@@ -254,6 +254,13 @@ input[type=text], input[type=email], input[type=password], select {
 .fwrap > .av { border-width: 2px; }
 .prof-av[data-frame], .pv-frame[data-frame] { border-radius: 50%; padding: 3px; background: conic-gradient(var(--fr), var(--fr2), var(--fr)); display: inline-block; }
 .pv-frame[data-glow="1"], .prof-av[data-glow="1"] { box-shadow: 0 0 12px var(--fr); }
+.terms { display: flex; gap: 10px; align-items: flex-start; margin: 4px 0 12px; font-size: 14px; line-height: 1.4; }
+.terms input { width: 20px; height: 20px; margin-top: 1px; flex: 0 0 auto; accent-color: var(--gold); }
+.terms a, .legal a { color: var(--gold); }
+.legal { text-align: center; color: var(--ivory-dim); margin: 4px 0 0; }
+.delask { margin-top: 12px; padding: 12px; border-radius: 10px; border: 1px solid var(--ember); background: rgba(192,57,43,.1); }
+.btn.danger-fill { background: var(--ember); color: #fff; box-shadow: none; }
+.row.safety { justify-content: center; }
 .reward { margin: 4px 0 8px; font-weight: 800; color: var(--gold); }
 .reward.muted { font-weight: 600; color: var(--ivory-dim); }
 /* roll effects: the roller's dice glow while they tumble */
@@ -464,6 +471,30 @@ ol.rules { padding-left: 20px; }
     "Copy the invite link for table {code}": "انسخ رابط الدعوة للطاولة {code}",
     "Switch language": "تغيير اللغة",
     "You can watch, but not play": "يمكنك المشاهدة فقط",
+    "Report": "إبلاغ",
+    "Block": "حظر",
+    "Unblock": "إلغاء الحظر",
+    "Report {name}": "الإبلاغ عن {name}",
+    "What's wrong? Reports go to the game's owner.": "ما المشكلة؟ البلاغات تصل لصاحب اللعبة.",
+    "Abusive or offensive chat": "دردشة مسيئة أو جارحة",
+    "Cheating or hijacking the game": "غش أو تخريب اللعبة",
+    "Offensive name": "اسم مسيء",
+    "Offensive photo": "صورة مسيئة",
+    "Something else": "شيء آخر",
+    "Thanks. The report was sent.": "شكرًا. تم إرسال البلاغ.",
+    "{name} is blocked. You won't see their chat.": "تم حظر {name}. لن ترى رسائله.",
+    "{name} is unblocked.": "تم إلغاء حظر {name}.",
+    "Bad-language filter: on": "فلتر الألفاظ: مفعّل",
+    "Bad-language filter: off": "فلتر الألفاظ: متوقف",
+    "Delete account": "حذف الحساب",
+    "Delete your account for good?": "حذف حسابك نهائيًا؟",
+    "This erases your profile, coins, levels and items. Purchases can't be refunded here. This can't be undone.": "سيُمسح ملفك وعملاتك ومستوياتك وأغراضك. لا يمكن استرداد المشتريات من هنا. لا يمكن التراجع.",
+    "Delete forever": "احذف نهائيًا",
+    "Your account was deleted.": "تم حذف حسابك.",
+    "Privacy": "الخصوصية",
+    "Support": "الدعم",
+    "I'm 13 or older and agree to the {t} and {p}.": "عمري 13 سنة أو أكثر وأوافق على {t} و{p}.",
+    "Please agree to the Terms and Privacy Policy.": "يرجى الموافقة على الشروط وسياسة الخصوصية.",
     "Shop and profile. {n} coins, level {l}": "المتجر والملف الشخصي. {n} عملة، المستوى {l}",
     "Lv {l}": "مس {l}",
     "Equipped": "مُستخدم",
@@ -1020,7 +1051,7 @@ ol.rules { padding-left: 20px; }
 
   /* ---------- coins, levels, cosmetics ---------- */
   // users/{uid} holds coins, XP, level, owned and equipped items. Only the server writes it.
-  var shopHTML = "", CAT = RokuCatalog, profiles = {}, profUnsub = {}, shopOpen = false, shopTab = "dice", shopBusy = false, profileEnsured = false;
+  var TERMS_V = 1, shopHTML = "", CAT = RokuCatalog, profiles = {}, profUnsub = {}, shopOpen = false, shopTab = "dice", shopBusy = false, profileEnsured = false;
   function myProf() { return profiles[uid] || null; }
   function watchProfiles() {
     if (!db || !uid || !authUser || !authUser.emailVerified) return;
@@ -1031,7 +1062,7 @@ ol.rules { padding-left: 20px; }
       profUnsub[id] = db.doc("users/" + id).onSnapshot(function (s) { profiles[id] = s.exists ? s.data() : null; render(); if (shopOpen && id === uid) renderShop(); }, function () {});
     });
     Object.keys(profUnsub).forEach(function (id) { if (!want[id]) { profUnsub[id](); delete profUnsub[id]; delete profiles[id]; } });
-    if (!profileEnsured) { profileEnsured = true; callFn("profile").catch(function () { profileEnsured = false; }); }
+    if (!profileEnsured) { profileEnsured = true; callFn("profile", { terms: TERMS_V }).catch(function () { profileEnsured = false; }); }
   }
   function dropProfiles() { Object.keys(profUnsub).forEach(function (id) { profUnsub[id](); }); profUnsub = {}; profiles = {}; profileEnsured = false; }
   function callFn(name, data) { return firebase.app().functions("us-central1").httpsCallable(name)(data || {}); }
@@ -1120,7 +1151,7 @@ ol.rules { padding-left: 20px; }
   // Tap another player's seat to call them out: Ro Sham Bo, or a quick 1-on-1 game at its own table.
   // Everything travels through each player's own seat document (duel, duelAns, rps), so no new rules.
   var HANDS = { rock: "✊", paper: "✋", scissors: "✌️" }, BEATS = { rock: "scissors", paper: "rock", scissors: "paper" };
-  var duelSeen = {}, duelPrimed = false, duelGone = {}, duelMenu = null, duelBusy = false, duelMade = {}, duelPosted = {};
+  var reportFor = null, duelSeen = {}, duelPrimed = false, duelGone = {}, duelMenu = null, duelBusy = false, duelMade = {}, duelPosted = {};
   function noteDuels() {
     var fresh = false, now = Date.now();
     Object.keys(players).forEach(function (id) {
@@ -1196,13 +1227,22 @@ ol.rules { padding-left: 20px; }
     if (!db || !code || !room || !players[uid]) { root.innerHTML = ""; return; }
     var html = "";
     var A = activeDuel();
+    var safety = duelMenu && duelMenu !== uid ? '<div class="row safety">' +
+      '<button class="btn ghost small" data-act="reportmenu" data-id="' + esc(duelMenu) + '">⚑ ' + T("Report") + "</button>" +
+      '<button class="btn ghost small" data-act="block" data-id="' + esc(duelMenu) + '">' + T(isBlocked(duelMenu) ? "Unblock" : "Block") + "</button></div>" : "";
     var kickBtn = duelMenu && room.host === uid && duelMenu !== uid && room.status !== "done" ? '<button class="btn ghost danger" data-act="kick" data-id="' + esc(duelMenu) + '">' + T("Remove {name} from the table", { name: "<bdi>" + esc(nameOf(duelMenu)) + "</bdi>" }) + "</button>" : "";
-    if (duelMenu && players[duelMenu] && !A && !isBot(duelMenu)) {
+    if (reportFor && players[reportFor]) {
+      var rn = "<bdi>" + esc(nameOf(reportFor)) + "</bdi>";
+      html = "<h3>" + T("Report {name}", { name: rn }) + "</h3><p>" + T("What's wrong? Reports go to the game's owner.") + '</p><div class="stack">' +
+        [["chat", "Abusive or offensive chat"], ["cheating", "Cheating or hijacking the game"], ["name", "Offensive name"], ["photo", "Offensive photo"], ["other", "Something else"]].map(function (x) {
+          return '<button class="btn ghost" data-act="report" data-id="' + esc(reportFor) + '" data-r="' + x[0] + '">' + T(x[1]) + "</button>";
+        }).join("") + '<button class="btn ghost small" data-act="duelclose">' + T("Cancel") + "</button></div>";
+    } else if (duelMenu && players[duelMenu] && !A && !isBot(duelMenu)) {
       var nm = "<bdi>" + esc(nameOf(duelMenu)) + "</bdi>";
       html = "<h3>" + T("Challenge {name}", { name: nm }) + '</h3><p>' + T("Pick a quick 1-on-1. They have to accept.") + '</p><div class="stack">' +
         '<button class="btn" data-act="chal" data-k="rps">✊ ' + T("Ro Sham Bo") + "</button>" +
         [2500, 5000, 10000].map(function (t) { return '<button class="btn ghost" data-act="chal" data-k="game" data-t="' + t + '">🎲 ' + T("Quick game to {n}", { n: fmt(t) }) + "</button>"; }).join("") +
-        kickBtn + '<button class="btn ghost small" data-act="duelclose">' + T("Cancel") + "</button></div>";
+        kickBtn + safety + '<button class="btn ghost small" data-act="duelclose">' + T("Cancel") + "</button></div>";
     } else if (A) {
       var other = "<bdi>" + esc(nameOf(A.other)) + "</bdi>", isGame = A.d.kind === "game";
       if (!A.ans) {
@@ -1298,7 +1338,7 @@ ol.rules { padding-left: 20px; }
   }
 
   /* ---------- menu ---------- */
-  var menuOpen = false;
+  var menuOpen = false, delAsk = false;
   var MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
   function renderMenu() {
     var root = $("#menuroot"); if (!root) return;
@@ -1313,13 +1353,16 @@ ol.rules { padding-left: 20px; }
     if (code) parts.push(alertsHTML());
     parts.push('<div class="panel"><p class="label">' + T("Settings") + '</p><div class="row" style="margin-top:8px">' +
       '<button class="btn ghost small pill" data-act="sound" aria-pressed="' + soundOn + '">' + T(soundOn ? "Sound: on" : "Sound: off") + "</button>" +
+      '<button class="btn ghost small pill" data-act="filter" aria-pressed="' + filterOn + '">' + T(filterOn ? "Bad-language filter: on" : "Bad-language filter: off") + "</button>" +
       '<button class="btn ghost small" data-act="lang"' + (LANG === "ar" ? ' lang="en">English' : ' lang="ar">عربي') + "</button>" +
       (code && room ? '<button class="btn ghost small" data-act="dealer">' + T("Switch dealer") + "</button>" : "") + "</div></div>");
     parts.push('<div class="panel">' + rulesHTML() + "</div>");
     if (code && room && room.host === uid && room.status !== "done" && !room.duelPair) parts.push('<div class="panel"><p class="label">' + T("Host controls") + '</p><div class="row" style="margin-top:8px">' +
       '<button class="btn ghost small pill" data-act="lock" aria-pressed="' + (room.locked === true) + '">' + T(room.locked ? "Table locked: only seated players" : "Table open: anyone with the link can sit") + "</button></div>" +
       '<p class="muted small" style="margin-top:8px">' + T("Tap a player's seat to remove them. Removed players can't come back to this table.") + "</p></div>");
-    if (authUser) parts.push('<div class="panel"><p class="label">' + T("Account") + '</p><p class="small">' + T("Signed in as {name}", { name: "<strong><bdi>" + esc(myName) + "</bdi></strong>" }) + ' <span class="muted" dir="ltr">' + esc(authUser.email || "") + '</span></p><div class="row" style="margin-top:8px"><button class="btn ghost small" data-act="signout">' + T("Sign out") + "</button></div></div>");
+    if (authUser) parts.push('<div class="panel"><p class="label">' + T("Account") + '</p><p class="small">' + T("Signed in as {name}", { name: "<strong><bdi>" + esc(myName) + "</bdi></strong>" }) + ' <span class="muted" dir="ltr">' + esc(authUser.email || "") + '</span></p><div class="row" style="margin-top:8px"><button class="btn ghost small" data-act="signout">' + T("Sign out") + '</button><button class="btn ghost small danger" data-act="delacct">' + T("Delete account") + "</button></div>" +
+      (delAsk ? '<div class="delask" role="alert"><p><strong>' + T("Delete your account for good?") + "</strong></p><p class=\"small\">" + T("This erases your profile, coins, levels and items. Purchases can't be refunded here. This can't be undone.") + '</p><div class="row"><button class="btn danger-fill" data-act="delyes">' + T("Delete forever") + '</button><button class="btn ghost small" data-act="delno">' + T("Cancel") + "</button></div></div>" : "") + "</div>");
+    parts.push('<p class="legal small"><a href="privacy.html" target="_blank" rel="noopener">' + T("Privacy") + '</a> · <a href="terms.html" target="_blank" rel="noopener">' + T("Terms") + '</a> · <a href="support.html" target="_blank" rel="noopener">' + T("Support") + "</a></p>");
     if (code) parts.push('<button class="btn ghost" data-act="home">' + T("Leave table") + "</button>");
     root.innerHTML = '<div class="menu-back" data-act="menuclose"></div><div class="menu" role="dialog" aria-modal="true" aria-label="' + T("Menu") + '">' + parts.join("") + "</div>";
     var m = root.querySelector(".menu"); if (m) m.scrollTop = keep;
@@ -1384,6 +1427,20 @@ ol.rules { padding-left: 20px; }
     return out.sort(function (a, b) { return a.at - b.at; }).slice(-60);
   }
   // Note when each message first reached this phone (immune to clock differences between phones).
+  // Bad-language filter (on by default) and blocked players. Applied to everything shown, on every phone.
+  var filterOn = store.get("fk-filter") !== "0";
+  var BAD_EN = /\b(f+u+c+k+\w*|motherf\w*|sh[i1]t(s|ty|ting|head\w*|ter)?|bullsh[i1]t|b[i1]tch\w*|c+u+n+t+s?|d[i1]ck(head)?s?|pussy|pussies|ass+hole\w*|bastard\w*|sluts?|whores?|n[i1]gg(a|er)\w*|fag(got)?s?|retard\w*|cocks?|wank\w*|twats?|porn\w*|rap(e|ist|ed|ing))\b/gi;
+  // Arabic is matched as whole words only, so normal words that contain these letters (like كسبت, "I won") are left alone.
+  var BAD_AR = /^(كس|كسك|كسم\S*|زب|زبي|زبك|شرموط\S*|منيوك\S*|منيك\S*|قحب\S*|عرص\S*|خول|متناك\S*|نيك|نيكك|طيز\S*|يلعن\S*|العن\S*)$/;
+  function cleanText(t) {
+    if (!filterOn) return t;
+    var mask = function (w) { return w.charAt(0) + new Array(Math.max(2, w.length)).join("*"); };
+    return String(t).replace(BAD_EN, mask).split(/(\s+)/).map(function (w) {
+      var core = w.replace(/^[^\u0600-\u06FF]+|[^\u0600-\u06FF]+$/g, "");
+      return core && BAD_AR.test(core) ? w.replace(core, mask(core)) : w;
+    }).join("");
+  }
+  function isBlocked(id) { var p = myProf(); return !!(p && (p.blocked || []).indexOf(id) > -1); }
   function noteChat() {
     var fresh = false, now = Date.now();
     allChat().forEach(function (m) { if (!(m.key in chatSeen)) { chatSeen[m.key] = chatPrimed ? now : 0; if (chatPrimed) fresh = true; } });
@@ -1393,11 +1450,12 @@ ol.rules { padding-left: 20px; }
     if (fresh) { clearTimeout(bubbleT); bubbleT = setTimeout(render, 6200); }
   }
   function unreadCount() {
-    return allChat().filter(function (m) { return m.id !== uid && chatSeen[m.key] > chatReadAt; }).length;
+    return allChat().filter(function (m) { return m.id !== uid && !isBlocked(m.id) && chatSeen[m.key] > chatReadAt; }).length;
   }
   function bubbleFor(id) {
+    if (isBlocked(id)) return "";
     var mine = allChat().filter(function (m) { return m.id === id && Date.now() - (chatSeen[m.key] || 0) < 6000; });
-    return mine.length ? mine[mine.length - 1].t : "";
+    return mine.length ? cleanText(mine[mine.length - 1].t) : "";
   }
   function sendChat(text) {
     text = String(text || "").replace(/\s+/g, " ").trim().slice(0, 200);
@@ -1442,7 +1500,7 @@ ol.rules { padding-left: 20px; }
   }
   function renderChat(force) {
     var list = $("#chatlist"), inp = $("#chatin"); if (!list) return;
-    var msgs = allChat(), keys = msgs.map(function (m) { return m.key; }).join("|");
+    var msgs = allChat().filter(function (m) { return !isBlocked(m.id); }), keys = msgs.map(function (m) { return m.key; }).join("|") + (filterOn ? "f" : "");
     var seated = !!players[uid];
     if (inp) { inp.disabled = !seated; inp.placeholder = seated ? T("Talk some trash…") : T("Take a seat to chat"); }
     $("#quick").innerHTML = seated ? QUICK.map(function (q) { q = T(q); return '<button class="btn ghost small" type="button" data-act="quick" data-t="' + esc(q) + '">' + esc(q) + "</button>"; }).join("") : "";
@@ -1452,7 +1510,7 @@ ol.rules { padding-left: 20px; }
     list.innerHTML = msgs.length ? msgs.map(function (m) {
       var me = m.id === uid;
       return '<div class="msg' + (me ? " me" : "") + '">' + avatarHTML(m.id, nameOf(m.id), players[m.id] && players[m.id].avatar) +
-        '<div><span class="who">' + esc(me ? T("You") : nameOf(m.id)) + '</span><span class="txt">' + esc(m.t) + "</span></div></div>";
+        '<div><span class="who">' + esc(me ? T("You") : nameOf(m.id)) + '</span><span class="txt">' + esc(cleanText(m.t)) + "</span></div></div>";
     }).join("") : '<p class="chat-empty">' + T("No trash talk yet. Somebody has to start it.") + "</p>";
     if (nearBottom || force || (msgs.length && msgs[msgs.length - 1].id === uid)) list.scrollTop = list.scrollHeight;
     if (chatOpen) chatReadAt = Date.now();
@@ -1974,6 +2032,7 @@ ol.rules { padding-left: 20px; }
       (up ? '<div class="field"><label class="label" for="au-name">' + T("Your name") + '</label><input type="text" id="au-name" maxlength="20" dir="auto" autocomplete="nickname" value="' + esc(myName) + '"></div>' : "") +
       '<div class="field"><label class="label" for="au-email">' + T("Email") + '</label><input type="email" id="au-email" dir="ltr" autocomplete="email" inputmode="email"></div>' +
       (reset ? "" : '<div class="field"><label class="label" for="au-pw">' + T("Password") + '</label><input type="password" id="au-pw" dir="ltr" autocomplete="' + (up ? "new-password" : "current-password") + '" minlength="6"></div>') +
+      (up ? '<label class="terms"><input type="checkbox" id="au-terms"> <span>' + T("I'm 13 or older and agree to the {t} and {p}.", { t: '<a href="terms.html" target="_blank" rel="noopener">' + T("Terms") + "</a>", p: '<a href="privacy.html" target="_blank" rel="noopener">' + T("Privacy Policy") + "</a>" }) + "</span></label>" : "") +
       (authErr ? '<p class="hint bad" role="alert">' + esc(authErr) + "</p>" : "") +
       (authInfo ? '<p class="hint" role="status">' + esc(authInfo) + "</p>" : "") +
       '<button class="btn" type="submit"' + (authBusy ? " disabled" : "") + ">" + (up ? T("Create account") : reset ? T("Send reset link") : T("Sign in")) + "</button>" +
@@ -1999,6 +2058,7 @@ ol.rules { padding-left: 20px; }
     var email = ($("#au-email") || {}).value || "", pw = ($("#au-pw") || {}).value || "", nm = (($("#au-name") || {}).value || "").trim();
     email = email.trim(); authErr = ""; authInfo = "";
     if (authMode === "up" && !nm) { authErr = T("Enter your name."); render(); return; }
+    if (authMode === "up" && !($("#au-terms") || {}).checked) { authErr = T("Please agree to the Terms and Privacy Policy."); render(); var keep = { n: nm, e: email }; var fn = $("#au-name"), fe = $("#au-email"); if (fn) fn.value = keep.n; if (fe) fe.value = keep.e; return; }
     if (!email) { authErr = T("Enter a valid email address."); render(); return; }
     authBusy = true; render();
     var a = firebase.auth(), job;
@@ -2242,6 +2302,13 @@ ol.rules { padding-left: 20px; }
     else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); saveName(v); maybeJoin(); render(); }
     else if (a === "authmode") { authMode = el.getAttribute("data-mode"); authErr = ""; authInfo = ""; render(); var f = $("#au-name") || $("#au-email"); if (f) f.focus(); }
     else if (a === "signout") signOut();
+    else if (a === "filter") { filterOn = !filterOn; store.set("fk-filter", filterOn ? "1" : "0"); renderMenu(); renderChat(true); render(); }
+    else if (a === "delacct") { delAsk = true; renderMenu(); }
+    else if (a === "delno") { delAsk = false; renderMenu(); }
+    else if (a === "delyes") {
+      el.disabled = true;
+      callFn("deleteAccount").then(function () { delAsk = false; toast(T("Your account was deleted.")); signOut(); }, function (e) { el.disabled = false; writeFail(e); });
+    }
     else if (a === "resend") resendVerify();
     else if (a === "shop") { shopOpen = true; menuOpen = false; renderMenu(); renderShop(); }
     else if (a === "shopclose") { shopOpen = false; renderShop(); }
@@ -2276,11 +2343,23 @@ ol.rules { padding-left: 20px; }
     }
     else if (a === "lang") { LANG = LANG === "ar" ? "en" : "ar"; store.set("fk-lang", LANG); applyLang(); avatarOpen && renderSheet(); renderChat(true); render(); }
     else if (a === "dealer") { dealerPick = dealerPick === "sofia" ? "layla" : "sofia"; store.set("fk-dealer", dealerPick); render(); }
-    else if (a === "seatmenu") { duelMenu = el.getAttribute("data-id"); renderDuel(); }
+    else if (a === "seatmenu") { duelMenu = el.getAttribute("data-id"); reportFor = null; renderDuel(); }
+    else if (a === "reportmenu") { reportFor = el.getAttribute("data-id"); duelMenu = null; renderDuel(); }
+    else if (a === "report") {
+      var rid = el.getAttribute("data-id"), rnm = nameOf(rid), last = allChat().filter(function (m) { return m.id === rid; }).slice(-3).map(function (m) { return m.t; }).join(" / ");
+      reportFor = null; renderDuel();
+      callFn("report", { target: rid, reason: el.getAttribute("data-r"), room: code, name: rnm, note: last }).then(function () { toast(T("Thanks. The report was sent.")); }, writeFail);
+    }
+    else if (a === "block") {
+      var bid = el.getAttribute("data-id"), on = !isBlocked(bid), bnm = nameOf(bid);
+      duelMenu = null; renderDuel();
+      callFn("block", { target: bid, on: on }).then(function () { toast(on ? T("{name} is blocked. You won't see their chat.", { name: bnm }) : T("{name} is unblocked.", { name: bnm })); }, writeFail);
+    }
     else if (a === "chal") challenge(duelMenu, el.getAttribute("data-k"), Number(el.getAttribute("data-t")) || 0);
     else if (a === "duelyes") { var A1 = activeDuel(); if (A1) answerDuel(A1, true); }
     else if (a === "duelno") { var A2 = activeDuel(); if (A2) { answerDuel(A2, false); closeDuel(A2); } }
     else if (a === "rps") { var A3 = activeDuel(); if (A3) pickHand(A3, el.getAttribute("data-h")); }
+    else if (a === "duelclose" && reportFor) { reportFor = null; renderDuel(); }
     else if (a === "duelclose") closeDuel(activeDuel());
     else if (a === "duelgo") { var A4 = activeDuel(); setTimeout(function () { closeDuel(A4); }, 300); }
     else if (a === "menu") { menuOpen = true; renderMenu(); }

@@ -56,7 +56,12 @@ exports.callables = (db, player) => {
     // Make sure the profile exists (new accounts get starter coins) and keep the display name current.
     profile: onCall(async (req) => {
       const uid = player(req);
-      return withProfile(uid, nameOf(req), (p) => { if (req.auth.token.name) p.name = req.auth.token.name; return { ok: true }; });
+      return withProfile(uid, nameOf(req), (p) => {
+        if (req.auth.token.name) p.name = req.auth.token.name;
+        const v = (req.data || {}).terms;
+        if (Number.isInteger(v) && v > 0 && (!p.terms || p.terms.v < v)) p.terms = { v: v, at: Date.now() };
+        return { ok: true };
+      });
     }),
     // Once per UTC day. Streak days 1-7 pay more; missing a day starts over.
     claimDaily: onCall(async (req) => {

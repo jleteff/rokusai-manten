@@ -203,6 +203,8 @@ input[type=text], input[type=email], input[type=password], select {
 .auto-note { display: inline-block; margin-inline-start: 6px; font-size: 12px; color: var(--ivory-dim); white-space: nowrap; }
 .badge .cd { font-variant-numeric: tabular-nums; }
 .oldver { margin: 6px auto; max-width: 560px; font-size: 13px; text-align: center; color: var(--gold); background: rgba(7,12,10,.85); border: 1px solid var(--gold-dim); border-radius: 9px; padding: 6px 10px; }
+.ok-check { width: 64px; height: 64px; margin: 0 auto 10px; border-radius: 50%; display: grid; place-items: center; font-size: 34px; font-weight: 900; color: var(--ink); background: var(--gold); }
+.waiting-dot { color: var(--gold); margin-bottom: 12px; }
 .grecaptcha-badge { visibility: hidden !important; }
 .recap { margin-top: 14px; font-size: 12px; } .recap a { color: inherit; text-decoration: underline; }
 .waitrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--gold-dim); border-radius: 10px; background: rgba(7,12,10,.85); font-size: 14px; }
@@ -402,12 +404,27 @@ ol.rules { padding-left: 20px; }
     "Copy the invite link for table {code}": "انسخ رابط الدعوة للطاولة {code}",
     "Switch language": "تغيير اللغة",
     "You can watch, but not play": "يمكنك المشاهدة فقط",
+    "We sent a link to {email}. Tap it to confirm your account. This screen moves on by itself once you do.": "أرسلنا رابطًا إلى {email}. اضغط عليه لتأكيد حسابك. ستنتقل هذه الشاشة تلقائيًا بعد ذلك.",
+    "Waiting for you to confirm…": "بانتظار تأكيدك…",
+    "One moment…": "لحظة…",
+    "This link didn't work": "هذا الرابط لم يعمل",
+    "It has expired or was already used. If you already confirmed your email, just go back to the game.": "انتهت صلاحيته أو تم استخدامه. إذا كنت قد أكّدت بريدك، عد إلى اللعبة فقط.",
+    "Go to the game": "اذهب إلى اللعبة",
+    "Choose a new password": "اختر كلمة مرور جديدة",
+    "New password": "كلمة المرور الجديدة",
+    "Save password": "حفظ كلمة المرور",
+    "Password changed": "تم تغيير كلمة المرور",
+    "Sign in with your new password.": "سجّل الدخول بكلمة المرور الجديدة.",
+    "Go to sign in": "اذهب لتسجيل الدخول",
+    "Email restored": "تمت استعادة البريد",
+    "Email confirmed": "تم تأكيد البريد",
+    "You're all set. Go back to the game: it's already moving on by itself. You can close this window.": "كل شيء جاهز. عد إلى اللعبة، فهي تنتقل تلقائيًا. يمكنك إغلاق هذه النافذة.",
+    "Your browser won't let this page close itself. Just close this tab.": "متصفحك لا يسمح لهذه الصفحة بإغلاق نفسها. أغلق هذا التبويب فقط.",
+    "Close this window": "أغلق هذه النافذة",
+    "Play in this window": "العب في هذه النافذة",
     "Check your email": "تحقق من بريدك",
-    "We sent a link to {email}. Tap it to confirm your account, then come back here.": "أرسلنا رابطًا إلى {email}. اضغط عليه لتأكيد حسابك، ثم عد إلى هنا.",
     "Don't see it? Check your spam or junk folder.": "لا تجده؟ تحقق من مجلد الرسائل غير المرغوب فيها.",
-    "I confirmed it": "لقد أكّدته",
     "Send it again": "أرسله مرة أخرى",
-    "Not confirmed yet. Tap the link in the email first.": "لم يتم التأكيد بعد. اضغط على الرابط في البريد أولًا.",
     "Sent. Check your inbox.": "تم الإرسال. تحقق من بريدك.",
     "Protected by reCAPTCHA. Google's {p} and {t} apply.": "محمي بواسطة reCAPTCHA. تنطبق {p} و{t} من Google.",
     "Privacy Policy": "سياسة الخصوصية",
@@ -852,6 +869,8 @@ ol.rules { padding-left: 20px; }
   var db = null;
   var uid = null, myName = store.get("fk-name") || "";
   // Accounts: everyone signs in with an email and password, so seats belong to real people.
+  // Links from Firebase emails land here with ?mode=...&oobCode=...
+  var actQ = new URLSearchParams(location.search), actState = actQ.get("oobCode") && actQ.get("mode") ? { mode: actQ.get("mode"), code: actQ.get("oobCode"), status: "working" } : null;
   var authUser = null, authReady = false, authMode = "in", authErr = "", authInfo = "", authBusy = false, verifySent = false, verifyT = null;
   var code = null, room = null, players = {}, roomLoaded = false, subErr = null;
   // Bump APP_VER whenever the game rules change. Each phone writes its version on its seat;
@@ -1970,6 +1989,7 @@ ol.rules { padding-left: 20px; }
       (code ? '<button class="chip-btn" data-act="copy" aria-label="' + T("Copy the invite link for table {code}", { code: esc(code) }) + '"><span class="lbl tbl">' + T("Table") + '</span><span class="code">' + esc(code) + '</span><span class="lbl inv">' + T("Invite") + "</span></button>" : "") +
       menuBtn + "</div>";
     renderMenu();
+    if (actState) { v.innerHTML = actionHTML(); return; }
     if (!authReady) { v.innerHTML = '<div class="panel muted">' + T("Loading…") + "</div>"; return; }
     if (!authUser) { v.innerHTML = authHTML(); return; }
     if (!authUser.emailVerified) { v.innerHTML = verifyHTML(); startVerifyWatch(); return; }
@@ -2042,7 +2062,7 @@ ol.rules { padding-left: 20px; }
     if (authMode === "reset") job = a.sendPasswordResetEmail(email).then(function () { authInfo = T("Check your email for the reset link."); authMode = "in"; });
     else if (authMode === "up") { verifySent = true; job = a.createUserWithEmailAndPassword(email, pw).then(function (c) {
       myName = nm; store.set("fk-name", nm);
-      return c.user.updateProfile({ displayName: nm }).then(function () { return c.user.sendEmailVerification(); });
+      return c.user.updateProfile({ displayName: nm }).then(function () { return sendVerify(c.user); });
     }); }
     else job = a.signInWithEmailAndPassword(email, pw);
     job.then(function () { if (authMode !== "in") return; }).catch(function (e) { authErr = authMsg(e); }).then(function () {
@@ -2053,27 +2073,72 @@ ol.rules { padding-left: 20px; }
   }
   // Every account has to confirm its email before it can sit at a table, so nobody can mass-produce fake players.
   function verifyHTML() {
-    if (!verifySent) { verifySent = true; authUser.sendEmailVerification().catch(function () {}); }
+    if (!verifySent) { verifySent = true; sendVerify(authUser).catch(function () {}); }
     return '<div class="hero"><h1 lang="ja">六賽万点</h1><p class="romaji" lang="ja-Latn">Roku-sai Manten</p></div>' +
       '<div class="panel" style="max-width:460px;margin:0 auto 28px"><h2>' + T("Check your email") + '</h2><p class="muted" style="margin-bottom:12px">' +
-      T("We sent a link to {email}. Tap it to confirm your account, then come back here.", { email: '<strong dir="ltr">' + esc(authUser.email || "") + "</strong>" }) + "</p>" +
+      T("We sent a link to {email}. Tap it to confirm your account. This screen moves on by itself once you do.", { email: '<strong dir="ltr">' + esc(authUser.email || "") + "</strong>" }) + "</p>" +
+      '<p class="small waiting-dot" role="status">' + T("Waiting for you to confirm…") + "</p>" +
       '<p class="muted small" style="margin-bottom:14px">' + T("Don't see it? Check your spam or junk folder.") + "</p>" +
       (authErr ? '<p class="hint bad" role="alert">' + esc(authErr) + "</p>" : "") +
       (authInfo ? '<p class="hint" role="status">' + esc(authInfo) + "</p>" : "") +
-      '<div class="row"><button class="btn" data-act="verified">' + T("I confirmed it") + '</button><button class="btn ghost small" data-act="resend">' + T("Send it again") + '</button><button class="btn ghost small" data-act="signout">' + T("Sign out") + "</button></div></div>";
+      '<div class="row"><button class="btn ghost small" data-act="resend">' + T("Send it again") + '</button><button class="btn ghost small" data-act="signout">' + T("Sign out") + "</button></div></div>";
   }
-  function checkVerified(manual) {
-    var u = firebase.auth().currentUser; if (!u) return;
+  // Only Firebase can say an email is confirmed: this asks it, and the database rules check it again on every read.
+  function checkVerified() {
+    var u = firebase.auth().currentUser; if (!u || !verifyT) return;   // only while the "check your email" screen is up
     u.reload().then(function () {
-      if (!u.emailVerified) { if (manual) { authErr = T("Not confirmed yet. Tap the link in the email first."); authInfo = ""; render(); } return; }
+      if (!u.emailVerified) return;
       clearInterval(verifyT); verifyT = null; authErr = ""; authInfo = "";
       return u.getIdToken(true).then(function () { authUser = u; unsubAll(); code = null; route(); });
     }).catch(function () {});
   }
-  function startVerifyWatch() { if (!verifyT) verifyT = setInterval(function () { checkVerified(false); }, 4000); }
+  function startVerifyWatch() { if (!verifyT) verifyT = setInterval(checkVerified, 3000); }
+  window.addEventListener("focus", function () { if (verifyT) checkVerified(); });
+  document.addEventListener("visibilitychange", function () { if (verifyT && !document.hidden) checkVerified(); });
+  // The email links come back to this page (see handleAction). If the console's custom link isn't set,
+  // Firebase's own page shows a "Continue" button back to the game instead.
+  function sendVerify(u) {
+    var back = { url: location.origin + location.pathname };
+    return u.sendEmailVerification(/^https?:$/.test(location.protocol) ? back : undefined).catch(function () { return u.sendEmailVerification(); });
+  }
   function resendVerify() {
     authErr = ""; authInfo = "";
-    authUser.sendEmailVerification().then(function () { authInfo = T("Sent. Check your inbox."); }, function (e) { authErr = authMsg(e); }).then(render);
+    sendVerify(authUser).then(function () { authInfo = T("Sent. Check your inbox."); }, function (e) { authErr = authMsg(e); }).then(render);
+  }
+  function handleAction() {
+    var A = actState, a = firebase.auth();
+    var fail = function (e) { A.status = "error"; A.err = /expired|invalid-action-code/.test((e && e.code) || "") ? "used" : "other"; render(); };
+    if (A.mode === "verifyEmail" || A.mode === "recoverEmail") {
+      a.applyActionCode(A.code).then(function () {
+        A.status = "done"; render();
+        var u = a.currentUser; if (u) u.reload().then(function () { return u.getIdToken(true); }).catch(function () {});
+        if (A.mode === "verifyEmail") setTimeout(function () { if (actState === A) closeWindow(true); }, 2500);
+      }, fail);
+    } else if (A.mode === "resetPassword") {
+      a.verifyPasswordResetCode(A.code).then(function (email) { A.status = "form"; A.email = email; render(); }, fail);
+    } else fail({});
+  }
+  function actionHTML() {
+    var A = actState, body;
+    if (A.status === "working") body = "<h2>" + T("One moment…") + "</h2>";
+    else if (A.status === "error") body = "<h2>" + T("This link didn't work") + '</h2><p class="muted">' + (A.err === "used" ? T("It has expired or was already used. If you already confirmed your email, just go back to the game.") : T("Something went wrong. Try again.")) + '</p><div class="row" style="margin-top:14px"><button class="btn" data-act="actdone">' + T("Go to the game") + "</button></div>";
+    else if (A.status === "form") body = '<form id="resetform" novalidate><h2>' + T("Choose a new password") + '</h2><p class="muted" style="margin-bottom:12px" dir="ltr">' + esc(A.email || "") + '</p><div class="field"><label class="label" for="np">' + T("New password") + '</label><input type="password" id="np" dir="ltr" autocomplete="new-password" minlength="6"></div>' + (A.msg ? '<p class="hint bad" role="alert">' + esc(A.msg) + "</p>" : "") + '<button class="btn" type="submit">' + T("Save password") + "</button></form>";
+    else if (A.mode === "resetPassword") body = "<h2>" + T("Password changed") + '</h2><p class="muted">' + T("Sign in with your new password.") + '</p><div class="row" style="margin-top:14px"><button class="btn" data-act="actdone">' + T("Go to sign in") + "</button></div>";
+    else body = '<div class="ok-check" aria-hidden="true">✓</div><h2>' + T(A.mode === "recoverEmail" ? "Email restored" : "Email confirmed") + '</h2><p class="muted">' +
+      T("You're all set. Go back to the game: it's already moving on by itself. You can close this window.") + "</p>" +
+      (A.cantClose ? '<p class="small" role="status">' + T("Your browser won't let this page close itself. Just close this tab.") + "</p>" : "") +
+      '<div class="row" style="margin-top:14px"><button class="btn" data-act="actclose">' + T("Close this window") + '</button><button class="btn ghost small" data-act="actdone">' + T("Play in this window") + "</button></div>";
+    return '<div class="hero"><h1 lang="ja">六賽万点</h1><p class="romaji" lang="ja-Latn">Roku-sai Manten</p></div><div class="panel" style="max-width:460px;margin:0 auto 28px;text-align:center">' + body + "</div>";
+  }
+  // Browsers only let a page close itself in some cases (like a tab opened from an email app). Otherwise say so.
+  function closeWindow(auto) {
+    try { window.close(); } catch (e) {}
+    setTimeout(function () { if (!window.closed && actState && !auto) { actState.cantClose = true; render(); } }, 400);
+  }
+  function actionDone() {
+    actState = null;
+    history.replaceState(null, "", location.pathname + location.hash);
+    route();
   }
   function saveName(n) {
     if (authUser && n && authUser.displayName !== n) authUser.updateProfile({ displayName: n }).catch(function () {});
@@ -2203,6 +2268,12 @@ ol.rules { padding-left: 20px; }
   /* ---------- events ---------- */
   document.addEventListener("submit", function (e) {
     if (e.target && e.target.id === "authform") { e.preventDefault(); doAuth(); }
+    if (e.target && e.target.id === "resetform") {
+      e.preventDefault();
+      var A = actState, pw = ($("#np") || {}).value || "";
+      if (pw.length < 6) { A.msg = T("Use a password with at least 6 characters."); render(); return; }
+      firebase.auth().confirmPasswordReset(A.code, pw).then(function () { A.status = "done"; A.msg = ""; render(); }, function (err) { A.msg = authMsg(err); render(); });
+    }
   });
   document.addEventListener("click", function (e) {
     var el = e.target.closest("[data-act]"); if (!el) return;
@@ -2220,8 +2291,9 @@ ol.rules { padding-left: 20px; }
     else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); saveName(v); maybeJoin(); render(); }
     else if (a === "authmode") { authMode = el.getAttribute("data-mode"); authErr = ""; authInfo = ""; render(); var f = $("#au-name") || $("#au-email"); if (f) f.focus(); }
     else if (a === "signout") signOut();
-    else if (a === "verified") checkVerified(true);
     else if (a === "resend") resendVerify();
+    else if (a === "actclose") closeWindow(false);
+    else if (a === "actdone") actionDone();
     else if (a === "lock") { if (room && room.host === uid) act(db.doc("rooms/" + code).update({ locked: room.locked !== true })); }
     else if (a === "kick") { var kid = el.getAttribute("data-id"); duelMenu = null; renderDuel(); removePlayer(kid); }
     else if (a === "letin") letIn(el.getAttribute("data-id"));
@@ -2342,6 +2414,9 @@ ol.rules { padding-left: 20px; }
       if (emu) firebase.auth().useEmulator("http://127.0.0.1:9099");
       db = firebase.firestore();
       if (emu) db.useEmulator("127.0.0.1", 8080);
+      if (actState) handleAction();
+      // Confirming in another tab of this browser refreshes the sign-in quietly; catch that right away.
+      firebase.auth().onIdTokenChanged(function (u) { if (u && verifyT) checkVerified(); });
       firebase.auth().onAuthStateChanged(function (u) {
         // Old guest (anonymous) sessions are signed out: every player needs an account now.
         if (u && u.isAnonymous) { firebase.auth().signOut(); return; }

@@ -59,7 +59,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* header */
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .brand { display: flex; align-items: baseline; gap: 8px; }
-.brand b { font-family: var(--font-jp); font-weight: 400; font-size: 26px; line-height: 1; color: var(--gold); letter-spacing: .04em; }
+.brand b { font-family: var(--font-jp); font-weight: 400; font-size: 26px; line-height: 1; color: var(--gold); letter-spacing: .04em; white-space: nowrap; }
 .brand span { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ivory-dim); font-weight: 700; }
 .chip-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--room-2); border-radius: 999px; padding: 6px 12px; min-height: 36px; }
 .chip-btn .code { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: .12em; color: var(--gold); }
@@ -138,17 +138,19 @@ input[type=text], input[type=email], input[type=password], select {
 /* dice */
 .die {
   width: var(--d); height: var(--d); border: 0; border-radius: 18%;
-  background: linear-gradient(145deg, #fffaea, #e2d9bd); padding: 0; display: block; position: relative;
-  box-shadow: 0 4px 0 #a99f7f, 0 9px 14px rgba(0,0,0,.45);
+  background: linear-gradient(145deg, var(--die-a, #fffaea), var(--die-b, #e2d9bd)); padding: 0; display: block; position: relative;
+  box-shadow: 0 4px 0 var(--die-edge, #a99f7f), 0 9px 14px rgba(0,0,0,.45);
+  filter: drop-shadow(0 0 5px var(--die-glow, transparent));
   transition: transform .15s, box-shadow .15s;
 }
 .die svg { display: block; width: 100%; height: 100%; pointer-events: none; }
-.die svg circle { fill: #15130f !important; }
+.die svg circle { fill: var(--pip, #15130f) !important; }
 .die:disabled { cursor: default; }
 .die.free:not(:disabled):hover { transform: translateY(-3px); }
 .die.sel { transform: translateY(-8px); box-shadow: 0 0 0 4px var(--gold), 0 14px 18px rgba(0,0,0,.5); }
-.die.held { background: linear-gradient(145deg, #d8b860, #a8853a); box-shadow: 0 4px 0 #6e5520, 0 9px 14px rgba(0,0,0,.45); opacity: .85; }
-.die.held svg circle { fill: #241c0b !important; }
+.die.held { box-shadow: 0 0 0 3px var(--gold), 0 4px 0 var(--die-edge, #a99f7f), 0 9px 14px rgba(0,0,0,.45); opacity: .72; }
+.tray[data-skin="classic"] .die.held, .tray:not([data-skin]) .die.held { background: linear-gradient(145deg, #d8b860, #a8853a); box-shadow: 0 4px 0 #6e5520, 0 9px 14px rgba(0,0,0,.45); opacity: .85; }
+.tray[data-skin="classic"] .die.held svg circle, .tray:not([data-skin]) .die.held svg circle { fill: #241c0b !important; }
 .die.blank { opacity: .3; }
 .die.bust { box-shadow: 0 0 0 3px var(--ember), 0 9px 14px rgba(0,0,0,.45); }
 /* dice in flight (thrown from a seat, scooped by the dealer) */
@@ -207,6 +209,60 @@ input[type=text], input[type=email], input[type=password], select {
 .waiting-dot { color: var(--gold); margin-bottom: 12px; }
 .grecaptcha-badge { visibility: hidden !important; }
 .recap { margin-top: 14px; font-size: 12px; } .recap a { color: inherit; text-decoration: underline; }
+/* coins, shop, cosmetics */
+.coin { display: inline-block; width: 15px; height: 15px; border-radius: 50%; vertical-align: -2px; margin-inline-end: 4px; background: radial-gradient(circle at 35% 30%, #fff3b8, #e3b74e 45%, #a87b1c); box-shadow: inset 0 0 0 1.5px #8a6212; }
+.coin.big { width: 22px; height: 22px; vertical-align: -5px; }
+.coin-chip b { font-weight: 800; color: var(--gold); }
+.coin-chip .lvl { white-space: nowrap; }
+@media (max-width: 430px) {
+  .topbtns { gap: 6px; }
+  .topbtns .chip-btn { padding: 6px 9px; gap: 5px; }
+  .coin-chip .lvl { display: none; }
+  .brand b { font-size: 22px; }
+}
+.coin-chip .lvl { font-size: 11px; font-weight: 800; letter-spacing: .06em; color: var(--ink); background: var(--gold); border-radius: 999px; padding: 1px 6px; }
+.coin-chip.ping { box-shadow: 0 0 0 2px var(--gold); animation: ping 1.6s ease-in-out infinite; }
+@keyframes ping { 50% { box-shadow: 0 0 0 5px rgba(227,183,78,.25); } }
+.menu.shop .prof-top { display: flex; align-items: center; gap: 12px; }
+.prof-av { --av: 52px; flex: 0 0 auto; }
+.prof-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.prof-txt span { font-size: 13px; color: var(--ivory-dim); }
+.prof-coins { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--gold); white-space: nowrap; }
+.xpbar { height: 10px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; margin: 12px 0 6px; }
+.xpbar span { display: block; height: 100%; background: linear-gradient(90deg, #a87b1c, var(--gold)); border-radius: 999px; }
+.daily { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--room-2); }
+.daily.ready { border-color: var(--gold); background: linear-gradient(135deg, rgba(227,183,78,.16), rgba(227,183,78,.04)); }
+.tabs { display: flex; flex: 0 0 auto; gap: 6px; margin: 4px 0 12px; overflow-x: auto; }
+.menu.shop > * { flex-shrink: 0; }
+.tabs .tab { flex: 1 0 auto; border: 1px solid var(--line); background: transparent; color: var(--ivory); border-radius: 999px; padding: 8px 12px; font-weight: 700; font-size: 14px; }
+.tabs .tab[aria-pressed="true"] { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; padding-bottom: 10px; }
+.shop-item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--room-2); text-align: center; }
+.shop-item.on { border-color: var(--gold); }
+.shop-item .si-name { font-size: 13px; font-weight: 700; min-height: 2.4em; display: flex; align-items: center; }
+.shop-item .btn.small { min-height: 34px; padding: 6px 12px; font-size: 14px; }
+.shop-item .tag { font-size: 12px; font-weight: 800; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--gold-dim); color: var(--gold); }
+.shop-item .tag.on { background: var(--gold); color: var(--ink); }
+.shop-item .tag.lock { color: var(--ivory-dim); border-color: var(--line); }
+.pv-die { width: 52px; height: 52px; border-radius: 18%; background: linear-gradient(145deg, var(--die-a), var(--die-b)); box-shadow: 0 3px 0 var(--die-edge), 0 6px 10px rgba(0,0,0,.4); filter: drop-shadow(0 0 5px var(--die-glow, transparent)); }
+.pv-die svg { display: block; width: 100%; height: 100%; } .pv-die svg circle { fill: var(--pip) !important; }
+.pv-felt { width: 76px; height: 52px; border-radius: 50%; background: radial-gradient(ellipse at 50% 42%, var(--felt-hi), var(--felt) 52%, var(--felt-lo)); box-shadow: inset 0 0 0 2px rgba(227,183,78,.45), 0 0 0 4px #3b2414; }
+.pv-frame { --av: 52px; }
+.pv-fx { padding: 6px; border-radius: 12px; } .pv-fx .pv-die { width: 44px; height: 44px; }
+.fwrap { position: relative; display: inline-block; border-radius: 50%; padding: 3px; background: conic-gradient(var(--fr), var(--fr2), var(--fr)); }
+.fwrap[data-glow="1"] { box-shadow: 0 0 12px var(--fr); }
+.fwrap > .av { border-width: 2px; }
+.prof-av[data-frame], .pv-frame[data-frame] { border-radius: 50%; padding: 3px; background: conic-gradient(var(--fr), var(--fr2), var(--fr)); display: inline-block; }
+.pv-frame[data-glow="1"], .prof-av[data-glow="1"] { box-shadow: 0 0 12px var(--fr); }
+.reward { margin: 4px 0 8px; font-weight: 800; color: var(--gold); }
+.reward.muted { font-weight: 600; color: var(--ivory-dim); }
+/* roll effects: the roller's dice glow while they tumble */
+.tray[data-fx="sparks"] .die.tumble, .pv-fx[data-fx="sparks"] .pv-die { filter: drop-shadow(0 0 6px #ffd76a) drop-shadow(0 0 14px rgba(255,215,106,.7)); }
+.tray[data-fx="fire"] .die.tumble, .pv-fx[data-fx="fire"] .pv-die { filter: drop-shadow(0 0 8px #ff6a1a) drop-shadow(0 0 18px #ff3d00); animation: flicker .18s infinite alternate; }
+.tray[data-fx="lightning"] .die.tumble, .pv-fx[data-fx="lightning"] .pv-die { filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 16px #8fd3ff); animation: zap .5s steps(2) infinite; }
+@keyframes flicker { to { filter: drop-shadow(0 0 12px #ffb02e) drop-shadow(0 0 24px #ff3d00); } }
+@keyframes zap { 50% { filter: drop-shadow(0 0 2px #8fd3ff) drop-shadow(0 0 4px #fff); } }
+@media (prefers-reduced-motion: reduce) { .coin-chip.ping, .tray[data-fx] .die.tumble, .pv-fx .pv-die { animation: none !important; } }
 .waitrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--gold-dim); border-radius: 10px; background: rgba(7,12,10,.85); font-size: 14px; }
 .waitrow .btn.small { min-height: 36px; padding: 6px 12px; }
 .plate .need.live { color: var(--gold); }
@@ -370,6 +426,7 @@ ol.rules { padding-left: 20px; }
 <div id="sheet"></div>
 <div id="duelroot"></div>
 <div id="menuroot"></div>
+<div id="shoproot"></div>
 <div class="chat-sheet" id="chatsheet" role="dialog" aria-label="Table chat">
   <div class="chat-head" id="chathead"><h2 id="chattitle">Table talk</h2><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn ghost small" type="button" data-act="chatpop" id="chatpop">Pop out</button><button class="btn ghost small" type="button" data-act="chatclose" id="chatclose">Close</button></div></div>
   <div class="chat-list" id="chatlist" aria-live="polite"></div>
@@ -380,6 +437,9 @@ ol.rules { padding-left: 20px; }
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
+<script src="game-core.js"></script>
+<script src="catalog.js"></script>
 <script src="firebase-config.js"></script>
 <script>
 (function () {
@@ -404,6 +464,33 @@ ol.rules { padding-left: 20px; }
     "Copy the invite link for table {code}": "انسخ رابط الدعوة للطاولة {code}",
     "Switch language": "تغيير اللغة",
     "You can watch, but not play": "يمكنك المشاهدة فقط",
+    "Shop and profile. {n} coins, level {l}": "المتجر والملف الشخصي. {n} عملة، المستوى {l}",
+    "Lv {l}": "مس {l}",
+    "Equipped": "مُستخدم",
+    "Use": "استخدم",
+    "Founder's Pack": "باقة المؤسسين",
+    "VIP": "VIP",
+    "Season Pass": "تذكرة الموسم",
+    "Level {l}": "المستوى {l}",
+    "Daily reward": "المكافأة اليومية",
+    "Come back every day for bigger rewards.": "ارجع كل يوم لمكافآت أكبر.",
+    "Claim": "استلم",
+    "Daily reward claimed": "تم استلام المكافأة اليومية",
+    "Streak: {n} days. Come back tomorrow.": "السلسلة: {n} أيام. ارجع غدًا.",
+    "Dice": "النرد",
+    "Tables": "الطاولات",
+    "Frames": "الإطارات",
+    "Effects": "التأثيرات",
+    "Shop": "المتجر",
+    "{w} wins in {g} games": "{w} فوز من {g} لعبة",
+    "XP to next level": "الخبرة للمستوى التالي",
+    "{x} / {y} XP to level {l}": "{x} / {y} خبرة للمستوى {l}",
+    "Win games to earn coins and XP. Everything here is just for looks: it never changes how the dice roll.": "اربح الألعاب لتكسب العملات والخبرة. كل شيء هنا للشكل فقط ولا يغيّر رمي النرد أبدًا.",
+    "Practice table: coins and XP need 2 or more players.": "طاولة تدريب: العملات والخبرة تحتاج لاعبَين أو أكثر.",
+    "You've hit today's reward limit. More tomorrow!": "وصلت لحد مكافآت اليوم. المزيد غدًا!",
+    "Level {l}!": "المستوى {l}!",
+    "Bought and equipped!": "تم الشراء والاستخدام!",
+    "+{n} coins! Streak: {s} days.": "+{n} عملة! السلسلة: {s} أيام.",
     "We sent a link to {email}. Tap it to confirm your account. This screen moves on by itself once you do.": "أرسلنا رابطًا إلى {email}. اضغط عليه لتأكيد حسابك. ستنتقل هذه الشاشة تلقائيًا بعد ذلك.",
     "Waiting for you to confirm…": "بانتظار تأكيدك…",
     "One moment…": "لحظة…",
@@ -765,104 +852,12 @@ ol.rules { padding-left: 20px; }
   }
 
   /* ---------- 10,000 house rules ---------- */
-  var MIN_ENTRY = 1000;
-  var THREE_PAIRS = 1500, STRAIGHT = 2500, SMALL_STRAIGHT = 700, FULL_HOUSE = 1500, TWO_TRIPLETS = 2500;
-  // Three of a kind = number x 100 (three 1s = 1,000). Each extra matching die adds 100.
-  function kindScore(v, c) { return (v === 1 ? 1000 : v * 100) + 100 * (c - 3); }
-  function counts(vals) { var c = [0, 0, 0, 0, 0, 0, 0]; vals.forEach(function (v) { c[v]++; }); return c; }
-  // Scores a chosen set of dice from one throw. valid = every chosen die contributes to the score.
-  // bonus = numbers whose triple was already kept this turn: each further die of that number is worth 100.
-  function scoreSel(vals, bonus) {
-    bonus = bonus || [];
-    if (!vals.length) return { score: 0, valid: false };
-    var c = counts(vals), n = vals.length, score = 0, v, w;
-    var best = { score: 0, valid: false };
-    function offer(sc) { if (sc > best.score) best = { score: sc, valid: true }; }
-    function single(k) { return bonus.indexOf(k) > -1 || k === 1 ? 100 : k === 5 ? 50 : 0; }
-    if (n === 6 && c.slice(1).every(function (x) { return x === 1; })) offer(STRAIGHT);
-    if (n === 6 && c.slice(1).filter(function (x) { return x === 2; }).length === 3) offer(THREE_PAIRS);
-    if (n === 6 && c.slice(1).filter(function (x) { return x === 3; }).length === 2) offer(TWO_TRIPLETS);
-    var plain = true;
-    for (v = 1; v <= 6; v++) {
-      if (!c[v]) continue;
-      var sc = Math.max(c[v] >= 3 ? kindScore(v, c[v]) : 0, single(v) * c[v]);
-      if (sc <= 0) { plain = false; break; }
-      score += sc;
-    }
-    if (plain) offer(score);
-    // Five-dice straight (1-2-3-4-5 or 2-3-4-5-6). A leftover sixth die counts only if it scores on its own.
-    if (n === 5 || n === 6) {
-      [1, 2].forEach(function (lo) {
-        var left = c.slice(), k, ok = true, extra = 0;
-        for (k = lo; k < lo + 5; k++) { if (!left[k]) ok = false; else left[k]--; }
-        if (!ok) return;
-        for (k = 1; k <= 6; k++) {
-          if (!left[k]) continue;
-          if (left[k] === 1 && single(k) > 0) extra += single(k); else ok = false;
-        }
-        if (ok) offer(SMALL_STRAIGHT + extra);
-      });
-    }
-    // Full house: three of a kind plus a pair (the pair does not have to score on its own).
-    // A leftover sixth die counts only if it is a 1 or a 5.
-    if (n === 5 || n === 6) {
-      for (v = 1; v <= 6; v++) {
-        if (c[v] < 3) continue;
-        for (w = 1; w <= 6; w++) {
-          if (c[w] < 2 || (w === v && c[v] < 5)) continue;   // five of a kind is a triple plus a pair
-          var left = c.slice(); left[v] -= 3; left[w] -= 2;
-          var extra = 0, ok = true, k;
-          for (k = 1; k <= 6; k++) {
-            if (!left[k]) continue;
-            if (left[k] === 1 && single(k) > 0) extra += single(k);
-            else ok = false;
-          }
-          if (ok) offer(FULL_HOUSE + extra);
-        }
-      }
-    }
-    return best;
-  }
-  function hasScore(vals, bonus) {
-    var c = counts(vals), v;
-    if (c[1] || c[5]) return true;
-    if ((bonus || []).some(function (b) { return c[b] > 0; })) return true;
-    for (v = 2; v <= 6; v++) if (c[v] >= 3) return true;   // also covers full houses and two triplets
-    if (vals.length === 6) {
-      if (c.slice(1).every(function (x) { return x === 1; })) return true;
-      if (c.slice(1).filter(function (x) { return x === 2; }).length === 3) return true;
-    }
-    return false;
-  }
-  // mode "best": highest score, and on a tie keep fewer dice so more stay in play.
-  // mode "all": every die that can score (the most dice), used by the 9,000+ must-keep rule.
-  function pickSet(dice, held, bonus, mode, cap) {
-    var free = [], i, m, best = null;
-    for (i = 0; i < 6; i++) if (!held[i]) free.push(i);
-    for (m = 1; m < (1 << free.length); m++) {
-      var idxs = free.filter(function (_, k) { return m & (1 << k); });
-      var sc = scoreSel(idxs.map(function (j) { return dice[j]; }), bonus);
-      if (!sc.valid || sc.score <= 0 || (cap !== undefined && sc.score > cap)) continue;
-      var better = !best || (mode === "all"
-        ? (idxs.length > best.idxs.length || (idxs.length === best.idxs.length && sc.score > best.score))
-        : mode === "min" ? (sc.score < best.score || (sc.score === best.score && idxs.length < best.idxs.length))
-        : (sc.score > best.score || (sc.score === best.score && idxs.length < best.idxs.length)));
-      if (better) best = { score: sc.score, idxs: idxs };
-    }
-    return best || { score: 0, idxs: [] };
-  }
-  // Never pick more than what's left to reach the target this turn.
-  function roomLeft(r) { var cur = r.order[r.turn]; return r.target - ((r.scores && r.scores[cur]) || 0) - (r.turnScore || 0); }
-  function bestSel(r) { return pickSet(r.dice, r.held, r.bonus, "best", r.rolloff ? undefined : roomLeft(r)).idxs; }
-  // Within 1,000 of the target (9,000 when playing to 10,000), every scoring die must be kept.
-  // From 2,000 below the target (8,000 when playing to 10,000), show what each player needs to go out.
-  function needToGoOut(r, id) {
-    var sc = (r.scores && r.scores[id]) || 0;
-    return sc >= r.target - 2000 && sc < r.target ? r.target - sc : 0;
-  }
-  function pointsLeft(r, id) { var sc = (r.scores && r.scores[id]) || 0; return sc < r.target ? r.target - sc : 0; }
-  function lockMode(r, id) { return ((r.scores && r.scores[id]) || 0) >= r.target - 1000; }
-  var rollDie = function () { return 1 + Math.floor(Math.random() * 6); };
+  // The game rules live in game-core.js, shared with the server. The server applies them; the page uses them for hints.
+  var CORE = RokuCore.make({ rollDie: function () { return 1 + Math.floor(Math.random() * 6); }, nameOf: function (id) { return nameOf(id); } });
+  var MIN_ENTRY = CORE.MIN_ENTRY, THREE_PAIRS = CORE.THREE_PAIRS, STRAIGHT = CORE.STRAIGHT, SMALL_STRAIGHT = CORE.SMALL_STRAIGHT, FULL_HOUSE = CORE.FULL_HOUSE, TWO_TRIPLETS = CORE.TWO_TRIPLETS;
+  var kindScore = CORE.kindScore, counts = CORE.counts, scoreSel = CORE.scoreSel, hasScore = CORE.hasScore, pickSet = CORE.pickSet, roomLeft = CORE.roomLeft,
+    bestSel = CORE.bestSel, needToGoOut = CORE.needToGoOut, pointsLeft = CORE.pointsLeft, lockMode = CORE.lockMode, pushLog = CORE.pushLog, FRESH_TURN = CORE.FRESH_TURN,
+    endTurn = CORE.endTurn, keepPatch = CORE.keepPatch;
   var PIPS = { 0: [], 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
   /* ---------- state ---------- */
@@ -875,7 +870,7 @@ ol.rules { padding-left: 20px; }
   var code = null, room = null, players = {}, roomLoaded = false, subErr = null;
   // Bump APP_VER whenever the game rules change. Each phone writes its version on its seat;
   // a phone that's behind stops playing and asks to update, so mixed versions can't break a game.
-  var APP_VER = 4;
+  var APP_VER = 5;
   function tableVer() { var v = 0; Object.keys(players).forEach(function (i) { if (!players[i].bot) v = Math.max(v, players[i].ver || 0); }); return v; }
   function staleApp() { return !!code && tableVer() > APP_VER; }
   function oldPhones() {
@@ -900,7 +895,7 @@ ol.rules { padding-left: 20px; }
   }
   function writeFail(e) {
     var c = e && e.code;
-    toast(c === "permission-denied"
+    toast(/permission-denied|failed-precondition|invalid-argument/.test(c || "")
       ? T("That move isn't allowed right now.")
       : T("Couldn't reach the table. Check your connection and try again."));
   }
@@ -967,7 +962,7 @@ ol.rules { padding-left: 20px; }
     }, function (e) { subErr = e; render(); }));
     unsubs.push(rref.collection("players").onSnapshot(function (q) {
       var m = {}; q.docs.forEach(function (d) { m[d.id] = d.data(); });
-      players = m;
+      players = m; watchProfiles();
       if (m[uid] && (m[uid].ver || 0) < APP_VER) myDoc().update({ ver: APP_VER }).catch(function () {});
       noteChat(); noteDuels(); hostSync(); duelTableTick(); scheduleAuto(); scheduleFarkle(); render(); renderChat(); renderDuel();
     }, function () {}));
@@ -994,38 +989,14 @@ ol.rules { padding-left: 20px; }
   }
   function letIn(id) {
     if (!room || room.host !== uid || room.status !== "play" || !players[id] || room.order.indexOf(id) > -1) return;
-    var patch = { order: room.order.concat([id]), log: pushLog(room, { k: "sat", names: nameOf(id) }) };
-    patch["scores." + id] = 0;
-    act(db.doc("rooms/" + code).update(patch));
+    act(callMove("letin", { id: id }));
   }
   // The host removes a player: they leave the turn order, lose their seat, and can't sit back down.
   function removePlayer(id) {
     var r = room;
     if (!r || r.host !== uid || id === uid || !players[id]) return;
-    var FV = firebase.firestore.FieldValue, patch = { banned: FV.arrayUnion(id) }, name = nameOf(id);
-    if (r.status === "play" && r.order && r.order.indexOf(id) > -1) {
-      var idx = r.order.indexOf(id), order = r.order.filter(function (x) { return x !== id; });
-      var scores = Object.assign({}, r.scores); delete scores[id];
-      var log = pushLog(r, { k: "removed", name: name });
-      var ro = r.rolloff ? Object.assign({}, r.rolloff, { players: r.rolloff.players.filter(function (x) { return x !== id; }) }) : null;
-      if (!order.length) patch = Object.assign(patch, { status: "lobby", order: [], log: [] });
-      else if (idx === r.turn) {
-        // It was their turn: hand it on as if they had just passed.
-        var ri = ro ? r.rolloff.players.indexOf(id) : -1;
-        if (ro) ro.i = ri - 1;
-        var r2 = Object.assign({}, r, { finalDone: (r.finalDone || []).concat([id]), rolloff: ro });
-        var p2 = endTurn(r2, scores, log);
-        if (p2.turn !== undefined) p2.turn = order.indexOf(r.order[p2.turn]);
-        if (ro && !p2.rolloff && p2.status !== "done") p2["rolloff.players"] = ro.players;
-        patch = Object.assign(patch, p2, { order: order, scores: scores });
-      } else {
-        patch = Object.assign(patch, { order: order, scores: scores, log: log, turn: idx < r.turn ? r.turn - 1 : r.turn,
-          finalists: (r.finalists || []).filter(function (x) { return x !== id; }), finalDone: (r.finalDone || []).filter(function (x) { return x !== id; }) });
-        if (ro) { var pos = r.rolloff.players.indexOf(id); if (pos > -1 && pos < ro.i) ro.i--; patch.rolloff = ro; }
-      }
-    }
-    act(db.doc("rooms/" + code).update(patch).then(function () { return db.doc("rooms/" + code + "/players/" + id).delete(); })
-      .then(function () { toast(T("{name} was removed from the table.", { name: name })); }));
+    var name = nameOf(id);
+    act(callMove("remove", { id: id }).then(function () { toast(T("{name} was removed from the table.", { name: name })); }));
   }
   function hostSync() {}
 
@@ -1046,6 +1017,99 @@ ol.rules { padding-left: 20px; }
   /* ---------- shared helpers ---------- */
   function newSid() { return Math.random().toString(36).slice(2, 10); }
   function myDoc() { return db.doc("rooms/" + code + "/players/" + uid); }
+
+  /* ---------- coins, levels, cosmetics ---------- */
+  // users/{uid} holds coins, XP, level, owned and equipped items. Only the server writes it.
+  var shopHTML = "", CAT = RokuCatalog, profiles = {}, profUnsub = {}, shopOpen = false, shopTab = "dice", shopBusy = false, profileEnsured = false;
+  function myProf() { return profiles[uid] || null; }
+  function watchProfiles() {
+    if (!db || !uid || !authUser || !authUser.emailVerified) return;
+    var want = {}; want[uid] = 1;
+    Object.keys(players).forEach(function (id) { if (!players[id].bot) want[id] = 1; });
+    Object.keys(want).forEach(function (id) {
+      if (profUnsub[id]) return;
+      profUnsub[id] = db.doc("users/" + id).onSnapshot(function (s) { profiles[id] = s.exists ? s.data() : null; render(); if (shopOpen && id === uid) renderShop(); }, function () {});
+    });
+    Object.keys(profUnsub).forEach(function (id) { if (!want[id]) { profUnsub[id](); delete profUnsub[id]; delete profiles[id]; } });
+    if (!profileEnsured) { profileEnsured = true; callFn("profile").catch(function () { profileEnsured = false; }); }
+  }
+  function dropProfiles() { Object.keys(profUnsub).forEach(function (id) { profUnsub[id](); }); profUnsub = {}; profiles = {}; profileEnsured = false; }
+  function callFn(name, data) { return firebase.app().functions("us-central1").httpsCallable(name)(data || {}); }
+  function gear(id, slot) {
+    var e = (profiles[id] && profiles[id].equipped) || {};
+    return CAT.byId[e[slot]] || CAT.byId[CAT.DEFAULTS[slot]];
+  }
+  function itemName(it) { return LANG === "ar" && it.ar ? it.ar : it.name; }
+  function diceVars(look) {
+    return "--die-a:" + look.a + ";--die-b:" + look.b + ";--pip:" + look.pip + ";--die-edge:" + look.edge + ";--die-glow:" + (look.glow || "transparent");
+  }
+  // The dice on the felt wear the skin (and roll effect) of whoever is rolling them.
+  function trayAttrs(rollerId) {
+    var d = gear(rollerId, "dice"), fx = gear(rollerId, "fx");
+    return ' style="' + diceVars(d.look) + '" data-skin="' + d.id + '"' + (fx.id !== "nofx" ? ' data-fx="' + fx.id + '"' : "");
+  }
+  // The table wears the host's felt.
+  function feltVars() {
+    if (!room) return "";
+    var f = gear(room.host, "felt").look;
+    return ' style="--felt-hi:' + f.hi + ";--felt:" + f.mid + ";--felt-lo:" + f.lo + (f.trim ? ";--felt-trim:" + f.trim : "") + '"';
+  }
+  function frameAttrs(id) {
+    var f = gear(id, "frame");
+    if (!f || f.id === "none") return "";
+    return ' data-frame="' + f.id + '" data-glow="' + (f.look.glow ? 1 : 0) + '" style="--fr:' + f.look.c + ";--fr2:" + (f.look.c2 || f.look.c) + ';"';
+  }
+  function utcDay() { return new Date().toISOString().slice(0, 10); }
+  function dailyReady(p) { return p && (!p.daily || p.daily.last !== utcDay()); }
+  function coinChip() {
+    var p = myProf(); if (!p) return "";
+    return '<button class="chip-btn coin-chip' + (dailyReady(p) ? " ping" : "") + '" data-act="shop" aria-label="' + T("Shop and profile. {n} coins, level {l}", { n: fmt(p.coins || 0), l: p.level || 1 }) + '"><span class="coin" aria-hidden="true"></span><b>' + fmt(p.coins || 0) + '</b><span class="lvl">' + T("Lv {l}", { l: p.level || 1 }) + "</span></button>";
+  }
+  function previewHTML(it) {
+    if (it.slot === "dice") return '<div class="pv-die" style="' + diceVars(it.look) + '">' + pipsSVG(5) + "</div>";
+    if (it.slot === "felt") return '<div class="pv-felt" style="--felt-hi:' + it.look.hi + ";--felt:" + it.look.mid + ";--felt-lo:" + it.look.lo + '"></div>';
+    if (it.slot === "frame") return '<div class="pv-frame"' + (it.id === "none" ? "" : ' data-frame="' + it.id + '" data-glow="' + (it.look.glow ? 1 : 0) + '" style="--fr:' + it.look.c + ";--fr2:" + (it.look.c2 || it.look.c) + '"') + ">" + avatarHTML(uid, myName, myAvatar, true) + "</div>";
+    return '<div class="pv-fx" data-fx="' + it.id + '" style="' + diceVars(CAT.byId.classic.look) + '"><div class="pv-die">' + pipsSVG(6) + "</div></div>";
+  }
+  function shopItemHTML(it, p) {
+    var owned = (p.owned || []).indexOf(it.id) > -1, on = gear(uid, it.slot).id === it.id, lv = it.level || 1, btn;
+    if (on) btn = '<span class="tag on">' + T("Equipped") + "</span>";
+    else if (owned) btn = '<button class="btn small" data-act="equip" data-id="' + it.id + '">' + T("Use") + "</button>";
+    else if (it.only) btn = '<span class="tag">' + T(it.only === "founder" ? "Founder's Pack" : it.only === "vip" ? "VIP" : "Season Pass") + "</span>";
+    else if ((p.level || 1) < lv) btn = '<span class="tag lock">🔒 ' + T("Level {l}", { l: lv }) + "</span>";
+    else btn = '<button class="btn small" data-act="buy" data-id="' + it.id + '"' + ((p.coins || 0) < it.price ? " disabled" : "") + '><span class="coin" aria-hidden="true"></span>' + fmt(it.price) + "</button>";
+    return '<div class="shop-item' + (on ? " on" : "") + '">' + previewHTML(it) + '<div class="si-name">' + esc(itemName(it)) + "</div>" + btn + "</div>";
+  }
+  function renderShop() {
+    var root = $("#shoproot"); if (!root) return;
+    var p = myProf();
+    if (!shopOpen || !p) { root.innerHTML = ""; shopHTML = ""; return; }
+    var lv = p.level || 1, lo = CAT.xpFor(lv), hi = CAT.xpFor(lv + 1), pct = Math.max(0, Math.min(100, Math.round(100 * ((p.xp || 0) - lo) / (hi - lo))));
+    var d = p.daily || {}, streak = d.last === utcDay() ? d.streak || 1 : 0;
+    var daily = dailyReady(p)
+      ? '<div class="daily ready"><div><strong>' + T("Daily reward") + "</strong><br><span class=\"muted small\">" + T("Come back every day for bigger rewards.") + '</span></div><button class="btn" data-act="daily"' + (shopBusy ? " disabled" : "") + ">" + T("Claim") + "</button></div>"
+      : '<div class="daily"><div><strong>' + T("Daily reward claimed") + '</strong><br><span class="muted small">' + T("Streak: {n} days. Come back tomorrow.", { n: streak }) + "</span></div></div>";
+    var tabs = [["dice", T("Dice")], ["felt", T("Tables")], ["frame", T("Frames")], ["fx", T("Effects")]].map(function (t) {
+      return '<button class="tab" data-act="shoptab" data-tab="' + t[0] + '" aria-pressed="' + (shopTab === t[0]) + '">' + t[1] + "</button>";
+    }).join("");
+    var list = CAT.items.filter(function (it) { return it.slot === shopTab; }).map(function (it) { return shopItemHTML(it, p); }).join("");
+    var html = '<div class="menu-back" data-act="shopclose"></div><div class="menu shop" role="dialog" aria-modal="true" aria-label="' + T("Shop") + '">' +
+      '<div class="menu-head"><h2>' + T("Shop") + '</h2><button class="btn ghost small" data-act="shopclose">' + T("Close") + "</button></div>" +
+      '<div class="panel prof"><div class="prof-top">' + '<div' + frameAttrs(uid) + ' class="prof-av">' + avatarHTML(uid, myName, myAvatar, true) + '</div><div class="prof-txt"><strong><bdi>' + esc(myName) + "</bdi></strong><span>" + T("Level {l}", { l: lv }) + " · " + T("{w} wins in {g} games", { w: fmt((p.stats || {}).wins || 0), g: fmt((p.stats || {}).games || 0) }) + '</span></div><div class="prof-coins"><span class="coin big" aria-hidden="true"></span>' + fmt(p.coins || 0) + "</div></div>" +
+      '<div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="' + T("XP to next level") + '"><span style="width:' + pct + '%"></span></div><p class="muted small">' + T("{x} / {y} XP to level {l}", { x: fmt((p.xp || 0) - lo), y: fmt(hi - lo), l: lv + 1 }) + "</p></div>" +
+      daily +
+      '<p class="muted small" style="margin:10px 2px">' + T("Win games to earn coins and XP. Everything here is just for looks: it never changes how the dice roll.") + "</p>" +
+      '<div class="tabs" role="group">' + tabs + '</div><div class="shop-grid">' + list + "</div></div>";
+    if (html === shopHTML) return;   // only redraw when something changed (keeps scroll and taps steady)
+    var old = root.querySelector(".menu"), keep = old ? old.scrollTop : 0, fresh = !old;
+    root.innerHTML = html; shopHTML = html;
+    var m = root.querySelector(".menu"); if (m) { m.scrollTop = keep; if (!fresh) m.style.animation = "none"; }
+  }
+  function shopAct(name, data, okMsg) {
+    if (shopBusy) return; shopBusy = true; renderShop();
+    callFn(name, data).then(function (res) { if (okMsg) toast(okMsg(res && res.data)); }, function (e) { toast((e && e.message) || T("Something went wrong. Try again.")); })
+      .then(function () { shopBusy = false; renderShop(); });
+  }
 
   /* ---------- players ---------- */
   // No bots: every seat is a signed-in person. Any old bot seat left in the database is ignored.
@@ -1405,141 +1469,32 @@ ol.rules { padding-left: 20px; }
     } catch (e) { writeFail(e); }
   }
   function startGame() {
-    var humans = humanIds();
-    if (!humans.length) return;
-    act(Promise.resolve().then(function () {
-      var ids = humans.slice();
-      // The last game's winner rolls first; everyone else keeps their place around the table.
-      var w = ids.indexOf(room.lastWinner);
-      if (w > 0) ids = ids.slice(w).concat(ids.slice(0, w));
-      var scores = {}; ids.forEach(function (x) { scores[x] = 0; });
-      return db.doc("rooms/" + code).update({
-        status: "play", order: ids, scores: scores, turn: 0, dice: [], held: [false, false, false, false, false, false],
-        turnScore: 0, phase: "roll", rollId: 0, finalFrom: -1, finalists: [], finalDone: [], rolloff: null, winner: null, winHow: null, bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null,
-        log: [{ k: w > -1 ? "startw" : "start", name: nameOf(ids[0]) }]
-      });
-    }));
+    if (!humanIds().length) return;
+    act(callMove("start"));
   }
+  // Every game move goes to the server (Cloud Function "move"), which rolls the dice and updates the table.
+  var moveFn = null;
+  function callMove(action, data) {
+    if (staleApp()) { render(); return Promise.resolve(); }
+    if (!moveFn) moveFn = firebase.app().functions("us-central1").httpsCallable("move");
+    return moveFn(Object.assign({ code: code, action: action }, data || {}));
+  }
+  function quiet(p) { return Promise.resolve(p).catch(function () {}); }   // timers: if the server says "not yet", that's fine
   function act(p) {
     if (staleApp()) { render(); return; }
     if (busy) return; busy = true;
     return Promise.resolve(p).catch(writeFail).then(function () { busy = false; render(); });
   }
-  function pushLog(r, line) { return (r.log || []).concat([line]).slice(-8); }
-  var FRESH_TURN = { dice: [], held: [false, false, false, false, false, false], turnScore: 0, phase: "roll", bonus: [], pick: [], pickRoll: -1, forced: [], bust: null, auto: null };
-  function endTurn(r, scores, log) {
-    if (r.rolloff) return rolloffNext(r, scores, log);
-    var n = r.order.length, cur = r.order[r.turn], k, idx, id;
-    // Final round: once anyone sits on exactly the target, every other player gets one last turn.
-    // finalDone remembers who has had it, so the round always ends, even if a turn was skipped.
-    var hit = r.order.filter(function (x) { return (scores[x] || 0) === r.target; });
-    if (hit.length) {
-      var finalists = (r.finalists || []).filter(function (x) { return hit.indexOf(x) > -1; });
-      hit.forEach(function (x) { if (finalists.indexOf(x) < 0) finalists.push(x); });
-      var done = (r.finalDone || []).slice(); if (done.indexOf(cur) < 0) done.push(cur);
-      for (k = 1; k <= n; k++) {
-        idx = (r.turn + k) % n; id = r.order[idx];
-        if (done.indexOf(id) < 0 && hit.indexOf(id) < 0)
-          return Object.assign({ scores: scores, finalFrom: r.finalFrom >= 0 ? r.finalFrom : r.turn, finalists: finalists, finalDone: done, turn: idx, log: log }, FRESH_TURN);
-      }
-      return finishFinalRound(Object.assign({}, r, { finalists: finalists }), scores, log);
-    }
-    return Object.assign({ scores: scores, finalFrom: -1, finalists: [], finalDone: [], turn: (r.turn + 1) % n, log: log }, FRESH_TURN);
-  }
-  // One player hit the target: they win. Several: 決戦 (Kessen), a roll-off.
-  function finishFinalRound(r, scores, log) {
-    var f = r.finalists || [];
-    if (f.length <= 1) return { status: "done", phase: "done", winner: f[0], winHow: "exact", scores: scores, turnScore: 0, auto: null, finalFrom: -1, finalDone: [],
-      log: pushLog({ log: log }, { k: "exact", name: nameOf(f[0]), t: r.target }) };
-    return Object.assign({ scores: scores, finalFrom: -1, finalDone: [], turn: r.order.indexOf(f[0]), rolloff: { players: f.slice(), i: 0, round: 1, results: {} },
-      log: pushLog({ log: log }, { k: "kessen", names: f.map(nameOf).join(", ") }) }, FRESH_TURN);
-  }
-  function rolloffNext(r, scores, log) {
-    var ro = r.rolloff, i = ro.i + 1, res = ro.results || {};
-    if (i < ro.players.length) return Object.assign({ scores: scores, turn: r.order.indexOf(ro.players[i]), "rolloff.i": i, log: log }, FRESH_TURN);
-    var best = Math.max.apply(null, ro.players.map(function (id) { return res[id] || 0; }));
-    var top = ro.players.filter(function (id) { return (res[id] || 0) === best; });
-    if (top.length === 1) return { status: "done", phase: "done", winner: top[0], winHow: "kessen", scores: scores, turnScore: 0, auto: null,
-      log: pushLog({ log: log }, { k: "kwin", name: nameOf(top[0]), n: best }) };
-    return Object.assign({ scores: scores, turn: r.order.indexOf(top[0]), rolloff: { players: top, i: 0, round: (ro.round || 1) + 1, results: {} },
-      log: pushLog({ log: log }, { k: "kagain", names: top.map(nameOf).join(", "), n: best }) }, FRESH_TURN);
-  }
-  function rollFrom(r, held, turnScore, log, bonus) {
-    bonus = bonus || [];
-    var h = held.slice(), hot = false, i;
-    // Hot dice is a fresh throw of all six, so earlier triples stop counting as "extra dice worth 100".
-    if (h.every(Boolean)) { h = [false, false, false, false, false, false]; hot = true; bonus = []; }
-    var dice = r.dice.length ? r.dice.slice() : [1, 1, 1, 1, 1, 1];
-    var free = [];
-    for (i = 0; i < 6; i++) if (!h[i]) { dice[i] = rollDie(); free.push(dice[i]); }
-    var who = nameOf(r.order[r.turn]), rid = (r.rollId || 0) + 1;
-    if (free.length === 6 && free.every(function (x) { return x === free[0]; })) {
-      // Six of anything in one throw wins the game on the spot.
-      return { status: "done", phase: "done", winner: r.order[r.turn], winHow: "six", dice: dice, held: h, turnScore: 0, rollId: rid, pick: [], pickRoll: -1,
-        log: pushLog({ log: log }, { k: "six", name: who, v: free[0] }) };
-    }
-    if (!hasScore(free, bonus)) {
-      var sunk = { dice: dice, held: h, turnScore: 0, phase: "farkle", rollId: rid, pick: [], pickRoll: -1, forced: [], bust: null, log: pushLog({ log: log }, { k: r.rolloff ? "ksunk" : "farkle", name: who, n: turnScore }) };
-      if (r.rolloff) sunk["rolloff.results." + r.order[r.turn]] = turnScore;
-      return sunk;
-    }
-    var cur = r.order[r.turn], forced = [];
-    if (r.rolloff) {
-      // 決戦: no target and no must-keep rule, just roll until 撃沈.
-    } else if (lockMode(r, cur)) {
-      // 9,000+ rule: every scoring die is kept. If that goes over the target, it's a bust.
-      var f = pickSet(dice, h, bonus, "all");
-      if ((r.scores[cur] || 0) + turnScore + f.score > r.target) {
-        return { dice: dice, held: h, turnScore: 0, phase: "farkle", bust: "over", rollId: rid, forced: f.idxs, pick: [], pickRoll: -1,
-          log: pushLog({ log: log }, { k: "over", name: who, n: f.score, t: r.target }) };
-      }
-      forced = f.idxs;
-    } else {
-      // Going over the target ends the turn: if even the smallest legal keep is too much, it's a bust.
-      var least = pickSet(dice, h, bonus, "min");
-      if ((r.scores[cur] || 0) + turnScore + least.score > r.target) {
-        return { dice: dice, held: h, turnScore: 0, phase: "farkle", bust: "over", rollId: rid, forced: least.idxs, pick: [], pickRoll: -1,
-          log: pushLog({ log: log }, { k: "over", name: who, n: least.score, t: r.target }) };
-      }
-    }
-    return { dice: dice, held: h, turnScore: turnScore, phase: "choose", rollId: rid, bonus: bonus, pick: [], pickRoll: -1, forced: forced, bust: null, log: hot ? pushLog({ log: log }, { k: "hot", name: who }) : log };
-  }
   function doRoll() {
     var r = room; if (!mineTurn(r) || r.phase !== "roll") return;
-    var p = rollFrom(r, r.held, 0, r.log || [], []); if (r.auto) p.auto = null;
-    act(db.doc("rooms/" + code).update(p));
+    act(callMove("roll"));
   }
   // Builds the update for keeping these dice and then rolling on or banking. null if not allowed.
-  function keepPatch(r, idxs, kind) {
-    var keptVals = idxs.map(function (i) { return r.dice[i]; }), s = scoreSel(keptVals, r.bonus);
-    if (!s.valid || s.score <= 0) return null;
-    // Any triple kept now makes further dice of that number worth 100 for the rest of the turn.
-    var bonus = (r.bonus || []).slice(), kc = counts(keptVals);
-    for (var bv = 1; bv <= 6; bv++) if (kc[bv] >= 3 && bonus.indexOf(bv) < 0) bonus.push(bv);
-    var held = r.held.slice(); idxs.forEach(function (i) { held[i] = true; });
-    var cur = r.order[r.turn], total = r.turnScore + s.score, me = nameOf(cur);
-    if (r.rolloff) return kind === "bank" ? null : rollFrom(r, held, total, r.log || [], bonus);   // 決戦: no banking
-    if ((r.scores[cur] || 0) + total > r.target) return null;   // can't keep dice that go over the target
-    if (kind !== "bank") return rollFrom(r, held, total, r.log || [], bonus);
-    if (!(r.scores[cur] > 0) && total < MIN_ENTRY) return null;
-    var newScore = (r.scores[cur] || 0) + total;
-    if (newScore > r.target) return null;   // must land exactly on the target
-    var scores = Object.assign({}, r.scores); scores[cur] = newScore;
-    var log = pushLog(r, { k: "bank", name: me, n: total });
-    if (newScore === r.target) {
-      // Hitting the target starts the final round (or joins it): everyone else gets one more turn.
-      var first = !(r.finalFrom >= 0);
-      var r2 = Object.assign({}, r, { finalFrom: first ? r.turn : r.finalFrom, finalists: (r.finalists || []).concat([cur]) });
-      return endTurn(r2, scores, pushLog({ log: log }, { k: first ? "final" : "reach", name: me, t: r.target }));
-    }
-    return endTurn(r, scores, log);
-  }
   function commit(kind) {
     var r = room; if (!mineTurn(r) || r.phase !== "choose") return;
     clearTimeout(pickT);
-    var patch = keepPatch(r, Array.from(sel), kind);
-    if (patch && r.auto && patch.auto === undefined) patch.auto = null;
-    if (patch) act(db.doc("rooms/" + code).update(patch));
+    var idxs = Array.from(sel).sort();
+    if (keepPatch(r, idxs, kind)) act(callMove("keep", { idxs: idxs, kind: kind === "bank" ? "bank" : "roll" }));
   }
 
   // ---------- auto-play ----------
@@ -1569,18 +1524,8 @@ ol.rules { padding-left: 20px; }
   }
   function autoMove() {
     var r = room; if (!r || r.status !== "play" || busy) return;
-    var cur = r.order[r.turn];
-    var base = r.auto === cur ? r : Object.assign({}, r, { log: pushLog(r, { k: "auto", name: nameOf(cur) }) });
-    var patch = null;
-    if (r.phase === "roll") patch = rollFrom(base, r.held, 0, base.log, []);
-    else if (r.phase === "choose") {
-      var idxs = (r.forced && r.forced.length) ? r.forced.slice() : bestSel(r);
-      patch = keepPatch(base, idxs, "bank") || keepPatch(base, idxs, "roll");
-    }
-    if (!patch) return;
-    if (patch.turn === undefined && patch.status !== "done") patch.auto = cur;   // still this player's turn
     if (mineTurn(r)) sel = new Set();
-    act(db.doc("rooms/" + code).update(patch));
+    quiet(callMove("auto"));
   }
   function backFromAuto() { if (room && room.auto === uid && mineTurn(room)) db.doc("rooms/" + code).update({ auto: null }).catch(function () {}); }
   function secondsLeft() { return Math.max(0, Math.ceil((autoStart + AUTO_MS - Date.now()) / 1000)); }
@@ -1605,13 +1550,9 @@ ol.rules { padding-left: 20px; }
     }, mine ? 4300 : 8500);
   }
   function pass(reason) {
-    var r = room;
-    var log = reason === "auto" ? (r.log || []) : pushLog(r, { k: reason === "skip" ? "skip" : "pass", name: nameOf(r.order[r.turn]) });
-    act(db.doc("rooms/" + code).update(endTurn(r, r.scores, log)));
+    if (reason === "skip") act(callMove("skip")); else quiet(callMove("pass"));
   }
-  function playAgain() {
-    act(db.doc("rooms/" + code).update({ status: "lobby", phase: "roll", dice: [], winner: null, lastWinner: room.winner || null, finalFrom: -1, finalists: [], finalDone: [], rolloff: null, log: [] }));
-  }
+  function playAgain() { act(callMove("again")); }
   function setTarget(v) { if (staleApp()) { render(); return; } act(db.doc("rooms/" + code).update({ target: Number(v) })); }
 
   /* ---------- rendering helpers ---------- */
@@ -1625,7 +1566,8 @@ ol.rules { padding-left: 20px; }
   }
   var AVATARS = ["🦊", "🐻", "🐯", "🦁", "🐸", "🐼", "🐵", "🦉", "🐙", "🦄", "🐲", "🦈", "🐺", "🐧", "🤠", "😎", "👑", "🎩", "🍀", "🔥", "⚡", "🌵", "🍕", "🎸"];
   function isPhoto(a) { return typeof a === "string" && a.length < 90000 && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(a); }
-  function avatarHTML(id, name, a) {
+  function avatarHTML(id, name, a, noFrame) {
+    if (!noFrame && id && profiles[id]) { var fa = frameAttrs(id); if (fa) return '<div class="fwrap"' + fa + ">" + avatarHTML(id, name, a, true) + "</div>"; }
     var st = ' style="--c:' + colorOf(id || "guest") + '"';
     if (isPhoto(a)) return '<div class="av"' + st + '><img src="' + a + '" alt=""></div>';
     if (AVATARS.indexOf(a) > -1 || /^[\u{1F916}\u{1F3B0}\u{1F40D}\u{1F977}\u{1F9DB}\u{1F996}\u{1F47D}\u{1F98D}]$/u.test(a)) return '<div class="av emo"' + st + ">" + a + "</div>";
@@ -1777,7 +1719,7 @@ ol.rules { padding-left: 20px; }
     }).join("");
   }
   function tableHTML(seats, center) {
-    return '<div class="table' + (isWide() ? " wide" : "") + '"><div class="rail"><div class="felt"></div></div>' + seats +
+    return '<div class="table' + (isWide() ? " wide" : "") + '"' + feltVars() + '><div class="rail"><div class="felt"></div></div>' + seats +
       '<div class="center">' + center + "</div></div>";
   }
   var PUBLIC_URL = "https://jleteff.github.io/rokusai-manten/";
@@ -1987,12 +1929,13 @@ ol.rules { padding-left: 20px; }
     var unread = room ? unreadCount() : 0;
     tr.innerHTML = '<div class="topbtns">' + (code && room ? '<button class="chip-btn" data-act="chatopen" aria-label="' + T("Open table chat") + (unread ? ", " + T("{n} unread", { n: unread }) : "") + '"><span class="chat-lbl">' + T("Chat") + "</span>" + (unread ? '<span class="dot">' + unread + "</span>" : "") + "</button>" : "") +
       (code ? '<button class="chip-btn" data-act="copy" aria-label="' + T("Copy the invite link for table {code}", { code: esc(code) }) + '"><span class="lbl tbl">' + T("Table") + '</span><span class="code">' + esc(code) + '</span><span class="lbl inv">' + T("Invite") + "</span></button>" : "") +
-      menuBtn + "</div>";
-    renderMenu();
+      coinChip() + menuBtn + "</div>";
+    renderMenu(); renderShop();
     if (actState) { v.innerHTML = actionHTML(); return; }
     if (!authReady) { v.innerHTML = '<div class="panel muted">' + T("Loading…") + "</div>"; return; }
     if (!authUser) { v.innerHTML = authHTML(); return; }
     if (!authUser.emailVerified) { v.innerHTML = verifyHTML(); startVerifyWatch(); return; }
+    if (!profUnsub[uid]) watchProfiles();
     if (!code) { v.innerHTML = homeHTML(); return; }
     if (subErr) { v.innerHTML = '<div class="panel"><h2>' + T("Can't reach the table") + '</h2><p class="muted">' + (subErr.code === "slow" ? T("Still waiting for the table to answer. It may load in a moment.") : T("Something went wrong loading this table.")) + '</p><div class="row" style="margin-top:14px"><button class="btn ghost" data-act="home">' + T("Back") + "</button></div></div>"; return; }
     if (!roomLoaded) { v.innerHTML = '<div class="panel muted">' + T("Finding table {code}…", { code: esc(code) }) + "</div>"; return; }
@@ -2144,6 +2087,7 @@ ol.rules { padding-left: 20px; }
     if (authUser && n && authUser.displayName !== n) authUser.updateProfile({ displayName: n }).catch(function () {});
   }
   function signOut() {
+    dropProfiles(); shopOpen = false;
     unsubAll(); code = null; menuOpen = false; location.hash = ""; authMode = "in"; authErr = ""; authInfo = ""; verifySent = false; clearInterval(verifyT); verifyT = null;
     firebase.auth().signOut();
   }
@@ -2168,6 +2112,13 @@ ol.rules { padding-left: 20px; }
           (room.duelPair ? "" : '<div class="tools"><button class="btn ghost small pill" data-act="lock" aria-pressed="' + (room.locked === true) + '">' + T(room.locked ? "Table locked" : "Table open") + "</button></div>")
       : '<p class="status-line">' + T("Playing to {n}. Waiting for {name} to start.", { n: fmt(room.target), name: "<bdi>" + esc(nameOf(room.host)) + "</bdi>" }) + "</p>";
     return tableHTML(seats, center) + '<div class="actionbar">' + bar + "</div>";
+  }
+  // What this game earned you, shown on the winner screen.
+  function rewardHTML(r) {
+    if (r.rewardNote === "practice" && r.order.indexOf(uid) > -1) return '<p class="reward muted">' + T("Practice table: coins and XP need 2 or more players.") + "</p>";
+    var w = r.rewards && r.rewards[uid]; if (!w) return "";
+    if (w.capped && !w.coins) return '<p class="reward muted">' + T("You've hit today's reward limit. More tomorrow!") + "</p>";
+    return '<p class="reward"><span class="coin" aria-hidden="true"></span>+' + fmt(w.coins) + " · +" + fmt(w.xp) + " XP" + (w.up ? ' · <strong>' + T("Level {l}!", { l: w.level }) + "</strong>" : "") + "</p>";
   }
   function gameHTML() {
     var hold = rollHold && (room.rollId || 0) === holdRoll && Date.now() < holdUntil;
@@ -2244,13 +2195,13 @@ ol.rules { padding-left: 20px; }
     var center;
     if (done) {
       center = '<p class="eyebrow mine">' + T("Winner") + '</p><div class="winner-name">' + esc(nameOf(r.winner)) + "</div>" +
-        '<p class="small">' + (r.winHow === "six" ? T("Rolled six of a kind in one throw.") : r.winHow === "kessen" ? T("Won the 決戦 roll-off.") : T("Landed on exactly {n}.", { n: fmt(r.target) })) + "</p>" + '<div class="tray" dir="ltr">' + dice + "</div>";
+        '<p class="small">' + (r.winHow === "six" ? T("Rolled six of a kind in one throw.") : r.winHow === "kessen" ? T("Won the 決戦 roll-off.") : T("Landed on exactly {n}.", { n: fmt(r.target) })) + "</p>" + rewardHTML(r) + '<div class="tray" dir="ltr"' + trayAttrs(r.winner) + ">" + dice + "</div>";
     } else {
       var tag = r.rolloff ? "決戦 · " : r.finalFrom >= 0 ? T("Final round") + " · " : "";
       var head = r.phase === "farkle" ? (r.bust === "over" ? '<div class="stamp">' + T("Bust") + "</div>" : '<div class="stamp jp" lang="ja">撃沈<small>GEKICHIN</small></div>')
         : '<p class="eyebrow' + (mine ? " mine" : "") + (tag ? " kessen" : "") + '">' + tag + (mine ? T("Your turn") : T("{name}'s turn", { name: who })) + "</p>";
       center = head + '<div class="pot"><span class="chips' + (potValue ? "" : " empty") + '" aria-hidden="true"></span><span class="pot-n" id="pot" data-num="pot" data-to="' + potValue + '" data-tpl="pot">' + fmt(potValue) + "</span></div>" +
-        '<p class="pot-l">' + T("This turn") + '</p><div class="tray" dir="ltr">' + dice + "</div>";
+        '<p class="pot-l">' + T("This turn") + '</p><div class="tray" dir="ltr"' + trayAttrs(cur) + ">" + dice + "</div>";
     }
     var liveTotal = r.phase === "choose" ? total : (r.turnScore || 0);
     var seats = seatsHTML(r.order, { live: !done && !r.rolloff ? { id: cur, total: liveTotal } : null, cur: done ? null : cur, winner: done ? r.winner : null, scores: r.scores, curBadge: r.phase === "farkle" ? (r.bust === "over" ? "Bust" : "撃沈") : isBot(cur) ? "Thinking…" : r.auto === cur ? "On auto" : mine ? "Your turn" : "Rolling",
@@ -2292,6 +2243,12 @@ ol.rules { padding-left: 20px; }
     else if (a === "authmode") { authMode = el.getAttribute("data-mode"); authErr = ""; authInfo = ""; render(); var f = $("#au-name") || $("#au-email"); if (f) f.focus(); }
     else if (a === "signout") signOut();
     else if (a === "resend") resendVerify();
+    else if (a === "shop") { shopOpen = true; menuOpen = false; renderMenu(); renderShop(); }
+    else if (a === "shopclose") { shopOpen = false; renderShop(); }
+    else if (a === "shoptab") { shopTab = el.getAttribute("data-tab"); renderShop(); }
+    else if (a === "buy") shopAct("buyItem", { id: el.getAttribute("data-id") }, function () { return T("Bought and equipped!"); });
+    else if (a === "equip") shopAct("equip", { id: el.getAttribute("data-id") });
+    else if (a === "daily") shopAct("claimDaily", {}, function (d) { return T("+{n} coins! Streak: {s} days.", { n: fmt((d && d.coins) || 0), s: (d && d.streak) || 1 }); });
     else if (a === "actclose") closeWindow(false);
     else if (a === "actdone") actionDone();
     else if (a === "lock") { if (room && room.host === uid) act(db.doc("rooms/" + code).update({ locked: room.locked !== true })); }
@@ -2413,7 +2370,7 @@ ol.rules { padding-left: 20px; }
       }
       if (emu) firebase.auth().useEmulator("http://127.0.0.1:9099");
       db = firebase.firestore();
-      if (emu) db.useEmulator("127.0.0.1", 8080);
+      if (emu) { db.useEmulator("127.0.0.1", 8080); firebase.app().functions("us-central1").useEmulator("127.0.0.1", 5001); }
       if (actState) handleAction();
       // Confirming in another tab of this browser refreshes the sign-in quietly; catch that right away.
       firebase.auth().onIdTokenChanged(function (u) { if (u && verifyT) checkVerified(); });

@@ -404,6 +404,10 @@ ol.rules { padding-left: 20px; }
     "Copy the invite link for table {code}": "انسخ رابط الدعوة للطاولة {code}",
     "Switch language": "تغيير اللغة",
     "You can watch, but not play": "يمكنك المشاهدة فقط",
+    "The table isn't answering. Check your internet connection. If you use a content blocker or VPN, try turning it off for this site.": "الطاولة لا تستجيب. تحقق من الإنترنت. إذا كنت تستخدم مانع محتوى أو VPN، جرّب إيقافه لهذا الموقع.",
+    "The table turned down this account. Make sure you confirmed your email (check Junk too), then tap Try again. If it keeps happening, sign out and sign back in.": "رفضت الطاولة هذا الحساب. تأكد أنك أكّدت بريدك (وتحقق من الرسائل غير المرغوب فيها)، ثم اضغط حاول مجددًا. إذا تكرر، سجّل الخروج ثم ادخل مرة أخرى.",
+    "Code": "الرمز",
+    "Try again": "حاول مجددًا",
     "We sent a link to {email}. Tap it to confirm your account. This screen moves on by itself once you do.": "أرسلنا رابطًا إلى {email}. اضغط عليه لتأكيد حسابك. ستنتقل هذه الشاشة تلقائيًا بعد ذلك.",
     "Waiting for you to confirm…": "بانتظار تأكيدك…",
     "One moment…": "لحظة…",
@@ -926,15 +930,38 @@ ol.rules { padding-left: 20px; }
     code = c; room = null; players = {}; roomLoaded = false; subErr = null; seenRoll = null; sel = new Set(); joining = false;
     chatSeen = {}; chatPrimed = false; myChat = null; chatKeys = ""; setChatOpen(false);
     duelSeen = {}; duelPrimed = false; duelMenu = null;
-    if (code && db) subscribe();
+    if (code && db && canOpenTables()) subscribe();
     render();
+  }
+  function canOpenTables() { return !!(authUser && authUser.emailVerified); }
+  // A refused connection is usually a sign-in that hasn't caught up with the email confirmation yet.
+  // Refresh it with Firebase and try again (twice) before showing the error.
+  var retries = 0;
+  function tableRefused(e) {
+    var u = firebase.auth().currentUser;
+    if (e && e.code === "permission-denied" && u && retries < 2) {
+      retries++;
+      u.reload().then(function () { return u.getIdToken(true); }).catch(function () {}).then(function () {
+        authUser = firebase.auth().currentUser;
+        var c = code; unsubAll(); code = null; location.hash = c ? "t-" + c : ""; route();
+      });
+      return;
+    }
+    subErr = e || { code: "unknown" }; render();
+  }
+  function retryTable() {
+    retries = 0; var u = firebase.auth().currentUser, c = code;
+    subErr = null; render();
+    (u ? u.reload().then(function () { return u.getIdToken(true); }) : Promise.resolve()).catch(function () {}).then(function () {
+      authUser = firebase.auth().currentUser; unsubAll(); code = null; location.hash = c ? "t-" + c : ""; route();
+    });
   }
   function subscribe() {
     var rref = db.doc("rooms/" + code);
     clearTimeout(loadT);
     loadT = setTimeout(function () { if (!roomLoaded) { subErr = { code: "slow" }; render(); } }, 10000);
     unsubs.push(rref.onSnapshot(function (s) {
-      roomLoaded = true; subErr = null; clearTimeout(loadT);
+      roomLoaded = true; subErr = null; retries = 0; clearTimeout(loadT);
       var before = room;
       room = s.exists ? s.data() : null;
       if (room) {
@@ -964,7 +991,7 @@ ol.rules { padding-left: 20px; }
         }
       }
       maybeJoin(); hostSync(); scheduleFarkle(); scheduleAuto(); duelTableTick(); render(); renderDuel();
-    }, function (e) { subErr = e; render(); }));
+    }, function (e) { tableRefused(e); }));
     unsubs.push(rref.collection("players").onSnapshot(function (q) {
       var m = {}; q.docs.forEach(function (d) { m[d.id] = d.data(); });
       players = m;
@@ -1994,7 +2021,15 @@ ol.rules { padding-left: 20px; }
     if (!authUser) { v.innerHTML = authHTML(); return; }
     if (!authUser.emailVerified) { v.innerHTML = verifyHTML(); startVerifyWatch(); return; }
     if (!code) { v.innerHTML = homeHTML(); return; }
-    if (subErr) { v.innerHTML = '<div class="panel"><h2>' + T("Can't reach the table") + '</h2><p class="muted">' + (subErr.code === "slow" ? T("Still waiting for the table to answer. It may load in a moment.") : T("Something went wrong loading this table.")) + '</p><div class="row" style="margin-top:14px"><button class="btn ghost" data-act="home">' + T("Back") + "</button></div></div>"; return; }
+    if (subErr) {
+      var why = subErr.code === "slow" ? T("The table isn't answering. Check your internet connection. If you use a content blocker or VPN, try turning it off for this site.")
+        : subErr.code === "permission-denied" ? T("The table turned down this account. Make sure you confirmed your email (check Junk too), then tap Try again. If it keeps happening, sign out and sign back in.")
+        : subErr.code === "unavailable" ? T("Couldn't connect. Check your internet and try again.")
+        : T("Something went wrong loading this table.");
+      v.innerHTML = '<div class="panel"><h2>' + T("Can't reach the table") + '</h2><p class="muted">' + why + '</p><p class="small muted" dir="ltr">' + T("Code") + ": " + esc(code || "") + " · " + esc(subErr.code || "unknown") + " · v" + APP_VER + '</p>' +
+        '<div class="row" style="margin-top:14px"><button class="btn" data-act="retrytable">' + T("Try again") + '</button><button class="btn ghost" data-act="signout">' + T("Sign out") + '</button><button class="btn ghost" data-act="home">' + T("Back") + "</button></div></div>";
+      return;
+    }
     if (!roomLoaded) { v.innerHTML = '<div class="panel muted">' + T("Finding table {code}…", { code: esc(code) }) + "</div>"; return; }
     if (!room) { v.innerHTML = '<div class="panel"><h2>' + T("No table {code}", { code: esc(code) }) + '</h2><p class="muted">' + T("Check the code, or start a new table.") + '</p><div class="row" style="margin-top:14px"><button class="btn" data-act="home">' + T("Back") + "</button></div></div>"; return; }
     if (!myName) { v.innerHTML = nameGate(); return; }
@@ -2089,7 +2124,7 @@ ol.rules { padding-left: 20px; }
     u.reload().then(function () {
       if (!u.emailVerified) return;
       clearInterval(verifyT); verifyT = null; authErr = ""; authInfo = "";
-      return u.getIdToken(true).then(function () { authUser = u; unsubAll(); code = null; route(); });
+      return u.getIdToken(true).then(function () { authUser = u; retries = 0; unsubAll(); code = null; route(); });
     }).catch(function () {});
   }
   function startVerifyWatch() { if (!verifyT) verifyT = setInterval(checkVerified, 3000); }
@@ -2291,6 +2326,7 @@ ol.rules { padding-left: 20px; }
     else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); saveName(v); maybeJoin(); render(); }
     else if (a === "authmode") { authMode = el.getAttribute("data-mode"); authErr = ""; authInfo = ""; render(); var f = $("#au-name") || $("#au-email"); if (f) f.focus(); }
     else if (a === "signout") signOut();
+    else if (a === "retrytable") retryTable();
     else if (a === "resend") resendVerify();
     else if (a === "actclose") closeWindow(false);
     else if (a === "actdone") actionDone();
@@ -2424,7 +2460,11 @@ ol.rules { padding-left: 20px; }
         authUser = u; authReady = true; uid = u ? u.uid : null;
         if (u && u.displayName) { myName = u.displayName; store.set("fk-name", myName); }
         if (was !== uid) { unsubAll(); code = null; }
-        route();
+        if (u && u.emailVerified) {
+          u.getIdTokenResult().then(function (t) {
+            if (t && t.claims && t.claims.email_verified === false) return u.getIdToken(true);
+          }).catch(function () {}).then(route);
+        } else route();
       });
     } catch (e) { db = null; console.error(e); render(); }
   }

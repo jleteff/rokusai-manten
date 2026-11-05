@@ -206,6 +206,7 @@ input[type=text], input[type=email], input[type=password], select {
 .badge .cd { font-variant-numeric: tabular-nums; }
 .oldver { margin: 6px auto; max-width: 560px; font-size: 13px; text-align: center; color: var(--gold); background: rgba(7,12,10,.85); border: 1px solid var(--gold-dim); border-radius: 9px; padding: 6px 10px; }
 .ok-check { width: 64px; height: 64px; margin: 0 auto 10px; border-radius: 50%; display: grid; place-items: center; font-size: 34px; font-weight: 900; color: var(--ink); background: var(--gold); }
+.icloud-note { margin: -6px 0 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--gold-dim); background: rgba(227,183,78,.08); color: var(--ivory); }
 .waiting-dot { color: var(--gold); margin-bottom: 12px; }
 .grecaptcha-badge { visibility: hidden !important; }
 .recap { margin-top: 14px; font-size: 12px; } .recap a { color: inherit; text-decoration: underline; }
@@ -591,6 +592,9 @@ ol.rules { padding-left: 20px; }
     "Level {l}!": "المستوى {l}!",
     "Bought and equipped!": "تم الشراء والاستخدام!",
     "+{n} coins! Streak: {s} days.": "+{n} عملة! السلسلة: {s} أيام.",
+    "iCloud Mail often holds back these emails for a long time. If it hasn't arrived in a couple of minutes, use a Gmail or Outlook address instead.": "بريد iCloud كثيرًا ما يؤخر هذه الرسائل لفترة طويلة. إذا لم تصل خلال دقيقتين، استخدم بريد Gmail أو Outlook بدلًا منه.",
+    "Use a different email": "استخدم بريدًا آخر",
+    "Enter the email you want to use.": "أدخل البريد الذي تريد استخدامه.",
     "The table isn't answering. Check your internet connection. If you use a content blocker or VPN, try turning it off for this site.": "الطاولة لا تستجيب. تحقق من الإنترنت. إذا كنت تستخدم مانع محتوى أو VPN، جرّب إيقافه لهذا الموقع.",
     "The table turned down this account. Make sure you confirmed your email (check Junk too), then tap Try again. If it keeps happening, sign out and sign back in.": "رفضت الطاولة هذا الحساب. تأكد أنك أكّدت بريدك (وتحقق من الرسائل غير المرغوب فيها)، ثم اضغط حاول مجددًا. إذا تكرر، سجّل الخروج ثم ادخل مرة أخرى.",
     "Code": "الرمز",
@@ -2297,9 +2301,10 @@ ol.rules { padding-left: 20px; }
       T("We sent a link to {email}. Tap it to confirm your account. This screen moves on by itself once you do.", { email: '<strong dir="ltr">' + esc(authUser.email || "") + "</strong>" }) + "</p>" +
       '<p class="small waiting-dot" role="status">' + T("Waiting for you to confirm…") + "</p>" +
       '<p class="muted small" style="margin-bottom:14px">' + T("Don't see it? Check your spam or junk folder.") + "</p>" +
+      (/@(icloud|me|mac)\.com$/i.test(authUser.email || "") ? '<p class="small icloud-note">' + T("iCloud Mail often holds back these emails for a long time. If it hasn't arrived in a couple of minutes, use a Gmail or Outlook address instead.") + "</p>" : "") +
       (authErr ? '<p class="hint bad" role="alert">' + esc(authErr) + "</p>" : "") +
       (authInfo ? '<p class="hint" role="status">' + esc(authInfo) + "</p>" : "") +
-      '<div class="row"><button class="btn ghost small" data-act="resend">' + T("Send it again") + '</button><button class="btn ghost small" data-act="signout">' + T("Sign out") + "</button></div></div>";
+      '<div class="row"><button class="btn small" data-act="newemail">' + T("Use a different email") + '</button><button class="btn ghost small" data-act="resend">' + T("Send it again") + '</button><button class="btn ghost small" data-act="signout">' + T("Sign out") + "</button></div></div>";
   }
   // Only Firebase can say an email is confirmed: this asks it, and the database rules check it again on every read.
   function checkVerified() {
@@ -2318,6 +2323,17 @@ ol.rules { padding-left: 20px; }
   function sendVerify(u) {
     var back = { url: location.origin + location.pathname };
     return u.sendEmailVerification(/^https?:$/.test(location.protocol) ? back : undefined).catch(function () { return u.sendEmailVerification(); });
+  }
+  // Start over with another address: the unconfirmed account is deleted so the name is free to use again.
+  function useDifferentEmail() {
+    var u = firebase.auth().currentUser; if (!u || u.emailVerified) return;
+    var nm = u.displayName || myName;
+    clearInterval(verifyT); verifyT = null; verifySent = false;
+    u.delete().catch(function () { return firebase.auth().signOut(); }).then(function () {
+      authMode = "up"; authErr = ""; authInfo = T("Enter the email you want to use.");
+      myName = nm; render();
+      var f = $("#au-email"); if (f) f.focus();
+    });
   }
   function resendVerify() {
     authErr = ""; authInfo = "";
@@ -2536,6 +2552,7 @@ ol.rules { padding-left: 20px; }
     else if (a === "restore") restorePurchases();
     else if (a === "tier") shopAct("claimTier", { n: Number(el.getAttribute("data-n")), track: el.getAttribute("data-t") }, function (d) { return d && d.item ? T("Unlocked {name}!", { name: itemName(CAT.byId[d.item]) }) : T("+{n} coins!", { n: fmt((d && d.coins) || 0) }); });
     else if (a === "daily") shopAct("claimDaily", {}, function (d) { return T("+{n} coins! Streak: {s} days.", { n: fmt((d && d.coins) || 0), s: (d && d.streak) || 1 }); });
+    else if (a === "newemail") useDifferentEmail();
     else if (a === "actclose") closeWindow(false);
     else if (a === "actdone") actionDone();
     else if (a === "lock") { if (room && room.host === uid) act(db.doc("rooms/" + code).update({ locked: room.locked !== true })); }

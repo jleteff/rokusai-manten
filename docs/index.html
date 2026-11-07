@@ -205,6 +205,7 @@ input[type=text], input[type=email], input[type=password], select {
 .oldver { margin: 6px auto; max-width: 560px; font-size: 13px; text-align: center; color: var(--gold); background: rgba(7,12,10,.85); border: 1px solid var(--gold-dim); border-radius: 9px; padding: 6px 10px; }
 .ok-check { width: 64px; height: 64px; margin: 0 auto 10px; border-radius: 50%; display: grid; place-items: center; font-size: 34px; font-weight: 900; color: var(--ink); background: var(--gold); }
 .icloud-note { margin: -6px 0 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--gold-dim); background: rgba(227,183,78,.08); color: var(--ivory); }
+.guest-box { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .waiting-dot { color: var(--gold); margin-bottom: 12px; }
 .grecaptcha-badge { visibility: hidden !important; }
 .recap { margin-top: 14px; font-size: 12px; } .recap a { color: inherit; text-decoration: underline; }
@@ -405,6 +406,10 @@ ol.rules { padding-left: 20px; }
     "Copy the invite link for table {code}": "انسخ رابط الدعوة للطاولة {code}",
     "Switch language": "تغيير اللغة",
     "You can watch, but not play": "يمكنك المشاهدة فقط",
+    "No account? Play tonight without one.": "ما عندك حساب؟ العب الليلة بدونه.",
+    "Play as guest": "العب كضيف",
+    "Guest play isn't switched on. The game owner needs to turn on Anonymous sign-in in Firebase.": "اللعب كضيف غير مفعّل. على صاحب اللعبة تفعيل تسجيل الدخول المجهول في Firebase.",
+    "Playing as a guest: {name}": "تلعب كضيف: {name}",
     "iCloud Mail often holds back these emails for a long time. If it hasn't arrived in a couple of minutes, use a Gmail or Outlook address instead.": "بريد iCloud كثيرًا ما يؤخر هذه الرسائل لفترة طويلة. إذا لم تصل خلال دقيقتين، استخدم بريد Gmail أو Outlook بدلًا منه.",
     "Use a different email": "استخدم بريدًا آخر",
     "Enter the email you want to use.": "أدخل البريد الذي تريد استخدامه.",
@@ -937,7 +942,7 @@ ol.rules { padding-left: 20px; }
     if (code && db && canOpenTables()) subscribe();
     render();
   }
-  function canOpenTables() { return !!(authUser && authUser.emailVerified); }
+  function canOpenTables() { return !!(authUser && (authUser.emailVerified || authUser.isAnonymous)); }
   // A refused connection is usually a sign-in that hasn't caught up with the email confirmation yet.
   // Refresh it with Firebase and try again (twice) before showing the error.
   var retries = 0;
@@ -1286,7 +1291,8 @@ ol.rules { padding-left: 20px; }
     if (code && room && room.host === uid && room.status !== "done" && !room.duelPair) parts.push('<div class="panel"><p class="label">' + T("Host controls") + '</p><div class="row" style="margin-top:8px">' +
       '<button class="btn ghost small pill" data-act="lock" aria-pressed="' + (room.locked === true) + '">' + T(room.locked ? "Table locked: only seated players" : "Table open: anyone with the link can sit") + "</button></div>" +
       '<p class="muted small" style="margin-top:8px">' + T("Tap a player's seat to remove them. Removed players can't come back to this table.") + "</p></div>");
-    if (authUser) parts.push('<div class="panel"><p class="label">' + T("Account") + '</p><p class="small">' + T("Signed in as {name}", { name: "<strong><bdi>" + esc(myName) + "</bdi></strong>" }) + ' <span class="muted" dir="ltr">' + esc(authUser.email || "") + '</span></p><div class="row" style="margin-top:8px"><button class="btn ghost small" data-act="signout">' + T("Sign out") + "</button></div></div>");
+    if (authUser && authUser.isAnonymous) parts.push('<div class="panel"><p class="label">' + T("Account") + '</p><p class="small">' + T("Playing as a guest: {name}", { name: "<strong><bdi>" + esc(myName || "?") + "</bdi></strong>" }) + '</p><div class="row" style="margin-top:8px"><button class="btn ghost small" data-act="signout">' + T("Sign out") + "</button></div></div>");
+    else if (authUser) parts.push('<div class="panel"><p class="label">' + T("Account") + '</p><p class="small">' + T("Signed in as {name}", { name: "<strong><bdi>" + esc(myName) + "</bdi></strong>" }) + ' <span class="muted" dir="ltr">' + esc(authUser.email || "") + '</span></p><div class="row" style="margin-top:8px"><button class="btn ghost small" data-act="signout">' + T("Sign out") + "</button></div></div>");
     if (code) parts.push('<button class="btn ghost" data-act="home">' + T("Leave table") + "</button>");
     root.innerHTML = '<div class="menu-back" data-act="menuclose"></div><div class="menu" role="dialog" aria-modal="true" aria-label="' + T("Menu") + '">' + parts.join("") + "</div>";
     var m = root.querySelector(".menu"); if (m) m.scrollTop = keep;
@@ -2023,7 +2029,7 @@ ol.rules { padding-left: 20px; }
     if (actState) { v.innerHTML = actionHTML(); return; }
     if (!authReady) { v.innerHTML = '<div class="panel muted">' + T("Loading…") + "</div>"; return; }
     if (!authUser) { v.innerHTML = authHTML(); return; }
-    if (!authUser.emailVerified) { v.innerHTML = verifyHTML(); startVerifyWatch(); return; }
+    if (!authUser.emailVerified && !authUser.isAnonymous) { v.innerHTML = verifyHTML(); startVerifyWatch(); return; }
     if (!code) { v.innerHTML = homeHTML(); return; }
     if (subErr) {
       var why = subErr.code === "slow" ? T("The table isn't answering. Check your internet connection. If you use a content blocker or VPN, try turning it off for this site.")
@@ -2076,7 +2082,7 @@ ol.rules { padding-left: 20px; }
       '<div class="row auth-links" style="margin-top:12px">' +
       (up || reset ? '<button type="button" class="btn ghost small" data-act="authmode" data-mode="in">' + T("I have an account") + "</button>"
         : '<button type="button" class="btn ghost small" data-act="authmode" data-mode="up">' + T("Create an account") + '</button><button type="button" class="btn ghost small" data-act="authmode" data-mode="reset">' + T("Forgot password?") + "</button>") +
-      "</div>" + (window.APP_CHECK_KEY ? '<p class="muted small recap">' + T("Protected by reCAPTCHA. Google's {p} and {t} apply.", { p: '<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">' + T("Privacy Policy") + "</a>", t: '<a href="https://policies.google.com/terms" target="_blank" rel="noopener">' + T("Terms") + "</a>" }) + "</p>" : "") + "</form>";
+      "</div>" + (authMode === "in" ? '<div class="guest-box"><p class="small muted">' + T("No account? Play tonight without one.") + '</p><button type="button" class="btn ghost" data-act="guest"' + (authBusy ? " disabled" : "") + ">" + T("Play as guest") + "</button></div>" : "") + (window.APP_CHECK_KEY ? '<p class="muted small recap">' + T("Protected by reCAPTCHA. Google's {p} and {t} apply.", { p: '<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">' + T("Privacy Policy") + "</a>", t: '<a href="https://policies.google.com/terms" target="_blank" rel="noopener">' + T("Terms") + "</a>" }) + "</p>" : "") + "</form>";
   }
   function authMsg(e) {
     var c = (e && e.code) || "";
@@ -2342,6 +2348,12 @@ ol.rules { padding-left: 20px; }
     else if (a === "setname") { var v = $("#nm").value.trim(); if (!v) return; myName = v; store.set("fk-name", v); saveName(v); maybeJoin(); render(); }
     else if (a === "authmode") { authMode = el.getAttribute("data-mode"); authErr = ""; authInfo = ""; render(); var f = $("#au-name") || $("#au-email"); if (f) f.focus(); }
     else if (a === "signout") signOut();
+    else if (a === "guest") {
+      authBusy = true; authErr = ""; render();
+      firebase.auth().signInAnonymously().catch(function (e) {
+        authErr = /operation-not-allowed|admin-restricted/.test((e && e.code) || "") ? T("Guest play isn't switched on. The game owner needs to turn on Anonymous sign-in in Firebase.") : authMsg(e);
+      }).then(function () { authBusy = false; render(); });
+    }
     else if (a === "retrytable") retryTable();
     else if (a === "resend") resendVerify();
     else if (a === "newemail") useDifferentEmail();
@@ -2472,7 +2484,7 @@ ol.rules { padding-left: 20px; }
       firebase.auth().onIdTokenChanged(function (u) { if (u && verifyT) checkVerified(); });
       firebase.auth().onAuthStateChanged(function (u) {
         // Old guest (anonymous) sessions are signed out: every player needs an account now.
-        if (u && u.isAnonymous) { firebase.auth().signOut(); return; }
+        // Guests (no account) are allowed while guest mode is on.
         var was = uid;
         authUser = u; authReady = true; uid = u ? u.uid : null;
         if (u && u.displayName) { myName = u.displayName; store.set("fk-name", myName); }

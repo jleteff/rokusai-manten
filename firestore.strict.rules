@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Every player signs in with an email-and-password account and has confirmed their email.
+    // Guest (anonymous) sessions and unconfirmed accounts can't see or touch any table.
+    function signedIn() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'password' &&
+        request.auth.token.email_verified == true;
+    }
+
+    match /rooms/{code} {
+      function isHost() { return resource.data.host == request.auth.uid; }
+      function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+      function myTurn() {
+        return resource.data.status == 'play' && resource.data.order[resource.data.turn] == request.auth.uid;
+      }
+      // What the player whose turn it is may change. Never the host, the seats (order), bans, the lock
+      // or the target.
+      function playFieldsOnly() {
+        return changed().hasOnly(['dice', 'held', 'turnScore', 'phase', 'rollId', 'pick', 'pickRoll', 'forced', 'bust',
+          'bonus', 'auto', 'log', 'scores', 'turn', 'finalFrom', 'finalists', 'finalDone', 'rolloff', 'status',
+          'winner', 'winHow']);
+      }
+      // Only your own score can change on your turn, and never past the target.
+      function scoresOk() {
+        return !changed().hasAny(['scores']) || (
+          request.resource.data.scores.diff(resource.data.scores).affectedKeys().hasOnly([request.auth.uid]) &&
+          request.resource.data.scores.get(request.auth.uid, 0) <= resource.data.target
+        );
+      }
+      // A turn can end the game, but can't send the table back to the lobby.
+      function statusOk() { return !changed().hasAny(['status']) || request.resource.data.status == 'done'; }
+
+      // You can open a table if you know its code, but nobody can list every table.
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.host == request.auth.uid;
+      // The host runs the table. During play, the player whose turn it is can only make game moves.
+      allow update: if signedIn() && (
+        isHost() ||
+        (myTurn() && playFieldsOnly() && scoresOk() && statusOk())
+      );
+
+      match /players/{pid} {
+        function room() { return get(/databases/$(database)/documents/rooms/$(code)).data; }
+        function roomHost() { return room().host == request.auth.uid; }
+        function banned() { return request.auth.uid in room().get('banned', []); }
+
+        allow read: if signedIn();
+        // There are no bots: a seat is always the signed-in person sitting in it, never anyone else.
+        // You can't sit down if the host removed you or locked the table.
+        allow create: if signedIn() && pid == request.auth.uid && !banned() &&
+          !('bot' in request.resource.data) &&
+          (room().get('locked', false) != true || roomHost());
+        // You can update your own seat (name, avatar, chat, challenges), and only your own.
+        allow update: if signedIn() && pid == request.auth.uid && !banned() && !('bot' in request.resource.data);
+        // The host can remove anyone. You can always get up yourself.
+        allow delete: if signedIn() && (roomHost() || pid == request.auth.uid);
+      }
+    }
+  }
+}
